@@ -8,6 +8,7 @@ A read-only dashboard for managing Scout expedition events, built with Next.js 1
 
 - Node.js 20+ and npm
 - Docker (for local Redis)
+- mkcert (for HTTPS in development)
 
 ### Installation
 
@@ -18,14 +19,27 @@ npm install
 # Copy environment template
 cp .env.example .env.local
 
+# Install mkcert (if not already installed)
+brew install mkcert
+mkcert -install
+
+# Generate SSL certificates
+mkdir -p certs
+cd certs
+mkcert localhost 127.0.0.1 ::1
+cd ..
+
 # Start local Redis (optional - for caching)
 docker-compose up -d
 
-# Start development server
+# Start development server with HTTPS
 npm run dev
+
+# Or use HTTP if you prefer
+npm run dev:http
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) to see the app.
+Visit [https://localhost:3000](https://localhost:3000) to see the app.
 
 ## 📁 Project Structure
 
@@ -111,4 +125,4 @@ This project uses:
 
 ## 📄 License
 
-Private project for SEEE use only.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
