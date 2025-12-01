@@ -135,11 +135,22 @@ All agents must adhere to this structure. Do not create new top-level directorie
 
 **Goal:** Connect frontend to backend using the "Waterfall" strategy.
 
-* [ ] **2.1 Authentication (Architecture 5.7):**  
-  * [ ] Install next-auth.  
-  * [ ] Configure src/lib/auth.ts with OSM Provider.  
-  * [ ] Implement **Token Rotation Strategy** (refresh_token) to handle 1-hour expiry.  
-  * [ ] Create app/api/auth/[...nextauth]/route.ts.  
+* [x] **2.1 Authentication (Architecture 5.7):**  
+  * [x] **Environment Setup:** Updated .env.example with NextAuth configuration:  
+    1. OSM_API_URL & OSM_OAUTH_URL: Base URLs for OSM API and OAuth endpoints.  
+    2. OSM_CLIENT_ID & OSM_CLIENT_SECRET: OAuth credentials from OSM Developer Portal.  
+    3. NEXTAUTH_SECRET: Secret for JWT encryption (generate with `openssl rand -base64 32`).  
+    4. NEXTAUTH_URL: https://localhost:3000 (HTTPS Required).  
+  * [ ] **Callback Registration:** Ensure https://localhost:3000/api/auth/callback/osm is registered in OSM Developer Portal.  
+  * [x] Installed next-auth@beta (v5).  
+  * [x] Configured src/lib/auth.ts:  
+    1. **OSM Provider:** OAuth 2.0 flow with Online Scout Manager.  
+    2. Token refresh logic integrated into JWT callback with automatic expiry detection.  
+  * [x] Implemented **Token Rotation Strategy** with automatic refresh when access token expires (1-hour lifetime).  
+  * [x] Created app/api/auth/[...nextauth]/route.ts handlers for all auth routes.  
+  * [x] Created middleware.ts for route protection (dashboard routes and /api/proxy require authentication).  
+  * [x] Created TypeScript type definitions (src/types/next-auth.d.ts) for session and JWT.  
+  * [ ] **TEST (Manual):** Verify authentication flow once OSM OAuth credentials are configured in .env.local.  
 * [ ] **2.2 State & Configuration Seeding:**  
   * [ ] Setup TanStack Query (staleTime: 5 mins) for API data.  
   * [ ] Setup Zustand for Session state (Section ID, User Role).  
