@@ -90,15 +90,15 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] README.md already includes "Getting Started" guide with HTTPS setup  
   * [x] Documented docker-compose up -d requirement for local Redis  
   * [x] Created .env.example with all necessary environment variables  
-* [ ] **1.2 Observability (Moved from P5):**  
-  * [ ] Install pino and pino-pretty (deferred to later phase)  
-  * [ ] Create src/lib/logger.ts to capture X-RateLimit headers and errors (using console for now)  
+* [x] **1.2 Observability (Moved from P5):**  
+  * [x] Installed pino and pino-pretty  
+  * [x] Created src/lib/logger.ts with helpers (rate limit, circuit breaker, proxy request, validation, Redis, cache) and integrated across safety layer  
 * [x] **1.3 Zod Schemas (src/lib/schemas.ts):**  
   * [x] **Tier 1 (Strict):** Member, Event, Patrol, FlexiStructure, StartupData schemas - Fail if invalid  
   * [x] **Tier 1 (Strict - Config):** Schema for getStartupData (User Roles) and FlexiStructure (Column Defs)  
   * [x] **Tier 2 (Permissive):** FlexiData, BadgeRecords, Attendance schemas with .catch() for graceful degradation  
   * [x] Created parseStrict() and parsePermissive() utility functions  
-  * [ ] **TEST (Unit):** Verify Tier 1 throws errors on bad data, while Tier 2 returns null (deferred)  
+  * [x] **TEST (Unit):** Verified Tier 1 throws errors on bad data, Tier 2 degrades gracefully (16 tests passing)  
 * [x] **1.4 Rate Limiting Engine:**  
   * [x] Implemented bottleneck logic in src/lib/bottleneck.ts capped at 80% of API limit  
   * [x] Parse X-RateLimit-Remaining headers from responses  
@@ -116,11 +116,11 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] Integrated rate limiting, circuit breaker, and validation  
   * [x] Ensured POST/PUT/DELETE/PATCH requests are rejected (Read-Only Policy)  
   * [x] X-Blocked header detection triggers hard lock  
-  * [ ] **TEST (Integration):** MSW tests for circuit breaker (deferred)  
-* [ ] **1.7 CI/CD Automation:**  
-  * [ ] Create scripts/validate-safety-layer.sh (deferred)  
-  * [ ] Script Logic: 1. Check Redis is reachable 2. Run Linting 3. Run Unit Tests 4. Run Integration Tests  
-  * [ ] Configure package.json with "test:safety" script (deferred)
+  * [x] **TEST (Integration):** MSW tests for proxy route covering caching, rate limiting, soft/hard locks, and X-Blocked detection (6 tests passing)  
+* [x] **1.7 CI/CD Automation:**  
+  * [x] Created scripts/validate-safety-layer.sh  
+  * [x] Script Logic: Check Redis reachable, run ESLint, run TypeScript compile check, run unit tests (schemas) and integration tests (proxy), then full suite  
+  * [x] Added `validate:safety` script in package.json
 
 **Status:** ✅ Core Safety Layer Complete - Ready for Phase 2
 - Zod schemas with two-tier validation strategy
@@ -128,6 +128,8 @@ All agents must adhere to this structure. Do not create new top-level directorie
 - Redis-based circuit breaker with soft/hard locks
 - Proxy route with caching, validation, and read-only enforcement
 - API client wrapper with type-safe methods
+ - Observability via Pino with structured logs
+ - CI validation script and full tests green (22 tests)
 
 ## **Phase 2: Core State & "Shell" UI**
 

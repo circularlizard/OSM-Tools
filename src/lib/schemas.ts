@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { logValidationError } from './logger'
 
 /**
  * Zod Schemas for SEEE Expedition Dashboard
@@ -228,7 +229,7 @@ export type AttendanceResponse = z.infer<typeof AttendanceResponseSchema>
 export function parseStrict<T>(schema: z.ZodType<T>, data: unknown, context: string): T {
   const result = schema.safeParse(data)
   if (!result.success) {
-    console.error(`[Tier 1 Validation Failed] ${context}:`, result.error.format())
+    logValidationError({ context, tier: 1, error: result.error, data })
     throw new Error(`Invalid ${context} data: ${result.error.message}`)
   }
   return result.data
@@ -246,7 +247,7 @@ export function parsePermissive<T>(
 ): T {
   const result = schema.safeParse(data)
   if (!result.success) {
-    console.warn(`[Tier 2 Validation Warning] ${context}:`, result.error.format())
+    logValidationError({ context, tier: 2, error: result.error, data })
     return defaultValue
   }
   return result.data

@@ -8,6 +8,7 @@ import {
   setCachedResponse,
   getCacheKey,
 } from '@/lib/redis'
+import { logProxyRequest, logCache } from '@/lib/logger'
 
 /**
  * Proxy API Route
@@ -38,8 +39,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const startTime = Date.now()
+  let resolvedParams: { path: string[] } | null = null
   try {
-    const resolvedParams = await params
+    resolvedParams = await params
     // Check for hard lock (global halt)
     if (await isHardLocked()) {
       return NextResponse.json(
@@ -81,15 +84,21 @@ export async function GET(
     const path = resolvedParams.path.join('/')
     const searchParams = request.nextUrl.searchParams.toString()
     const targetUrl = `${OSM_API_BASE}/${path}${searchParams ? `?${searchParams}` : ''}`
-
-    console.log(`[Proxy] GET ${targetUrl}`)
+    
 
     // Check cache first (read-through pattern)
     const cacheKey = getCacheKey(path, Object.fromEntries(request.nextUrl.searchParams))
     const cachedData = await getCachedResponse(cacheKey)
 
     if (cachedData) {
-      console.log(`[Proxy] Cache hit: ${cacheKey}`)
+      logCache({ operation: 'hit', key: cacheKey })
+      logProxyRequest({
+        method: 'GET',
+        path,
+        status: 200,
+        duration: Date.now() - startTime,
+        cached: true,
+      })
       return NextResponse.json(JSON.parse(cachedData), {
         status: 200,
         headers: {
@@ -97,6 +106,8 @@ export async function GET(
         },
       })
     }
+
+    logCache({ operation: 'miss', key: cacheKey })
 
     // Schedule request through rate limiter
     const response = await scheduleRequest(async () => {
@@ -146,6 +157,15 @@ export async function GET(
     // Parse and cache successful response
     const data = await response.json()
     await setCachedResponse(cacheKey, JSON.stringify(data), CACHE_TTL)
+    logCache({ operation: 'set', key: cacheKey, ttl: CACHE_TTL })
+
+    logProxyRequest({
+      method: 'GET',
+      path,
+      status: 200,
+      duration: Date.now() - startTime,
+      cached: false,
+    })
 
     return NextResponse.json(data, {
       status: 200,
@@ -156,25 +176,21 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('[Proxy] Error:', error)
+    const duration = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const pathFromUrl = resolvedParams ? resolvedParams.path.join('/') : request.nextUrl.pathname.replace(/^\/?api\/proxy\//, '')
 
-    // Check if error is from rate limiter
     if (error instanceof Error && error.message.includes('RATE_LIMITED')) {
+      logProxyRequest({ method: 'GET', path: pathFromUrl, status: 429, duration, error: errorMessage })
       return NextResponse.json(
-        {
-          error: 'RATE_LIMITED',
-          message: error.message,
-          retryAfter: 60,
-        },
+        { error: 'RATE_LIMITED', message: error.message, retryAfter: 60 },
         { status: 429 }
       )
     }
 
+    logProxyRequest({ method: 'GET', path: pathFromUrl, status: 500, duration, error: errorMessage })
     return NextResponse.json(
-      {
-        error: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'INTERNAL_ERROR', message: errorMessage },
       { status: 500 }
     )
   }

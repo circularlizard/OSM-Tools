@@ -1,12 +1,21 @@
 import '@testing-library/jest-dom'
-import { server } from './src/mocks/server'
 
-// Establish API mocking before all tests
-beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+// Polyfill for Pino in Node test environment
+if (typeof setImmediate === 'undefined') {
+  (global as any).setImmediate = (fn: (...args: any[]) => void, ...args: any[]) =>
+    setTimeout(fn, 0, ...args)
+}// Polyfill Web Fetch API for NextRequest usage in tests
+try {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	const { fetch, Request, Response, Headers } = require('undici')
+	// Assign if not present
+	if (!(global as any).fetch) (global as any).fetch = fetch
+	if (!(global as any).Request) (global as any).Request = Request
+	if (!(global as any).Response) (global as any).Response = Response
+	if (!(global as any).Headers) (global as any).Headers = Headers
+} catch (e) {
+	// ignore if undici not available
+}
 
-// Reset any request handlers that we may add during the tests,
-// so they don't affect other tests
-afterEach(() => server.resetHandlers())
-
-// Clean up after the tests are finished
-afterAll(() => server.close())
+// MSW setup is only imported in integration tests that need it
+// This avoids issues with Response not being defined in Node environment for unit tests

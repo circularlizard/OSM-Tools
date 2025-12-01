@@ -1,6 +1,7 @@
 import 'server-only'
 import Bottleneck from 'bottleneck'
 import { getQuota, updateQuota, setSoftLock, isSoftLocked } from './redis'
+import { logRateLimit } from './logger'
 
 /**
  * Rate Limiting Engine for OSM API
@@ -55,7 +56,7 @@ export function getRateLimiter(): Bottleneck {
   })
 
   // Update reservoir dynamically based on API quota
-  limiter.on('done', async (info) => {
+  limiter.on('done', async () => {
     try {
       const quota = await getQuota()
       if (quota) {
@@ -66,9 +67,11 @@ export function getRateLimiter(): Bottleneck {
           reservoir: safeRemaining,
         })
 
-        console.log(
-          `[Rate Limiter] Updated reservoir: ${safeRemaining}/${quota.limit} (${quota.remaining} actual remaining)`
-        )
+        logRateLimit({
+          remaining: quota.remaining,
+          limit: quota.limit,
+          reset: quota.reset,
+        })
 
         // Trigger soft lock if quota is getting low (< 10%)
         if (quota.remaining < quota.limit * 0.1) {

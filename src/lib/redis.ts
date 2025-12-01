@@ -1,5 +1,6 @@
 import 'server-only'
 import Redis from 'ioredis'
+import { logRedis, logCircuitBreaker } from './logger'
 
 /**
  * Redis Client for SEEE Expedition Dashboard
@@ -49,11 +50,11 @@ export function getRedisClient(): Redis {
 
   // Connection error handling
   redis.on('error', (error) => {
-    console.error('[Redis] Connection error:', error)
+    logRedis({ event: 'error', error })
   })
 
   redis.on('connect', () => {
-    console.log('[Redis] Connected successfully')
+    logRedis({ event: 'connected' })
   })
 
   return redis
@@ -85,7 +86,7 @@ export function getCacheKey(path: string, params?: Record<string, string>): stri
 export async function setSoftLock(ttl: number = 60): Promise<void> {
   const client = getRedisClient()
   await client.setex(CIRCUIT_BREAKER_KEYS.SOFT_LOCK, ttl, '1')
-  console.warn(`[Circuit Breaker] Soft lock enabled for ${ttl}s`)
+  logCircuitBreaker({ event: 'soft_lock', ttl, reason: 'Quota low or exhausted' })
 }
 
 /**
@@ -104,7 +105,7 @@ export async function isSoftLocked(): Promise<boolean> {
 export async function setHardLock(ttl: number = 300): Promise<void> {
   const client = getRedisClient()
   await client.setex(CIRCUIT_BREAKER_KEYS.HARD_LOCK, ttl, '1')
-  console.error(`[Circuit Breaker] HARD LOCK enabled for ${ttl}s`)
+  logCircuitBreaker({ event: 'hard_lock', ttl, reason: 'X-Blocked header detected' })
 }
 
 /**
@@ -122,7 +123,7 @@ export async function isHardLocked(): Promise<boolean> {
 export async function clearLocks(): Promise<void> {
   const client = getRedisClient()
   await client.del(CIRCUIT_BREAKER_KEYS.SOFT_LOCK, CIRCUIT_BREAKER_KEYS.HARD_LOCK)
-  console.log('[Circuit Breaker] All locks cleared')
+  logCircuitBreaker({ event: 'lock_cleared', reason: 'Manual override' })
 }
 
 /**
