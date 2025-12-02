@@ -2,29 +2,26 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useAppStore } from "@/store/use-store";
+import { useStore } from "@/store/use-store";
 
-interface Section {
-  id: string;
-  name: string;
-}
+interface Section { sectionId: string; sectionName: string }
 
 export default function SectionPickerModal() {
-  const sections = useAppStore((s) => s.sections);
-  const selectedSectionId = useAppStore((s) => s.selectedSectionId);
-  const setSelectedSectionId = useAppStore((s) => s.setSelectedSectionId);
+  const sections = useStore((s) => s.availableSections);
+  const currentSection = useStore((s) => s.currentSection);
+  const setCurrentSection = useStore((s) => s.setCurrentSection);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const multiple = sections && sections.length > 1;
-    const hasSelection = !!selectedSectionId;
+    const hasSelection = !!currentSection;
     setOpen(multiple && !hasSelection);
-  }, [sections, selectedSectionId]);
+  }, [sections, currentSection]);
 
   if (!sections || sections.length <= 1) return null;
 
-  const handlePick = (id: string) => {
-    setSelectedSectionId(id);
+  const handlePick = (section: Section) => {
+    setCurrentSection({ sectionId: section.sectionId, sectionName: section.sectionName, sectionType: '' });
     setOpen(false);
   };
 
@@ -39,8 +36,8 @@ export default function SectionPickerModal() {
         </p>
         <div className="grid grid-cols-1 gap-2 mt-3">
           {sections.map((s: Section) => (
-            <Button key={s.id} variant={s.id === selectedSectionId ? "default" : "secondary"} onClick={() => handlePick(s.id)}>
-              {s.name}
+            <Button key={s.sectionId} variant={currentSection?.sectionId === s.sectionId ? "default" : "secondary"} onClick={() => handlePick(s)}>
+              {s.sectionName}
             </Button>
           ))}
         </div>
