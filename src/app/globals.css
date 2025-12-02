@@ -2,71 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Theme Tokens: colors, radius, spacing, and fonts */
+/* Shadcn-style OKLCH theme tokens (from reference_data/index.css) */
 :root {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-
-  /* Palette: Slate/Zinc neutrals + bold accent */
-  --color-bg: 255 255 255; /* white */
-  --color-fg: 17 24 39; /* slate-900 */
-  --color-muted: 243 244 246; /* gray-100 */
-  --color-muted-foreground: 107 114 128; /* gray-500 */
-
-  --color-primary: 37 99 235; /* blue-600 */
-  --color-primary-foreground: 255 255 255;
-
-  --color-secondary: 24 24 27; /* zinc-900 */
-  --color-secondary-foreground: 255 255 255;
-
-  --color-destructive: 220 38 38; /* red-600 */
-  --color-destructive-foreground: 255 255 255;
-
-  /* Radius & Spacing */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.3211 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.3211 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.3211 0 0);
+  --primary: oklch(0.5995 0.2008 259.8319);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9279 0.0071 268.5450);
+  --secondary-foreground: oklch(0.4311 0.0251 255.0517);
+  --muted: oklch(0.9450 0.0063 255.4759);
+  --muted-foreground: oklch(0.5311 0.0231 267.1118);
+  --accent: oklch(0.9151 0.0435 237.6126);
+  --accent-foreground: oklch(0.3662 0.1319 265.7757);
+  --destructive: oklch(0.6216 0.2194 26.4309);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.8909 0.0088 264.5185);
+  --input: oklch(0.8909 0.0088 264.5185);
+  --ring: oklch(0.5995 0.2008 259.8319);
+  --sidebar: oklch(0.9450 0.0063 255.4759);
+  --sidebar-foreground: oklch(0.3211 0 0);
+  --sidebar-primary: oklch(0.5995 0.2008 259.8319);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.9151 0.0435 237.6126);
+  --sidebar-accent-foreground: oklch(0.3662 0.1319 265.7757);
+  --sidebar-border: oklch(0.8909 0.0088 264.5185);
+  --sidebar-ring: oklch(0.5995 0.2008 259.8319);
+  --font-sans: Barlow, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: Barlow Semi Condensed, ui-sans-serif, sans-serif, system-ui;
+  --font-mono: JetBrains Mono, monospace;
+  --radius: 0.3rem;
 }
 
 .dark {
-  --color-bg: 9 9 11; /* zinc-950 */
-  --color-fg: 250 250 250; /* neutral-50 */
-  --color-muted: 24 24 27; /* zinc-900 */
-  --color-muted-foreground: 161 161 170; /* zinc-400 */
-
-  --color-primary: 37 99 235; /* blue-600 */
-  --color-primary-foreground: 255 255 255;
-
-  --color-secondary: 63 63 70; /* zinc-700 */
-  --color-secondary-foreground: 255 255 255;
-
-  --color-destructive: 239 68 68; /* red-500 */
-  --color-destructive-foreground: 255 255 255;
+  --background: oklch(0.2046 0 0);
+  --foreground: oklch(0.9219 0 0);
+  --card: oklch(0.2686 0 0);
+  --card-foreground: oklch(0.9219 0 0);
+  --popover: oklch(0.2686 0 0);
+  --popover-foreground: oklch(0.9219 0 0);
+  --primary: oklch(0.5995 0.2008 259.8319);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.2686 0 0);
+  --secondary-foreground: oklch(0.9219 0 0);
+  --muted: oklch(0.2393 0 0);
+  --muted-foreground: oklch(0.7155 0 0);
+  --accent: oklch(0.3662 0.1319 265.7757);
+  --accent-foreground: oklch(0.8435 0.0776 253.9919);
+  --destructive: oklch(0.6216 0.2194 26.4309);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.3715 0 0);
+  --input: oklch(0.3715 0 0);
+  --ring: oklch(0.5995 0.2008 259.8319);
+  --sidebar: oklch(0.2046 0 0);
+  --sidebar-foreground: oklch(0.9219 0 0);
+  --sidebar-primary: oklch(0.5995 0.2008 259.8319);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.3662 0.1319 265.7757);
+  --sidebar-accent-foreground: oklch(0.8435 0.0776 253.9919);
+  --sidebar-border: oklch(0.3715 0 0);
+  --sidebar-ring: oklch(0.5995 0.2008 259.8319);
 }
 
 @layer base {
-  :root {
-    --background: rgb(var(--color-bg));
-    --foreground: rgb(var(--color-fg));
-    --muted: rgb(var(--color-muted));
-    --muted-foreground: rgb(var(--color-muted-foreground));
-    --primary: rgb(var(--color-primary));
-    --primary-foreground: rgb(var(--color-primary-foreground));
-    --secondary: rgb(var(--color-secondary));
-    --secondary-foreground: rgb(var(--color-secondary-foreground));
-    --destructive: rgb(var(--color-destructive));
-    --destructive-foreground: rgb(var(--color-destructive-foreground));
-  }
-
-  * {
-    @apply border-border;
-  }
+  * { @apply border-[var(--border)]; }
   body {
     font-family: var(--font-sans);
     @apply bg-[var(--background)] text-[var(--foreground)];
