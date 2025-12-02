@@ -152,26 +152,6 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] Created TypeScript type definitions (src/types/next-auth.d.ts) for session and JWT.  
   * [ ] **TEST (Manual):** Verify authentication flow once OSM OAuth credentials are configured in .env.local.  
 
-* [ ] **2.1.A ALTERNATE Authentication (Architecture 5.7):**  
-  * [ ] **Environment Setup:** Configure .env.local to use **HTTPS**:  
-    1. OSM_API_BASE_URL: The root URL for OSM (e.g., https://www.onlinescoutmanager.co.uk).  
-    2. OSM_CLIENT_ID & OSM_CLIENT_SECRET: From OSM Developer Portal.  
-    3. NEXTAUTH_SECRET: Generated string.  
-    4. NEXTAUTH_URL: https://localhost:3000 (HTTPS Required).  
-    5. MOCK_AUTH_ENABLED: true to bypass OSM (Offline Mode).  
-    6. NEXT_PUBLIC_USE_MOCK_DATA: true to use JSON files instead of Proxy.  
-  * [ ] **Callback Registration:** Ensure https://localhost:3000/api/auth/callback/osm is registered in OSM Developer Portal.  
-  * [ ] Install next-auth.  
-  * [ ] Configure src/lib/auth.ts:  
-    1. **OSM Provider:** Standard OAuth 2.0 flow.  
-    2. **Mock Provider:** Custom Credential provider triggered by MOCK_AUTH_ENABLED=true that returns a dummy session.  
-  * [ ] Implement **Token Rotation Strategy** (refresh_token) to handle 1-hour expiry (Skip for Mock Provider).  
-  * [ ] Create app/api/auth/[...nextauth]/route.ts.  
-  * [ ] **TEST (Manual):** Verify 3 Operation Modes:  
-    1. **Real Auth + Real Data:** MOCK_AUTH_ENABLED=false, NEXT_PUBLIC_USE_MOCK_DATA=false (Production).  
-    2. **Real Auth + Mock Data:** MOCK_AUTH_ENABLED=false, NEXT_PUBLIC_USE_MOCK_DATA=true (Safe Dev).  
-    3. **Mock Auth + Mock Data:** MOCK_AUTH_ENABLED=true, NEXT_PUBLIC_USE_MOCK_DATA=true (Offline/CI).  
-
 * [ ] **2.1.1 Mock Authentication & Multi-Mode Support:**  
   **Goal:** Enable offline development and CI testing without OSM credentials (addresses 2.1.A requirements).
   * [ ] **Environment Variables:**
