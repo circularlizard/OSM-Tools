@@ -25,6 +25,8 @@ SANITIZED_MAPPING = {
     "getEventSummary2.txt": "event_summary_2.json",
     "getBadgeRecord.txt": "badge_records.json",
     "getBadges.txt": "badges.json",
+    "getListOfLists.txt": "listOfQMLists.json",  # Added: Maps the list of lists URL to the mock data
+    "getList.txt": "QMList.json",
     # Added: Maps the image URL structure to the mock image lookup table
     "memberImage.txt": "images.json", 
 }

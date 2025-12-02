@@ -27,6 +27,26 @@
     "is_static_resource": false
   },
   {
+    "original_file": "getListOfLists.txt",
+    "mock_data_file": "listOfQMLists.json",
+    "full_url": "https://www.onlinescoutmanager.co.uk/ext/quartermaster/?action=getListOfLists&section=explorers&sectionid=37458",
+    "path": "/ext/quartermaster/",
+    "method": "GET",
+    "action": "getListOfLists",
+    "query_params": {
+      "action": [
+        "getListOfLists"
+      ],
+      "section": [
+        "explorers"
+      ],
+      "sectionid": [
+        "37458"
+      ]
+    },
+    "is_static_resource": false
+  },
+  {
     "original_file": "getEvents.txt",
     "mock_data_file": "events.json",
     "full_url": "https://www.onlinescoutmanager.co.uk/ext/events/summary/?action=get&sectionid=37458&termid=842886",
@@ -147,6 +167,29 @@
       ],
       "archived": [
         "n"
+      ]
+    },
+    "is_static_resource": false
+  },
+  {
+    "original_file": "getList.txt",
+    "mock_data_file": "QMList.json",
+    "full_url": "https://www.onlinescoutmanager.co.uk/ext/quartermaster/?action=getList&listid=11551&section=explorers&sectionid=37458",
+    "path": "/ext/quartermaster/",
+    "method": "GET",
+    "action": "getList",
+    "query_params": {
+      "action": [
+        "getList"
+      ],
+      "listid": [
+        "11551"
+      ],
+      "section": [
+        "explorers"
+      ],
+      "sectionid": [
+        "37458"
       ]
     },
     "is_static_resource": false

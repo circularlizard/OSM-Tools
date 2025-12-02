@@ -29,6 +29,8 @@ FILE_MAPPING = {
     "getFlexiRecordStructure.txt": "flexi_structure.json",
     "getFlexiRecords.txt": "flexi_definitions.json",
     "getBadgeRecord.txt": "badge_records.json",
+    "getListOfLists.txt": "listOfQMLists.json",
+    "getList.txt": "QMList.json",
     
     # Startup / Config (Blind Replace)
     "getStartupData.txt": "startup_data.json",
