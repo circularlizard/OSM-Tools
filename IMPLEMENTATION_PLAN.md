@@ -178,8 +178,8 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] Setup TanStack Query (staleTime: 5 mins) for API data.  
   * [x] Setup Zustand for Session state (Section ID, User Role).  
   * [x] **Seeding:** Create src/lib/config-loader.ts to load defaults.json into Redis if empty (Required for User Role detection).  
-* [ ] **2.3 Initialization Flow:**  
-  * [ ] Implement getStartupData fetch on app load (requires Auth & Config).  
+* [x] **2.3 Initialization Flow:**  
+  * [x] Implement getStartupData fetch on app load (requires Auth & Config).  
   
 * [ ] **2.4 App Shell & Login UI:**  
   * [ ] **Theme Configuration:**  

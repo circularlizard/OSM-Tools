@@ -22,6 +22,8 @@ import {
   type BadgeRecordsResponse,
   type AttendanceResponse,
   type PatrolsResponse,
+  StartupDataSchema,
+  type StartupData,
 } from './schemas'
 
 /**
@@ -65,6 +67,19 @@ async function proxyFetch(path: string, params?: Record<string, string>): Promis
   }
 
   return response
+}
+
+/**
+ * Fetch startup data (Tier 1 - Strict validation)
+ * Contains user roles and available sections
+ */
+export async function getStartupData(): Promise<StartupData> {
+  const response = await proxyFetch('ext/generic/startup/', {
+    action: 'getData',
+  })
+
+  const data = await response.json()
+  return parseStrict(StartupDataSchema, data, 'Startup Data')
 }
 
 /**

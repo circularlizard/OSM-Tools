@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { MSWProvider } from '@/components/MSWProvider'
 import { QueryProvider } from '@/components/QueryProvider'
+import StartupInitializer from '@/components/StartupInitializer'
 
 export const metadata: Metadata = {
   title: 'SEEE Expedition Dashboard',
@@ -17,7 +18,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <MSWProvider>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <StartupInitializer />
+            {children}
+          </QueryProvider>
         </MSWProvider>
       </body>
     </html>
