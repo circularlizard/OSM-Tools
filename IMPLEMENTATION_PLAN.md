@@ -182,22 +182,23 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] Implement getStartupData fetch on app load (requires Auth & Config).  
   
 * [ ] **2.4 App Shell & Login UI:**  
-  * [ ] **Theme Configuration:**  
-    1. [ ] Select **Typeface**: Choose a modern, readable sans-serif (e.g., Inter or Geist Sans) as per "Clean & Modern" requirement.  
-    2. [ ] Select **Palette**: Define CSS variables for Primary (Brand), Secondary, Destructive, and Muted colors in globals.css. Ensure high contrast and professional look (e.g., Slate/Zinc neutrals + a bold accent).  
-    3. [ ] **Radius & Spacing**: Define consistent border-radius and spacing tokens.  
-  * [ ] Build **Section Picker Modal** if user has access to multiple sections (styled with theme tokens).  
-  * [ ] **Login Screen:** Implement src/app/page.tsx (Root/Login) with:  
-    1. [ ] "Sign in with OSM" button (triggers real OAuth).  
-    2. [ ] "Dev: Mock Login" button (conditionally rendered only if MOCK_AUTH_ENABLED=true).  
-    3. [ ] Clean, professional landing UI (Aesthetics & Theme).  
-  * [ ] **App Shell:** Build Sidebar and Header using shadcn/ui.  
-  * [ ] **Error Pages:** Create error.tsx (500), not-found.tsx (404), and forbidden.tsx (403).  
-  * [ ] **TEST (Component):** Verify Login UI logic:  
-    1. [ ] Mock MOCK_AUTH_ENABLED=false -> Verify only OSM button renders.  
-    2. [ ] Mock MOCK_AUTH_ENABLED=true -> Verify both buttons render.  
-    3. [ ] Verify "Sign in with OSM" calls signIn('osm').  
-    4. [ ] Verify "Mock Login" calls signIn('credentials', { ... }).  
+  * [x] **Theme Configuration:**  
+    1. [x] Select **Typeface**: Adopted Barlow + Barlow Semi Condensed from shadcn tokens.  
+    2. [x] Select **Palette**: Adopted customised shadcn OKLCH variables in `globals.css` (Primary, Secondary, Muted, Accent, Destructive, etc.).  
+    3. [x] **Radius & Spacing**: Mapped radius and shadows; Tailwind theme extended to token aliases (bg-primary, text-muted-foreground, rounded-md, shadow-sm).  
+    4. [x] **Dark Mode Policy**: No dark mode required; `.dark` tokens retained for future but not surfaced.  
+  * [x] Build **Section Picker Modal** if user has access to multiple sections (styled with theme tokens).  
+  * [x] **Login Screen:** Implement `src/app/page.tsx` (Root/Login) with:  
+    1. [x] "Sign in with OSM" button (triggers real OAuth).  
+    2. [x] "Dev: Mock Login" button (conditionally rendered only if MOCK_AUTH_ENABLED=true).  
+    3. [x] Clean, professional landing UI (Aesthetics & Theme).  
+  * [x] **App Shell:** Build Sidebar and Header using shadcn/ui; wired into `layout.tsx`.  
+  * [x] **Error Pages:** Create `error.tsx` (500), `not-found.tsx` (404), and `forbidden.tsx` (403).  
+  * [x] **TEST (Component):** Verify Login UI logic:  
+    1. [x] Mock MOCK_AUTH_ENABLED=false -> Verify only OSM button renders.  
+    2. [x] Mock MOCK_AUTH_ENABLED=true -> Verify both buttons render.  
+    3. [x] Verify "Sign in with OSM" calls signIn('osm').  
+    4. [x] Verify "Mock Login" calls signIn('credentials', { redirect: true }).  
   * [ ] **TEST (Manual):** Verify the 3 Operation Modes now that UI exists:  
     1. Real Auth (Production).  
     2. Real Auth + Mock Data.  

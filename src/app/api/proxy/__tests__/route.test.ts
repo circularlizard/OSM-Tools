@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
-process.env.OSM_API_TOKEN = 'test-token'
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn(async () => ({ accessToken: 'test-access-token' })),
+}))
 
 jest.mock('next/server', () => ({
   NextResponse: {
@@ -12,6 +14,8 @@ jest.mock('next/server', () => ({
     }),
   },
 }))
+// Mock authConfig to avoid importing ESM providers in tests
+jest.mock('@/lib/auth', () => ({ authConfig: {} }))
 const { GET, POST, PUT, DELETE, PATCH } = require('../[...path]/route')
 
 // Mock redis helpers to control circuit breaker and cache behavior

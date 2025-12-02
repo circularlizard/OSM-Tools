@@ -14,24 +14,41 @@ export function MSWProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initMSW = async () => {
-      // Only enable MSW in development or when explicitly enabled
-      if (
-        process.env.NODE_ENV === 'development' ||
-        process.env.NEXT_PUBLIC_USE_MSW === 'true'
-      ) {
-        const { worker } = await import('@/mocks/browser')
-        await worker.start({
-          onUnhandledRequest: 'bypass',
-        })
+      // Enable MSW only when explicitly enabled via public env
+      const enableMsw = process.env.NEXT_PUBLIC_USE_MSW === 'true'
+      if (!enableMsw) {
+        setMswReady(true)
+        return
       }
-      setMswReady(true)
+
+      try {
+        const { worker } = await import('@/mocks/browser')
+        // Use an explicit service worker URL to avoid scope issues under App Router and HTTPS
+        const startPromise = worker.start({
+          onUnhandledRequest: 'bypass',
+          serviceWorker: {
+            url: '/mockServiceWorker.js',
+          },
+        })
+
+        // Add a timeout guard so UI doesn't hang if SW fails to start
+        const timeout = new Promise<void>((resolve) =>
+          setTimeout(() => resolve(), 1500)
+        )
+        await Promise.race([startPromise, timeout])
+      } catch (err) {
+        // In case MSW fails to initialize, proceed without blocking the UI
+        console.warn('[MSW] Failed to start mock service worker:', err)
+      } finally {
+        setMswReady(true)
+      }
     }
 
     initMSW()
   }, [])
 
-  // Show loading state until MSW is ready in development
-  if (!mswReady && process.env.NODE_ENV === 'development') {
+  // Show loading state only when MSW is explicitly enabled
+  if (!mswReady && process.env.NEXT_PUBLIC_USE_MSW === 'true') {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-lg">Initializing mock service worker...</p>

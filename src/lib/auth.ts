@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from 'next-auth'
 import type { Provider } from 'next-auth/providers'
+// Using a custom provider factory since package exports vary across environments
 import { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getMockUser } from '@/mocks/mockSession'
@@ -79,10 +80,8 @@ function getProviders(): Provider[] {
           password: { label: 'Password', type: 'password' },
         },
         async authorize(credentials) {
-          // In mock mode, accept any password and return the mock user
           const username = credentials?.username as string
           const mockUser = getMockUser(username)
-          
           return {
             id: mockUser.id,
             name: mockUser.name,
@@ -95,46 +94,104 @@ function getProviders(): Provider[] {
   }
 
   // Production: OSM OAuth provider
+  // Define as inline object to match NextAuth v5 beta structure
   return [
     {
       id: 'osm',
       name: 'Online Scout Manager',
-      type: 'oauth',
+      type: 'oidc',
+      issuer: OSM_OAUTH_URL,
       authorization: {
         url: `${OSM_OAUTH_URL}/authorize`,
         params: {
           scope: 'section:member:read section:events:read',
         },
       },
-      token: `${OSM_OAUTH_URL}/token`,
-      userinfo: `${OSM_API_URL}/api/user/info`,
+      token: {
+        url: `${OSM_OAUTH_URL}/token`,
+      },
+      userinfo: {
+        url: `${OSM_API_URL}/api/user/info`,
+      },
       clientId: process.env.OSM_CLIENT_ID,
       clientSecret: process.env.OSM_CLIENT_SECRET,
-      profile(profile) {
+      profile(profile: any) {
         return {
           id: profile.user_id || profile.id,
-          name: profile.name || profile.firstname + ' ' + profile.lastname,
+          name: profile.name || `${profile.firstname} ${profile.lastname}`,
           email: profile.email,
           image: profile.photo_guid ? `${OSM_API_URL}/api/member/photo/${profile.photo_guid}` : null,
         }
       },
-    },
+    } as any,
   ]
 }
 
-export const authConfig: NextAuthConfig = {
-  providers: getProviders(),
-  callbacks: {
+export function getAuthConfig(): AuthOptions {
+  const providers = MOCK_AUTH_ENABLED 
+    ? [CredentialsProvider({
+        id: 'credentials',
+        name: 'Mock Login',
+        credentials: {
+          username: { label: 'Username', type: 'text' },
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(credentials) {
+          const username = credentials?.username as string
+          const mockUser = getMockUser(username)
+          return {
+            id: mockUser.id,
+            name: mockUser.name,
+            email: mockUser.email,
+            image: mockUser.image,
+          }
+        },
+      })]
+    : [{
+        id: 'osm',
+        name: 'Online Scout Manager',
+        type: 'oauth',
+        authorization: {
+          url: `${OSM_OAUTH_URL}/authorize`,
+          params: {
+            scope: 'section:member:read section:events:read',
+          },
+        },
+        token: `${OSM_OAUTH_URL}/token`,
+        userinfo: `${OSM_API_URL}/api/user/info`,
+        clientId: process.env.OSM_CLIENT_ID,
+        clientSecret: process.env.OSM_CLIENT_SECRET,
+        profile(profile: any) {
+          return {
+            id: profile.user_id || profile.id,
+            name: profile.name || `${profile.firstname} ${profile.lastname}`,
+            email: profile.email,
+            image: profile.photo_guid ? `${OSM_API_URL}/api/member/photo/${profile.photo_guid}` : null,
+          }
+        },
+      } as any]
+
+  return {
+    providers,
+    callbacks: {
     async jwt({ token, account, user }) {
       // Mock authentication: skip token rotation
       if (MOCK_AUTH_ENABLED) {
         if (account && user) {
+          // Initial sign-in: set mock tokens
           return {
+            ...token,
             accessToken: 'mock-access-token',
             accessTokenExpires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
             refreshToken: 'mock-refresh-token',
             user,
           }
+        }
+        // Subsequent requests: ensure accessToken is always present
+        if (!token.accessToken) {
+          token.accessToken = 'mock-access-token'
+          token.accessTokenExpires = Date.now() + 30 * 24 * 60 * 60 * 1000
+          token.refreshToken = 'mock-refresh-token'
         }
         return token
       }
@@ -180,9 +237,12 @@ export const authConfig: NextAuthConfig = {
     signIn: '/',
     error: '/auth/error',
   },
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days (matches typical refresh token lifetime)
-  },
-  secret: process.env.NEXTAUTH_SECRET,
+    session: {
+      strategy: 'jwt',
+      maxAge: 30 * 24 * 60 * 60, // 30 days (matches typical refresh token lifetime)
+    },
+    secret: process.env.NEXTAUTH_SECRET,
+  }
 }
+
+export const authConfig = getAuthConfig()

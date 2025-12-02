@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth'
-import { authConfig } from '@/lib/auth'
+import { getAuthConfig } from '@/lib/auth'
 
 /**
  * NextAuth.js Route Handler
@@ -15,6 +15,6 @@ import { authConfig } from '@/lib/auth'
  * The configuration is imported from src/lib/auth.ts
  */
 
-const handler = NextAuth(authConfig)
+const handler = NextAuth(getAuthConfig())
 
 export { handler as GET, handler as POST }

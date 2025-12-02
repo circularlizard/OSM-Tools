@@ -50,6 +50,14 @@ interface ApiMapEntry {
 }
 
 /**
+ * Extract base URL (protocol + host + path) without query parameters
+ */
+function getBaseUrl(fullUrl: string): string {
+  const url = new URL(fullUrl)
+  return `${url.origin}${url.pathname}`
+}
+
+/**
  * Generate MSW handlers from the api_map.json
  * 
  * This creates handlers for all documented OSM API endpoints,
@@ -57,14 +65,17 @@ interface ApiMapEntry {
  */
 function generateHandlers() {
   const handlers = (apiMap as ApiMapEntry[]).map((entry) => {
-    const { full_url, method, mock_data_file, is_static_resource } = entry
+    const { full_url, method, mock_data_file, is_static_resource, query_params } = entry
     
     // Get the mock data for this endpoint
     const mockData = mockDataRegistry[mock_data_file]
     
+    // Extract base URL without query parameters (MSW v2+ best practice)
+    const baseUrl = getBaseUrl(full_url)
+    
     // For static resources (images), return empty response
     if (is_static_resource) {
-      return http.get(full_url, () => {
+      return http.get(baseUrl, () => {
         return new HttpResponse(null, {
           status: 404,
           statusText: 'Mock image not available',
@@ -74,7 +85,11 @@ function generateHandlers() {
     
     // Create handler based on HTTP method
     if (method === 'GET') {
-      return http.get(full_url, () => {
+      return http.get(baseUrl, () => {
+        // Note: We match on path only and ignore query parameters.
+        // The actual query params are validated by the proxy layer.
+        // This approach follows MSW v2+ best practices.
+        
         // Simulate API rate limit headers
         return HttpResponse.json(mockData as Record<string, unknown>, {
           headers: {
@@ -89,7 +104,7 @@ function generateHandlers() {
     // Block POST/PUT/DELETE (Read-Only Policy)
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
       return http[method.toLowerCase() as 'post' | 'put' | 'delete' | 'patch'](
-        full_url,
+        baseUrl,
         () => {
           return HttpResponse.json(
             { error: 'Mutations are not allowed in read-only mode' },
@@ -100,7 +115,7 @@ function generateHandlers() {
     }
     
     // Fallback
-    return http.get(full_url, () => HttpResponse.json(mockData as Record<string, unknown>))
+    return http.get(baseUrl, () => HttpResponse.json(mockData as Record<string, unknown>))
   })
   
   return handlers

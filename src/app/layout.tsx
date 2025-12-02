@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { MSWProvider } from '@/components/MSWProvider'
+import { SessionProvider } from '@/components/SessionProvider'
 import { QueryProvider } from '@/components/QueryProvider'
 import StartupInitializer from '@/components/StartupInitializer'
 import SectionPickerModal from '@/components/layout/SectionPickerModal'
@@ -21,15 +22,17 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <MSWProvider>
-          <QueryProvider>
-            <StartupInitializer />
-            <SectionPickerModal />
-            <Header />
-            <div className="flex">
-              <Sidebar />
-              <main className="flex-1">{children}</main>
-            </div>
-          </QueryProvider>
+          <SessionProvider>
+            <QueryProvider>
+              <StartupInitializer />
+              <SectionPickerModal />
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1">{children}</main>
+              </div>
+            </QueryProvider>
+          </SessionProvider>
         </MSWProvider>
       </body>
     </html>

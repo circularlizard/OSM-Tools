@@ -10,17 +10,8 @@ import pino from 'pino'
 // Configure logger based on environment
 const logger = pino({
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
-  transport:
-    process.env.NODE_ENV !== 'production'
-      ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss Z',
-            ignore: 'pid,hostname',
-          },
-        }
-      : undefined,
+  // Disable pino-pretty transport to avoid worker thread issues in Next.js server runtime.
+  // Pretty printing can be enabled locally via environment if needed.
 })
 
 /**

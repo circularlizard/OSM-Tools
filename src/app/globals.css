@@ -68,19 +68,9 @@
 }
 
 @layer base {
-  * { @apply border-[var(--border)]; }
+  * { @apply border-border; }
   body {
     font-family: var(--font-sans);
-    @apply bg-[var(--background)] text-[var(--foreground)];
+    @apply bg-background text-foreground;
   }
-}
-
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-}
-
-body {
-  color: rgb(var(--foreground));
-  background: rgb(var(--background));
 }

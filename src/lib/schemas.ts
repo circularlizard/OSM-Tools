@@ -80,28 +80,47 @@ export type EventsResponse = z.infer<typeof EventsResponseSchema>
  * Startup Data Schema (Tier 1)
  * Contains user roles and section access - Critical for auth
  */
-export const UserRoleSchema = z.object({
-  userid: z.string(),
-  firstname: z.string(),
-  lastname: z.string(),
-  email: z.string().email(),
-  roles: z.array(z.string()),
-  sections: z.array(z.object({
-    sectionid: z.number(),
-    sectionname: z.string(),
-    section: z.string(),
-  })),
+export const RoleSchema = z.object({
+  groupname: z.string(),
+  groupid: z.string(),
+  group_country: z.string(),
+  sectionid: z.string(),
+  sectionname: z.string(),
+  section: z.string(),
+  isDefault: z.string(),
+  permissions: z.object({
+    badge: z.number(),
+    member: z.number(),
+    user: z.number(),
+    register: z.number(),
+    programme: z.number(),
+    events: z.number(),
+    finance: z.number().optional(),
+    flexi: z.number().optional(),
+    quartermaster: z.number().optional(),
+  }),
+  sectionConfig: z.object({
+    subscription_level: z.number(),
+    subscription_expires: z.string(),
+    section_type: z.string(),
+  }).passthrough(), // Allow additional fields
 })
 
 export const StartupDataSchema = z.object({
-  user: UserRoleSchema.optional(),
-  sections: z.array(z.object({
-    sectionid: z.number(),
-    sectionname: z.string(),
-  })),
-})
+  cdn: z.string(),
+  resources: z.array(z.string()),
+  config_hash: z.string(),
+  required_cdn_built_files: z.object({}).passthrough(),
+  cache_bust: z.string(),
+  globals: z.object({
+    post_login_action: z.union([z.boolean(), z.string()]),
+    theme: z.string(),
+    userid: z.number(),
+    roles: z.array(RoleSchema),
+  }).passthrough(), // Allow additional fields in globals
+}).passthrough() // Allow additional top-level fields
 
-export type UserRole = z.infer<typeof UserRoleSchema>
+export type Role = z.infer<typeof RoleSchema>
 export type StartupData = z.infer<typeof StartupDataSchema>
 
 /**

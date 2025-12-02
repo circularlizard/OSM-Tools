@@ -9,6 +9,56 @@ import {
   getCacheKey,
 } from '@/lib/redis'
 import { logProxyRequest, logCache } from '@/lib/logger'
+import { getServerSession } from 'next-auth/next'
+import { getAuthConfig } from '@/lib/auth'
+import apiMap from '@/mocks/api_map.json'
+
+// Import all mock data files
+import attendanceData from '@/mocks/data/attendance.json'
+import badgeAssignmentsData from '@/mocks/data/badge_assignments.json'
+import badgeRecordsData from '@/mocks/data/badge_records.json'
+import badgesData from '@/mocks/data/badges.json'
+import eventDetailsData from '@/mocks/data/event_details.json'
+import eventSummaryData from '@/mocks/data/event_summary.json'
+import eventSummary2Data from '@/mocks/data/event_summary_2.json'
+import eventsData from '@/mocks/data/events.json'
+import flexiDataData from '@/mocks/data/flexi_data.json'
+import flexiDefinitionsData from '@/mocks/data/flexi_definitions.json'
+import flexiStructureData from '@/mocks/data/flexi_structure.json'
+import membersData from '@/mocks/data/members.json'
+import patrolsData from '@/mocks/data/patrols.json'
+import startupConfigData from '@/mocks/data/startup_config.json'
+import startupDataData from '@/mocks/data/startup_data.json'
+
+// Map mock data filenames to imported data
+const mockDataRegistry: Record<string, unknown> = {
+  'attendance.json': attendanceData,
+  'badge_assignments.json': badgeAssignmentsData,
+  'badge_records.json': badgeRecordsData,
+  'badges.json': badgesData,
+  'event_details.json': eventDetailsData,
+  'event_summary.json': eventSummaryData,
+  'event_summary_2.json': eventSummary2Data,
+  'events.json': eventsData,
+  'flexi_data.json': flexiDataData,
+  'flexi_definitions.json': flexiDefinitionsData,
+  'flexi_structure.json': flexiStructureData,
+  'members.json': membersData,
+  'patrols.json': patrolsData,
+  'startup_config.json': startupConfigData,
+  'startup_data.json': startupDataData,
+}
+
+interface ApiMapEntry {
+  original_file: string
+  mock_data_file: string
+  full_url: string
+  path: string
+  method: string
+  action: string | null
+  query_params: Record<string, string[]>
+  is_static_resource: boolean
+}
 
 /**
  * Proxy API Route
@@ -27,10 +77,55 @@ import { logProxyRequest, logCache } from '@/lib/logger'
  */
 
 const OSM_API_BASE = process.env.OSM_API_URL || 'https://www.onlinescoutmanager.co.uk'
-const OSM_API_TOKEN = process.env.OSM_API_TOKEN
+const USE_MSW = process.env.NEXT_PUBLIC_USE_MSW === 'true'
 
 // Cache TTL (5 minutes)
 const CACHE_TTL = 300
+
+/**
+ * Find mock data for a given request path and query params
+ * Used when MSW is enabled to serve mock data server-side
+ */
+function findMockData(path: string, queryParams: URLSearchParams): unknown | null {
+  const entries = apiMap as ApiMapEntry[]
+  
+  // Normalize path: ensure it starts with / and may or may not end with /
+  const normalizedPath = `/${path.replace(/^\/+/, '').replace(/\/+$/, '')}`
+  
+  // Get action param if present (most OSM endpoints use this)
+  const action = queryParams.get('action')
+  
+  // Try to find best match:
+  // 1. Match by path and action
+  // 2. Match by path only
+  let entry: ApiMapEntry | undefined
+  
+  if (action) {
+    entry = entries.find(e => {
+      const entryPath = e.path.replace(/\/+$/, '')
+      return entryPath === normalizedPath && e.action === action
+    })
+  }
+  
+  // Fallback: match by path only
+  if (!entry) {
+    entry = entries.find(e => {
+      const entryPath = e.path.replace(/\/+$/, '')
+      return entryPath === normalizedPath
+    })
+  }
+  
+  if (entry && entry.mock_data_file) {
+    const mockData = mockDataRegistry[entry.mock_data_file]
+    if (mockData) {
+      console.log(`[Proxy] Returning mock data: ${entry.mock_data_file} for ${normalizedPath}${action ? ` (action=${action})` : ''}`)
+      return mockData
+    }
+  }
+  
+  console.warn(`[Proxy] No mock data found for: ${normalizedPath}${action ? ` (action=${action})` : ''}`)
+  return null
+}
 
 /**
  * GET Handler - Fetch data from OSM API
@@ -68,15 +163,15 @@ export async function GET(
       )
     }
 
-    // Validate API token is configured
-    if (!OSM_API_TOKEN) {
-      console.error('[Proxy] OSM_API_TOKEN not configured')
+    // Require authenticated session and read access token from NextAuth
+    const session = await getServerSession(getAuthConfig())
+    if (!session || !session.accessToken) {
       return NextResponse.json(
         {
-          error: 'CONFIGURATION_ERROR',
-          message: 'API token not configured',
+          error: 'UNAUTHENTICATED',
+          message: 'You must be signed in to access the proxy.',
         },
-        { status: 500 }
+        { status: 401 }
       )
     }
 
@@ -85,6 +180,36 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams.toString()
     const targetUrl = `${OSM_API_BASE}/${path}${searchParams ? `?${searchParams}` : ''}`
     
+    // MSW Mode: Return mock data directly (server-side)
+    if (USE_MSW) {
+      const mockData = findMockData(path, request.nextUrl.searchParams)
+      if (mockData) {
+        logProxyRequest({
+          method: 'GET',
+          path,
+          status: 200,
+          duration: Date.now() - startTime,
+          cached: false,
+        })
+        return NextResponse.json(mockData, {
+          status: 200,
+          headers: {
+            'X-Mock': 'true',
+            'X-Cache': 'BYPASS',
+          },
+        })
+      } else {
+        // No mock data found
+        return NextResponse.json(
+          {
+            error: 'MOCK_DATA_NOT_FOUND',
+            message: `No mock data available for ${path}`,
+            path,
+          },
+          { status: 404 }
+        )
+      }
+    }
 
     // Check cache first (read-through pattern)
     const cacheKey = getCacheKey(path, Object.fromEntries(request.nextUrl.searchParams))
@@ -114,7 +239,7 @@ export async function GET(
       const res = await fetch(targetUrl, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${OSM_API_TOKEN}`,
+          Authorization: `Bearer ${session.accessToken}`,
           'Content-Type': 'application/json',
         },
       })

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import NextAuth from 'next-auth'
-import { authConfig } from '@/lib/auth'
-
-const { auth } = NextAuth(authConfig)
+import { getToken } from 'next-auth/jwt'
 
 /**
  * Middleware for route protection and authentication
@@ -19,9 +16,10 @@ const { auth } = NextAuth(authConfig)
  * Unauthenticated users are redirected to the sign-in page
  */
 
-export default auth((req: NextRequest & { auth: any }) => {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const isAuthenticated = !!req.auth
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const isAuthenticated = !!token
 
   // Protected dashboard routes
   if (pathname.startsWith('/dashboard')) {
@@ -43,7 +41,7 @@ export default auth((req: NextRequest & { auth: any }) => {
   }
 
   return NextResponse.next()
-})
+}
 
 export const config = {
   matcher: [
