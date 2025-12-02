@@ -3,6 +3,7 @@ import './globals.css'
 import { MSWProvider } from '@/components/MSWProvider'
 import { QueryProvider } from '@/components/QueryProvider'
 import StartupInitializer from '@/components/StartupInitializer'
+import SectionPickerModal from '@/components/layout/SectionPickerModal'
 
 export const metadata: Metadata = {
   title: 'SEEE Expedition Dashboard',
@@ -20,6 +21,7 @@ export default function RootLayout({
         <MSWProvider>
           <QueryProvider>
             <StartupInitializer />
+            <SectionPickerModal />
             {children}
           </QueryProvider>
         </MSWProvider>

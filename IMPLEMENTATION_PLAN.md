@@ -202,10 +202,26 @@ All agents must adhere to this structure. Do not create new top-level directorie
     1. Real Auth (Production).  
     2. Real Auth + Mock Data.  
     3. Mock Auth + Mock Data (Full Offline).  
-* [ ] **2.5 Progressive Hydration:**  
+* [ ] 2.5 API Browser & Debug Tool (New):  
+  Goal: Enable manual verification of backend API calls from the UI before building complex views.  
+  * [ ] **Route:** Create src/app/(dashboard)/debug/page.tsx (Protected route).  
+  * [ ] **UI Components:**  
+    * [ ] **Endpoint Selector:** Dropdown to choose from api_map.json endpoints (e.g., getEvents, getPatrols).  
+    * [ ] **Parameter Input:** Dynamic inputs for required params (e.g., eventId, sectionId).  
+    * [ ] **Execute Button:** Triggers the fetch via the Proxy.  
+  * [ ] **Display Panel:**  
+    * [ ] **Environment Status:** Badge showing "Mock Data: ON/OFF" and "Mock Auth: ON/OFF".  
+    * [ ] **Upstream URL:** If Mock Data is OFF, display the constructed OSM_API_BASE_URL endpoint.  
+    * [ ] **Rate Limits:** Real-time display of X-RateLimit-Remaining and Reset headers from the last response.  
+    * [ ] **Payloads:** JSON view of Request Headers/Body and Response Data.  
+  * [ ] **TEST (Manual):** Use the tool to "Ping" the backend and verify:  
+    * [ ] Rate limit headers update after clicks.  
+    * [ ] Soft/Hard locks trigger correctly (by spamming the button).  
+    * [ ] Correct data is returned for both Mock and Real modes.  
+* [ ] **2.6 Progressive Hydration:**  
   * [ ] Fetch Event Index (getEvents) -> Render Skeletons.  
   * [ ] Lazy-load details (Participants, Structure) via throttled queue.  
-* [ ] **2.6 E2E Verification (Shift Left):**  
+* [ ] **2.7 E2E Verification (Shift Left):**  
   * [ ] Install Playwright.  
   * [ ] **TEST (E2E):** Verify **Login Flow**: Unauthenticated user redirected to Login; Clicking "Sign In" triggers correct flow.  
   * [ ] **TEST (E2E):** Verify **Section Picker**: Multi-section user sees modal, selection persists.
