@@ -1,5 +1,8 @@
 import type { NextAuthConfig } from 'next-auth'
+import type { Provider } from 'next-auth/providers'
 import { JWT } from 'next-auth/jwt'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { getMockUser } from '@/mocks/mockSession'
 
 /**
  * NextAuth Configuration for SEEE Expedition Dashboard
@@ -17,6 +20,7 @@ import { JWT } from 'next-auth/jwt'
 
 const OSM_OAUTH_URL = process.env.OSM_OAUTH_URL || 'https://www.onlinescoutmanager.co.uk/oauth'
 const OSM_API_URL = process.env.OSM_API_URL || 'https://www.onlinescoutmanager.co.uk'
+const MOCK_AUTH_ENABLED = process.env.MOCK_AUTH_ENABLED === 'true'
 
 /**
  * Refresh the access token using the refresh token
@@ -59,8 +63,39 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
   }
 }
 
-export const authConfig: NextAuthConfig = {
-  providers: [
+/**
+ * Build the providers array based on environment configuration
+ * - If MOCK_AUTH_ENABLED=true: Use credentials provider with mock data
+ * - Otherwise: Use OSM OAuth provider
+ */
+function getProviders(): Provider[] {
+  if (MOCK_AUTH_ENABLED) {
+    return [
+      CredentialsProvider({
+        id: 'credentials',
+        name: 'Mock Login',
+        credentials: {
+          username: { label: 'Username', type: 'text', placeholder: 'admin, standard, readonly, or multiSection' },
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(credentials) {
+          // In mock mode, accept any password and return the mock user
+          const username = credentials?.username as string
+          const mockUser = getMockUser(username)
+          
+          return {
+            id: mockUser.id,
+            name: mockUser.name,
+            email: mockUser.email,
+            image: mockUser.image,
+          }
+        },
+      }),
+    ]
+  }
+
+  // Production: OSM OAuth provider
+  return [
     {
       id: 'osm',
       name: 'Online Scout Manager',
@@ -84,10 +119,27 @@ export const authConfig: NextAuthConfig = {
         }
       },
     },
-  ],
+  ]
+}
+
+export const authConfig: NextAuthConfig = {
+  providers: getProviders(),
   callbacks: {
     async jwt({ token, account, user }) {
-      // Initial sign in
+      // Mock authentication: skip token rotation
+      if (MOCK_AUTH_ENABLED) {
+        if (account && user) {
+          return {
+            accessToken: 'mock-access-token',
+            accessTokenExpires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+            refreshToken: 'mock-refresh-token',
+            user,
+          }
+        }
+        return token
+      }
+
+      // Real OAuth: Initial sign in
       if (account && user) {
         return {
           accessToken: account.access_token,
@@ -106,12 +158,13 @@ export const authConfig: NextAuthConfig = {
       return refreshAccessToken(token)
     },
     async session({ session, token }) {
-      if (token.user) {
+      if (token.user && typeof token.user === 'object' && 'id' in token.user) {
+        const user = token.user as { id: string; name?: string | null; email?: string | null; image?: string | null }
         session.user = {
-          id: (token.user as any).id,
-          name: (token.user as any).name,
-          email: (token.user as any).email,
-          image: (token.user as any).image,
+          id: user.id,
+          name: user.name ?? null,
+          email: user.email ?? null,
+          image: user.image ?? null,
           // AdapterUser requires emailVerified; OSM profile doesn't include it
           // Use null to indicate unknown verification status
           emailVerified: null as unknown as Date | null,

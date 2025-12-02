@@ -143,7 +143,7 @@ All agents must adhere to this structure. Do not create new top-level directorie
     3. NEXTAUTH_SECRET: Secret for JWT encryption (generate with openssl rand -base64 32).  
     4. NEXTAUTH_URL: https://localhost:3000 (HTTPS Required).  
   * [x] **Callback Registration:** Ensure https://localhost:3000/api/auth/callback/osm is registered in OSM Developer Portal.  
-  * [x] Installed next-auth@beta (v5).  
+  * [x] Installed next-auth@beta (v5).
   * [x] Configured src/lib/auth.ts:  
     1. **OSM Provider:** OAuth 2.0 flow with Online Scout Manager.  
     2. Token refresh logic integrated into JWT callback with automatic expiry detection.  
@@ -151,26 +151,26 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] Created app/api/auth/[...nextauth]/route.ts handlers for all auth routes.  
   * [x] Created middleware.ts for route protection (dashboard routes and /api/proxy require authentication).  
   * [x] Created TypeScript type definitions (src/types/next-auth.d.ts) for session and JWT.  
-* [ ] 2.1.1 Mock Authentication & Multi-Mode Support:  
+* [x] 2.1.1 Mock Authentication & Multi-Mode Support:  
   Goal: Enable offline development and CI testing without OSM credentials (addresses 2.1.A requirements).  
-  * [ ] **Environment Variables:**  
-    1. [ ] Add MOCK_AUTH_ENABLED to .env.example (defaults to false)  
-    2. [ ] Verify NEXT_PUBLIC_USE_MSW exists for MSW control (already configured in Phase 0)  
-  * [ ] **Mock Provider Implementation:**  
-    1. [ ] Add mock credentials provider to src/lib/auth.ts that:  
+  * [x] **Environment Variables:**  
+    1. [x] Add MOCK_AUTH_ENABLED to .env.example (defaults to false)  
+    2. [x] Verify NEXT_PUBLIC_USE_MSW exists for MSW control (already configured in Phase 0)  
+  * [x] **Mock Provider Implementation:**  
+    1. [x] Add mock credentials provider to src/lib/auth.ts that:  
        1. Returns a dummy session when MOCK_AUTH_ENABLED=true  
        2. Bypasses OAuth flow entirely  
        3. Provides fixed user data (e.g., "Mock User", mock@example.com)  
-  * [ ] **Conditional Provider Loading:**  
-    1. [ ] Update src/lib/auth.ts to conditionally include OSM or Mock provider based on MOCK_AUTH_ENABLED  
-    2. [ ] Ensure token rotation is skipped for Mock provider  
-  * [ ] **Mock Session Data:**  
-    1. [ ] Create src/mocks/mockSession.ts with:  
+  * [x] **Conditional Provider Loading:**  
+    1. [x] Update src/lib/auth.ts to conditionally include OSM or Mock provider based on MOCK_AUTH_ENABLED  
+    2. [x] Ensure token rotation is skipped for Mock provider  
+  * [x] **Mock Session Data:**  
+    1. [x] Create src/mocks/mockSession.ts with:  
        1. Mock user profile (id, name, email, roles)  
        2. Mock section access (to test section picker with multiple sections)  
        3. Mock roles (admin, standard viewer, read-only)  
-  * [ ] **Documentation:**  
-    1. [ ] Update README with three operation modes:  
+  * [x] **Documentation:**  
+    1. [x] Update README with three operation modes:  
        1. **Real Auth + Real Data:** Production mode  
        2. **Real Auth + Mock Data:** Safe development with real OAuth  
        3. **Mock Auth + Mock Data:** Offline/CI mode (no credentials needed)  

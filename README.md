@@ -91,14 +91,73 @@ Tests use Mock Service Worker (MSW) to intercept network requests.
 
 ## 🛠️ Development
 
+### Operation Modes
+
+The application supports three operation modes to enable flexible development and testing:
+
+#### 1. **Real Auth + Real Data** (Production Mode)
+**When to use:** Production deployment or testing with live OSM data
+
+```bash
+# .env.local
+MOCK_AUTH_ENABLED=false
+NEXT_PUBLIC_USE_MSW=false
+OSM_CLIENT_ID=your_real_client_id
+OSM_CLIENT_SECRET=your_real_client_secret
+```
+
+- Uses OAuth 2.0 authentication with Online Scout Manager
+- Makes real API calls to OSM endpoints
+- Requires valid OAuth credentials registered in OSM Developer Portal
+- Token rotation and rate limiting active
+
+#### 2. **Real Auth + Mock Data** (Safe Development Mode)
+**When to use:** UI development with real authentication but safe test data
+
+```bash
+# .env.local
+MOCK_AUTH_ENABLED=false
+NEXT_PUBLIC_USE_MSW=true
+OSM_CLIENT_ID=your_real_client_id
+OSM_CLIENT_SECRET=your_real_client_secret
+```
+
+- Uses real OAuth flow for authentication
+- API calls intercepted by MSW and return sanitized mock data
+- Good for testing authentication flow without consuming API quota
+- Ensures UI handles real auth tokens correctly
+
+#### 3. **Mock Auth + Mock Data** (Offline/CI Mode)
+**When to use:** Offline development, CI/CD pipelines, or quick prototyping
+
+```bash
+# .env.local
+MOCK_AUTH_ENABLED=true
+NEXT_PUBLIC_USE_MSW=true
+```
+
+- No OSM credentials required
+- Uses credentials provider with predefined mock users
+- All API calls return mock data from `src/mocks/data/`
+- Perfect for CI/CD environments and offline development
+
+**Mock Users Available:**
+- `admin` - Full admin access, multiple sections
+- `standard` - Standard leader, single section
+- `readonly` - Read-only viewer, single section
+- `multiSection` - Standard leader with 3 sections (tests section picker)
+
+Login with any of these usernames and any password when `MOCK_AUTH_ENABLED=true`.
+
 ### Mock Service Worker
 
-In development, MSW intercepts API calls and returns mock data from `src/mocks/data/`. This allows development without hitting the real OSM API.
+MSW intercepts API calls and returns mock data from `src/mocks/data/`. This allows development without hitting the real OSM API.
 
-To disable MSW:
+Control MSW via environment variable:
 ```bash
 # In .env.local
-NEXT_PUBLIC_USE_MSW=false
+NEXT_PUBLIC_USE_MSW=true   # Enable mock data
+NEXT_PUBLIC_USE_MSW=false  # Use real API calls
 ```
 
 ### Data Sanitization
