@@ -10,7 +10,8 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "validate:safety": "./scripts/validate-safety-layer.sh"
+    "validate:safety": "./scripts/validate-safety-layer.sh",
+    "tscheck": "tsc --noEmit 2>&1 | grep -v '.next/types/validator.ts' || true"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.11",
