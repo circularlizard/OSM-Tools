@@ -4,52 +4,52 @@
 
 All agents must adhere to this structure. Do not create new top-level directories without approval.
 
-.  
-├── .github/  
-│   └── copilot-instructions.md   # AI Agent behavior rules  
-├── docs/  
-│   └── GEMINI_CONTEXT.md         # Architecture primer  
-├── scripts/  
-│   └── sanitize_data.py          # Script to scrub PII from raw dumps  
-│   └── validate-safety-layer.sh  # CI Check script (New)  
-├── public/  
-├── src/  
-│   ├── app/  
-│   │   ├── api/  
-│   │   │   ├── auth/[...nextauth]/route.ts  # Auth.js Handlers  
-│   │   │   └── proxy/            # The Safety Layer API Route  
-│   │   ├── (dashboard)/          # Protected routes  
-│   │   ├── layout.tsx            # Main App Shell  
-│   │   ├── not-found.tsx         # 404 Page  
-│   │   ├── error.tsx             # 500/Generic Error  
-│   │   └── page.tsx              # Login/Landing  
-│   ├── components/  
-│   │   ├── ui/                   # shadcn/ui primitives (Button, Card)  
-│   │   ├── domain/               # Feature-specific (PatrolList, ReadinessTable)  
-│   │   └── layout/               # Nav, Sidebar  
-│   ├── lib/  
-│   │   ├── auth.ts               # NextAuth Options & Rotation Logic  
-│   │   ├── api.ts                # Fetch wrappers  
-│   │   ├── bottleneck.ts         # Rate limiting logic  
-│   │   ├── logger.ts             # Pino Logger setup  
-│   │   ├── redis.ts              # Vercel KV connection  
-│   │   ├── schemas.ts            # Zod definitions (Tier 1 & 2)  
-│   │   └── utils.ts              # cn() and generic helpers  
-│   ├── mocks/  
-│   │   ├── handlers.ts           # MSW Handlers  
-│   │   └── data/                 # Sanitized JSON (NO PII allowed here)  
-│   ├── store/  
-│   │   └── use-store.ts          # Zustand (Session, Theme, Config)  
-│   ├── __tests__/                # Colocated or top-level tests  
-│   │   ├── unit/                 # Zod & Utils tests  
-│   │   ├── integration/          # API Route & Rate Limit tests  
-│   │   └── e2e/                  # Playwright tests  
-│   └── types/                    # TypeScript interfaces  
-├── .env.example  
-├── .env.local  
-├── docker-compose.yml            # Local Redis  
-├── middleware.ts  
-└── next.config.mjs
+* .  
+* ├── .github/  
+* │   └── copilot-instructions.md   # AI Agent behavior rules  
+* ├── docs/  
+* │   └── GEMINI_CONTEXT.md         # Architecture primer  
+* ├── scripts/  
+* │   └── sanitize_data.py          # Script to scrub PII from raw dumps  
+* │   └── validate-safety-layer.sh  # CI Check script (New)  
+* ├── public/  
+* ├── src/  
+* │   ├── app/  
+* │   │   ├── api/  
+* │   │   │   ├── auth/[...nextauth]/route.ts  # Auth.js Handlers  
+* │   │   │   └── proxy/            # The Safety Layer API Route  
+* │   │   ├── (dashboard)/          # Protected routes  
+* │   │   ├── layout.tsx            # Main App Shell  
+* │   │   ├── not-found.tsx         # 404 Page  
+* │   │   ├── error.tsx             # 500/Generic Error  
+* │   │   └── page.tsx              # Login/Landing  
+* │   ├── components/  
+* │   │   ├── ui/                   # shadcn/ui primitives (Button, Card)  
+* │   │   ├── domain/               # Feature-specific (PatrolList, ReadinessTable)  
+* │   │   └── layout/               # Nav, Sidebar  
+* │   ├── lib/  
+* │   │   ├── auth.ts               # NextAuth Options & Rotation Logic  
+* │   │   ├── api.ts                # Fetch wrappers  
+* │   │   ├── bottleneck.ts         # Rate limiting logic  
+* │   │   ├── logger.ts             # Pino Logger setup  
+* │   │   ├── redis.ts              # Vercel KV connection  
+* │   │   ├── schemas.ts            # Zod definitions (Tier 1 & 2)  
+* │   │   └── utils.ts              # cn() and generic helpers  
+* │   ├── mocks/  
+* │   │   ├── handlers.ts           # MSW Handlers  
+* │   │   └── data/                 # Sanitized JSON (NO PII allowed here)  
+* │   ├── store/  
+* │   │   └── use-store.ts          # Zustand (Session, Theme, Config)  
+* │   ├── __tests__/                # Colocated or top-level tests  
+* │   │   ├── unit/                 # Zod & Utils tests  
+* │   │   ├── integration/          # API Route & Rate Limit tests  
+* │   │   └── e2e/                  # Playwright tests  
+* │   └── types/                    # TypeScript interfaces  
+* ├── .env.example  
+* ├── .env.local  
+* ├── docker-compose.yml            # Local Redis  
+* ├── middleware.ts  
+* └── next.config.mjs
 
 ## **Phase 0: Infrastructure & Data Sanitization ✅ COMPLETE**
 
@@ -82,7 +82,7 @@ All agents must adhere to this structure. Do not create new top-level directorie
 
 **Status:** ✅ Phase 0 Complete - Dev server running successfully on http://localhost:3000
 
-## **Phase 1: The Safety Layer (Backend & Proxy)** ✅ COMPLETE
+## **Phase 1: The Safety Layer (Backend & Proxy) ✅ COMPLETE**
 
 **Goal:** Build the "Safety Shield" backend before any UI. All complexity regarding limits and validation lives here.
 
@@ -120,28 +120,29 @@ All agents must adhere to this structure. Do not create new top-level directorie
 * [x] **1.7 CI/CD Automation:**  
   * [x] Created scripts/validate-safety-layer.sh  
   * [x] Script Logic: Check Redis reachable, run ESLint, run TypeScript compile check, run unit tests (schemas) and integration tests (proxy), then full suite  
-  * [x] Added `validate:safety` script in package.json
+  * [x] Added validate:safety script in package.json
 
 **Status:** ✅ Core Safety Layer Complete - Ready for Phase 2
-- Zod schemas with two-tier validation strategy
-- Bottleneck rate limiter with 80% safety buffer
-- Redis-based circuit breaker with soft/hard locks
-- Proxy route with caching, validation, and read-only enforcement
-- API client wrapper with type-safe methods
- - Observability via Pino with structured logs
- - CI validation script and full tests green (22 tests)
+
+* Zod schemas with two-tier validation strategy  
+* Bottleneck rate limiter with 80% safety buffer  
+* Redis-based circuit breaker with soft/hard locks  
+* Proxy route with caching, validation, and read-only enforcement  
+* API client wrapper with type-safe methods  
+* Observability via Pino with structured logs  
+* CI validation script and full tests green (22 tests)
 
 ## **Phase 2: Core State & "Shell" UI**
 
 **Goal:** Connect frontend to backend using the "Waterfall" strategy.
 
-* [x] **2.1 Authentication (Architecture 5.7):**  
+* [ ] **2.1 Authentication (Architecture 5.7):**  
   * [x] **Environment Setup:** Updated .env.example with NextAuth configuration:  
     1. OSM_API_URL & OSM_OAUTH_URL: Base URLs for OSM API and OAuth endpoints.  
     2. OSM_CLIENT_ID & OSM_CLIENT_SECRET: OAuth credentials from OSM Developer Portal.  
-    3. NEXTAUTH_SECRET: Secret for JWT encryption (generate with `openssl rand -base64 32`).  
+    3. NEXTAUTH_SECRET: Secret for JWT encryption (generate with openssl rand -base64 32).  
     4. NEXTAUTH_URL: https://localhost:3000 (HTTPS Required).  
-  * [ ] **Callback Registration:** Ensure https://localhost:3000/api/auth/callback/osm is registered in OSM Developer Portal.  
+  * [x] **Callback Registration:** Ensure https://localhost:3000/api/auth/callback/osm is registered in OSM Developer Portal.  
   * [x] Installed next-auth@beta (v5).  
   * [x] Configured src/lib/auth.ts:  
     1. **OSM Provider:** OAuth 2.0 flow with Online Scout Manager.  
@@ -150,36 +151,29 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] Created app/api/auth/[...nextauth]/route.ts handlers for all auth routes.  
   * [x] Created middleware.ts for route protection (dashboard routes and /api/proxy require authentication).  
   * [x] Created TypeScript type definitions (src/types/next-auth.d.ts) for session and JWT.  
-  * [ ] **TEST (Manual):** Verify authentication flow once OSM OAuth credentials are configured in .env.local.  
-
-* [ ] **2.1.1 Mock Authentication & Multi-Mode Support:**  
-  **Goal:** Enable offline development and CI testing without OSM credentials (addresses 2.1.A requirements).
-  * [ ] **Environment Variables:**
-    * [ ] Add `MOCK_AUTH_ENABLED` to .env.example (defaults to `false`)
-    * [ ] Verify `NEXT_PUBLIC_USE_MSW` exists for MSW control (already configured in Phase 0)
-  * [ ] **Mock Provider Implementation:**
-    * [ ] Add mock credentials provider to `src/lib/auth.ts` that:
-      1. Returns a dummy session when `MOCK_AUTH_ENABLED=true`
-      2. Bypasses OAuth flow entirely
-      3. Provides fixed user data (e.g., "Mock User", mock@example.com)
-  * [ ] **Conditional Provider Loading:**
-    * [ ] Update `src/lib/auth.ts` to conditionally include OSM or Mock provider based on `MOCK_AUTH_ENABLED`
-    * [ ] Ensure token rotation is skipped for Mock provider
-  * [ ] **Mock Session Data:**
-    * [ ] Create `src/mocks/mockSession.ts` with:
-      1. Mock user profile (id, name, email, roles)
-      2. Mock section access (to test section picker with multiple sections)
-      3. Mock roles (admin, standard viewer, read-only)
-  * [ ] **Documentation:**
-    * [ ] Update README with three operation modes:
-      1. **Real Auth + Real Data:** Production mode
-      2. **Real Auth + Mock Data:** Safe development with real OAuth
-      3. **Mock Auth + Mock Data:** Offline/CI mode (no credentials needed)
-  * [ ] **Testing:**
-    * [ ] Verify Mock Auth + Mock Data mode works without OSM credentials
-    * [ ] Verify switching between modes via environment variables
-    * [ ] Test middleware allows mock sessions through protected routes
-
+* [ ] 2.1.1 Mock Authentication & Multi-Mode Support:  
+  Goal: Enable offline development and CI testing without OSM credentials (addresses 2.1.A requirements).  
+  * [ ] **Environment Variables:**  
+    1. [ ] Add MOCK_AUTH_ENABLED to .env.example (defaults to false)  
+    2. [ ] Verify NEXT_PUBLIC_USE_MSW exists for MSW control (already configured in Phase 0)  
+  * [ ] **Mock Provider Implementation:**  
+    1. [ ] Add mock credentials provider to src/lib/auth.ts that:  
+       1. Returns a dummy session when MOCK_AUTH_ENABLED=true  
+       2. Bypasses OAuth flow entirely  
+       3. Provides fixed user data (e.g., "Mock User", mock@example.com)  
+  * [ ] **Conditional Provider Loading:**  
+    1. [ ] Update src/lib/auth.ts to conditionally include OSM or Mock provider based on MOCK_AUTH_ENABLED  
+    2. [ ] Ensure token rotation is skipped for Mock provider  
+  * [ ] **Mock Session Data:**  
+    1. [ ] Create src/mocks/mockSession.ts with:  
+       1. Mock user profile (id, name, email, roles)  
+       2. Mock section access (to test section picker with multiple sections)  
+       3. Mock roles (admin, standard viewer, read-only)  
+  * [ ] **Documentation:**  
+    1. [ ] Update README with three operation modes:  
+       1. **Real Auth + Real Data:** Production mode  
+       2. **Real Auth + Mock Data:** Safe development with real OAuth  
+       3. **Mock Auth + Mock Data:** Offline/CI mode (no credentials needed)  
 * [ ] **2.2 State & Configuration Seeding:**  
   * [ ] Setup TanStack Query (staleTime: 5 mins) for API data.  
   * [ ] Setup Zustand for Session state (Section ID, User Role).  
@@ -187,16 +181,32 @@ All agents must adhere to this structure. Do not create new top-level directorie
 * [ ] **2.3 Initialization Flow:**  
   * [ ] Implement getStartupData fetch on app load (requires Auth & Config).  
   * [ ] Build **Section Picker Modal** if user has access to multiple sections.  
-* [ ] **2.4 App Shell & Error UI:**  
-  * [ ] Build Sidebar and Header using shadcn/ui.  
-  * [ ] Create error.tsx (500), not-found.tsx (404), and forbidden.tsx (403).  
-  * [ ] Implement "Theming Mechanism" via globals.css variables.  
+* [ ] **2.4 App Shell & Login UI:**  
+  * [ ] **Theme Configuration:**  
+    1. [ ] Select **Typeface**: Choose a modern, readable sans-serif (e.g., Inter or Geist Sans) as per "Clean & Modern" requirement.  
+    2. [ ] Select **Palette**: Define CSS variables for Primary (Brand), Secondary, Destructive, and Muted colors in globals.css. Ensure high contrast and professional look (e.g., Slate/Zinc neutrals + a bold accent).  
+    3. [ ] **Radius & Spacing**: Define consistent border-radius and spacing tokens.  
+  * [ ] **Login Screen:** Implement src/app/page.tsx (Root/Login) with:  
+    1. [ ] "Sign in with OSM" button (triggers real OAuth).  
+    2. [ ] "Dev: Mock Login" button (conditionally rendered only if MOCK_AUTH_ENABLED=true).  
+    3. [ ] Clean, professional landing UI (Aesthetics & Theme).  
+  * [ ] **App Shell:** Build Sidebar and Header using shadcn/ui.  
+  * [ ] **Error Pages:** Create error.tsx (500), not-found.tsx (404), and forbidden.tsx (403).  
+  * [ ] **TEST (Component):** Verify Login UI logic:  
+    1. [ ] Mock MOCK_AUTH_ENABLED=false -> Verify only OSM button renders.  
+    2. [ ] Mock MOCK_AUTH_ENABLED=true -> Verify both buttons render.  
+    3. [ ] Verify "Sign in with OSM" calls signIn('osm').  
+    4. [ ] Verify "Mock Login" calls signIn('credentials', { ... }).  
+  * [ ] **TEST (Manual):** Verify the 3 Operation Modes now that UI exists:  
+    1. Real Auth (Production).  
+    2. Real Auth + Mock Data.  
+    3. Mock Auth + Mock Data (Full Offline).  
 * [ ] **2.5 Progressive Hydration:**  
   * [ ] Fetch Event Index (getEvents) -> Render Skeletons.  
   * [ ] Lazy-load details (Participants, Structure) via throttled queue.  
 * [ ] **2.6 E2E Verification (Shift Left):**  
   * [ ] Install Playwright.  
-  * [ ] **TEST (E2E):** Verify **Login Flow**: Unauthenticated user redirected to Login.  
+  * [ ] **TEST (E2E):** Verify **Login Flow**: Unauthenticated user redirected to Login; Clicking "Sign In" triggers correct flow.  
   * [ ] **TEST (E2E):** Verify **Section Picker**: Multi-section user sees modal, selection persists.
 
 ## **Phase 3: Data Visualization**
@@ -266,3 +276,4 @@ All agents must adhere to this structure. Do not create new top-level directorie
 * Make sure to update the plan after each phase  
 * Check that what is coming next still makes sense  
 * Commit code at the end of each phase
+
