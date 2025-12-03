@@ -70,6 +70,10 @@ async function proxyFetch(path: string, params?: Record<string, string>): Promis
 }
 
 /**
+ * @deprecated This endpoint is no longer needed. User data, sections, and permissions
+ * are now provided directly by the OAuth /oauth/resource endpoint and stored in the
+ * NextAuth session. Use `useSession()` instead to access this data.
+ * 
  * Fetch startup data (Tier 1 - Strict validation)
  * Contains user roles and available sections
  */

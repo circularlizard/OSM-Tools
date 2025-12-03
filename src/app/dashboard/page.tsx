@@ -46,7 +46,7 @@ export default function DashboardPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex gap-2">
                   <span className="font-medium text-muted-foreground">User ID:</span>
-                  <span>{session.user?.id}</span>
+                  <span>{(session.user as any)?.id}</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="font-medium text-muted-foreground">Name:</span>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="pt-4 border-t">
-              <Button variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>
+              <Button variant="secondary" onClick={() => signOut({ callbackUrl: "/" })}>
                 Sign Out
               </Button>
             </div>

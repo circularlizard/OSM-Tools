@@ -1,7 +1,5 @@
-import type { NextAuthConfig } from 'next-auth'
-import type { Provider } from 'next-auth/providers'
-// Using a custom provider factory since package exports vary across environments
-import { JWT } from 'next-auth/jwt'
+import type { AuthOptions } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getMockUser } from '@/mocks/mockSession'
 
@@ -69,7 +67,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
  * - If MOCK_AUTH_ENABLED=true: Use credentials provider with mock data
  * - Otherwise: Use OSM OAuth provider
  */
-function getProviders(): Provider[] {
+function getProviders(): AuthOptions['providers'] {
   if (MOCK_AUTH_ENABLED) {
     return [
       CredentialsProvider({
@@ -87,6 +85,8 @@ function getProviders(): Provider[] {
             name: mockUser.name,
             email: mockUser.email,
             image: mockUser.image,
+            sections: mockUser.sections,
+            scopes: mockUser.scopes,
           }
         },
       }),
@@ -123,6 +123,9 @@ function getProviders(): Provider[] {
           name: data.full_name || 'OSM User',
           email: data.email || null,
           image: data.profile_picture_url || null,
+          // Store sections and scopes for later use
+          sections: data.sections || [],
+          scopes: data.scopes || [],
         }
       },
     } as any,
@@ -144,6 +147,8 @@ export function getAuthConfig(): AuthOptions {
             accessTokenExpires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
             refreshToken: 'mock-refresh-token',
             user,
+            sections: (user as any).sections || [],
+            scopes: (user as any).scopes || [],
           }
         }
         // Subsequent requests: ensure accessToken is always present
@@ -162,6 +167,9 @@ export function getAuthConfig(): AuthOptions {
           accessTokenExpires: account.expires_at ? account.expires_at * 1000 : Date.now() + 3600 * 1000,
           refreshToken: account.refresh_token,
           user,
+          // Store OAuth resource data in JWT
+          sections: (user as any).sections || [],
+          scopes: (user as any).scopes || [],
         }
       }
 
@@ -188,6 +196,9 @@ export function getAuthConfig(): AuthOptions {
       }
       session.accessToken = token.accessToken as string
       session.error = token.error as string | undefined
+      // Attach OAuth resource data to session
+      session.sections = token.sections
+      session.scopes = token.scopes
 
       return session
     },

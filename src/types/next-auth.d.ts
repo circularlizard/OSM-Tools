@@ -1,6 +1,8 @@
 import 'next-auth'
 import 'next-auth/jwt'
 
+import { OAuthSection } from '@/lib/schemas'
+
 declare module 'next-auth' {
   /**
    * Extends the built-in session types with our custom properties
@@ -8,6 +10,8 @@ declare module 'next-auth' {
   interface Session {
     accessToken: string
     error?: string
+    sections?: OAuthSection[]
+    scopes?: string[]
   }
 
   /**
@@ -28,6 +32,8 @@ declare module 'next-auth/jwt' {
   interface JWT {
     accessToken?: string
     accessTokenExpires?: number
+    sections?: OAuthSection[]
+    scopes?: string[]
     refreshToken?: string
     error?: string
     user?: {

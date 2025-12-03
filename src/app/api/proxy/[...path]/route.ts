@@ -164,7 +164,7 @@ export async function GET(
     }
 
     // Require authenticated session and read access token from NextAuth
-    const session = await getServerSession(getAuthConfig())
+    const session = await getServerSession(getAuthConfig()) as { accessToken?: string } | null
     if (!session || !session.accessToken) {
       return NextResponse.json(
         {
