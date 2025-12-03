@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useStore } from '@/store/use-store'
 
@@ -10,8 +10,8 @@ import { useStore } from '@/store/use-store'
  * Client component that initializes the Zustand store with user data.
  * Fetches full section data from Redis via API endpoint.
  *
- * SAFETY: Only processes data when user is authenticated.
- * The OAuth resource endpoint provides sections/scopes stored in Redis.
+ * SAFETY: Only fetches data once when user is authenticated.
+ * Uses a ref to prevent duplicate requests.
  *
  * Render at app layout level under SessionProvider and QueryProvider.
  */
@@ -19,18 +19,27 @@ export default function StartupInitializer() {
   const { data: session, status } = useSession()
   const setUserRole = useStore((s) => s.setUserRole)
   const setAvailableSections = useStore((s) => s.setAvailableSections)
-  const [loading, setLoading] = useState(false)
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
+    // Safety checks: only fetch once when authenticated
+    if (status !== 'authenticated' || !session?.user || hasInitialized.current) {
+      return
+    }
+
+    const userId = (session.user as any).id
+    if (!userId) {
+      return
+    }
+
+    hasInitialized.current = true
+
     async function fetchSections() {
-      if (status !== 'authenticated' || !session?.user?.id || loading) return
-      
-      setLoading(true)
       try {
         // Fetch full section data from Redis
         const response = await fetch('/api/auth/oauth-data')
         if (!response.ok) {
-          console.error('Failed to fetch OAuth data:', response.statusText)
+          console.error('[StartupInitializer] Failed to fetch OAuth data:', response.status, response.statusText)
           return
         }
         
@@ -38,8 +47,8 @@ export default function StartupInitializer() {
         const sections = data.sections || []
         
         // Determine role based on permissions
-        const hasEventsAccess = sections.some((s: any) => s.upgrades.events)
-        const hasProgrammeAccess = sections.some((s: any) => s.upgrades.programme)
+        const hasEventsAccess = sections.some((s: any) => s.upgrades?.events)
+        const hasProgrammeAccess = sections.some((s: any) => s.upgrades?.programme)
         
         // Role heuristic: events + programme = standard, events only = readonly
         const role = hasEventsAccess && hasProgrammeAccess ? 'standard' : 'readonly'
@@ -52,15 +61,16 @@ export default function StartupInitializer() {
           sectionType: s.section_type,
         }))
         setAvailableSections(storeSections)
+        
+        console.log('[StartupInitializer] Initialized with', storeSections.length, 'sections, role:', role)
       } catch (error) {
-        console.error('Error fetching OAuth data:', error)
-      } finally {
-        setLoading(false)
+        console.error('[StartupInitializer] Error fetching OAuth data:', error)
+        hasInitialized.current = false // Allow retry on error
       }
     }
 
     fetchSections()
-  }, [session, status, loading, setUserRole, setAvailableSections])
+  }, [status, session, setUserRole, setAvailableSections])
 
   return null
 }
