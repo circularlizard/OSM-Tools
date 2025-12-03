@@ -136,19 +136,22 @@ All agents must adhere to this structure. Do not create new top-level directorie
 
 **Goal:** Connect frontend to backend using the "Waterfall" strategy.
 
-* [ ] **2.1 Authentication (Architecture 5.7):**  
+* [x] **2.1 Authentication (Architecture 5.7):**  
   * [x] **Environment Setup:** Updated .env.example with NextAuth configuration:  
     1. OSM_API_URL & OSM_OAUTH_URL: Base URLs for OSM API and OAuth endpoints.  
     2. OSM_CLIENT_ID & OSM_CLIENT_SECRET: OAuth credentials from OSM Developer Portal.  
     3. NEXTAUTH_SECRET: Secret for JWT encryption (generate with openssl rand -base64 32).  
     4. NEXTAUTH_URL: https://localhost:3000 (HTTPS Required).  
   * [x] **Callback Registration:** Ensure https://localhost:3000/api/auth/callback/osm is registered in OSM Developer Portal.  
-  * [x] Installed next-auth@beta (v5).
+  * [x] Installed next-auth@^4.24.0 (Downgraded from v5 beta for stability).  
   * [x] Configured src/lib/auth.ts:  
     1. **OSM Provider:** OAuth 2.0 flow with Online Scout Manager.  
     2. Token refresh logic integrated into JWT callback with automatic expiry detection.  
+    3. **OAuth Data Storage:** Full section data stored in Redis (24hr TTL), only section IDs in JWT to avoid size limits.  
+    4. **Scope Strategy:** Using `section:event:read` only (OSM filters sections by ALL scopes).  
   * [x] Implemented **Token Rotation Strategy** with automatic refresh when access token expires (1-hour lifetime).  
   * [x] Created app/api/auth/[...nextauth]/route.ts handlers for all auth routes.  
+  * [x] Created app/api/auth/oauth-data/route.ts to fetch full OAuth data from Redis.  
   * [x] Created middleware.ts for route protection (dashboard routes and /api/proxy require authentication).  
   * [x] Created TypeScript type definitions (src/types/next-auth.d.ts) for session and JWT.  
 * [x] 2.1.1 Mock Authentication & Multi-Mode Support:  
@@ -179,7 +182,16 @@ All agents must adhere to this structure. Do not create new top-level directorie
   * [x] Setup Zustand for Session state (Section ID, User Role).  
   * [x] **Seeding:** Create src/lib/config-loader.ts to load defaults.json into Redis if empty (Required for User Role detection).  
 * [x] **2.3 Initialization Flow:**  
-  * [x] Implement getStartupData fetch on app load (requires Auth & Config).  
+  * [x] ~~Implement getStartupData fetch on app load~~ **REPLACED:** OAuth `/oauth/resource` provides section data directly.  
+  * [x] Created StartupInitializer component to fetch OAuth data from Redis via `/api/auth/oauth-data`.  
+  * [x] User role determination based on section permissions (events + programme = standard, events only = readonly).  
+  * [x] Multi-section support verified (4 sections accessible with correct scope).  
+  * [x] Deprecated `getStartupData` endpoint in src/lib/api.ts (OAuth resource replaces it).  
+  * [x] **Redis OAuth Storage Pattern:**  
+    1. profile() callback stores full OAuth data in Redis (sections, scopes, permissions).  
+    2. JWT contains only user ID, section IDs array, and scopes.  
+    3. StartupInitializer fetches full data from Redis on app load.  
+    4. Solves JWT size limits (was causing 431 errors with full section history).  
   
 * [ ] **2.4 App Shell & Login UI:**  
   * [x] **Theme Configuration:**  
@@ -199,33 +211,34 @@ All agents must adhere to this structure. Do not create new top-level directorie
     2. [x] Mock MOCK_AUTH_ENABLED=true -> Verify both buttons render.  
     3. [x] Verify "Sign in with OSM" calls signIn('osm').  
     4. [x] Verify "Mock Login" calls signIn('credentials', { redirect: true }).  
-  * [ ] **TEST (Manual):** Verify the 3 Operation Modes now that UI exists:  
-    1. Real Auth (Production).  
-    2. Real Auth + Mock Data.  
-    3. Mock Auth + Mock Data (Full Offline).  
-* [ ] 2.5 API Browser & Debug Tool (New):  
-  Goal: Enable manual verification of backend API calls from the UI before building complex views.  
-  * [ ] **Route:** Create src/app/(dashboard)/debug/page.tsx (Protected route).  
-  * [ ] **UI Components:**  
-    * [ ] **Endpoint Selector:** Dropdown to choose from api_map.json endpoints (e.g., getEvents, getPatrols).  
-    * [ ] **Parameter Input:** Dynamic inputs for required params (e.g., eventId, sectionId).  
-    * [ ] **Execute Button:** Triggers the fetch via the Proxy.  
-  * [ ] **Display Panel:**  
-    * [ ] **Environment Status:** Badge showing "Mock Data: ON/OFF" and "Mock Auth: ON/OFF".  
-    * [ ] **Upstream URL:** If Mock Data is OFF, display the constructed OSM_API_BASE_URL endpoint.  
-    * [ ] **Rate Limits:** Real-time display of X-RateLimit-Remaining and Reset headers from the last response.  
-    * [ ] **Payloads:** JSON view of Request Headers/Body and Response Data.  
-  * [ ] **TEST (Manual):** Use the tool to "Ping" the backend and verify:  
-    * [ ] Rate limit headers update after clicks.  
-    * [ ] Soft/Hard locks trigger correctly (by spamming the button).  
-    * [ ] Correct data is returned for both Mock and Real modes.  
-* [ ] **2.6 Progressive Hydration:**  
-  * [ ] Fetch Event Index (getEvents) -> Render Skeletons.  
-  * [ ] Lazy-load details (Participants, Structure) via throttled queue.  
-* [ ] **2.7 E2E Verification (Shift Left):**  
-  * [ ] Install Playwright.  
-  * [ ] **TEST (E2E):** Verify **Login Flow**: Unauthenticated user redirected to Login; Clicking "Sign In" triggers correct flow.  
-  * [ ] **TEST (E2E):** Verify **Section Picker**: Multi-section user sees modal, selection persists.
+  * [ ] **TEST (Manual):** Verify the 3 Operation Modes:  
+    1. [ ] Real Auth + Real Data (MOCK_AUTH_ENABLED=false, NEXT_PUBLIC_USE_MSW=false).  
+    2. [x] Real Auth + Mock Data (MOCK_AUTH_ENABLED=false, NEXT_PUBLIC_USE_MSW=true) - **Verified working**.  
+    3. [ ] Mock Auth + Mock Data (MOCK_AUTH_ENABLED=true, NEXT_PUBLIC_USE_MSW=true).  
+* [ ] **2.5 Progressive Hydration (Events List):**  
+  * [ ] Create `/dashboard/events` route protected by auth.  
+  * [ ] Implement TanStack Query hook to fetch events via `/api/proxy/ext/events/events/?action=getEvents`.  
+  * [ ] Render loading skeletons during data fetch.  
+  * [ ] Display events in card grid or table layout (responsive).  
+  * [ ] Show event name, dates, attendance count (from event data).  
+  * [ ] Lazy-load event details on card click (defer Participants, Structure to detail view).  
+* [ ] **2.6 E2E Testing Setup:**  
+  * [ ] Install Playwright and configure for HTTPS localhost.  
+  * [ ] Create basic E2E test structure (tests/e2e/ directory).  
+  * [ ] **TEST (E2E):** Verify **Login Flow**:  
+    1. [ ] Unauthenticated user accessing /dashboard redirected to login page.  
+    2. [ ] Clicking "Sign in with OSM" triggers OAuth flow (verify redirect to OSM).  
+    3. [ ] After OAuth callback, user lands on /dashboard.  
+  * [ ] **TEST (E2E):** Verify **Section Picker**:  
+    1. [ ] Multi-section user sees modal after login.  
+    2. [ ] Section selection persists in Zustand store.  
+    3. [ ] Selected section ID used in subsequent API calls.  
+  * [ ] **TEST (E2E):** Verify **Events List**:  
+    1. [ ] /dashboard/events renders loading skeletons.  
+    2. [ ] Events load and display correctly.  
+    3. [ ] Mobile view shows cards, desktop shows table (if implemented).
+
+**Status:** Phase 2 Core Complete (Auth, State, Shell UI). Next: Install Playwright → Build Events List → Write E2E Tests → Move to Phase 3.
 
 ## **Phase 3: Data Visualization**
 
@@ -272,10 +285,15 @@ All agents must adhere to this structure. Do not create new top-level directorie
 
 **Goal:** Finalize export features and production safety.
 
-* [ ] **5.1 PDF Export:** Implement React-PDF generation for Patrol sheets.  
-* [ ] **5.2 Excel Export:** Implement SheetJS export for offline editing.  
-* [ ] **5.3 Circuit Breaker UI:** Create "System Cooling Down" overlay for Soft Locks.  
-* [ ] **5.4 Final E2E Sweep:**  
+* [ ] **5.1 API Browser & Debug Tool (Optional - Deferred from Phase 2):**  
+  * [ ] Create src/app/(dashboard)/debug/page.tsx (Protected route).  
+  * [ ] Endpoint selector, parameter inputs, execute button.  
+  * [ ] Display panel: Environment status, upstream URL, rate limits, request/response payloads.  
+  * [ ] Manual testing: Rate limit updates, soft/hard locks, mock vs real data verification.  
+* [ ] **5.2 PDF Export:** Implement React-PDF generation for Patrol sheets.  
+* [ ] **5.3 Excel Export:** Implement SheetJS export for offline editing.  
+* [ ] **5.4 Circuit Breaker UI:** Create "System Cooling Down" overlay for Soft Locks.  
+* [ ] **5.5 Final E2E Sweep:**  
   * [ ] **TEST (E2E):** Full walkthrough: Login -> Select Section -> Filter by Unit -> Export PDF.
 
 ## **Phase 6: Deployment & Handover**
