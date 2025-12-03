@@ -61,8 +61,6 @@ export default function StartupInitializer() {
           sectionType: s.section_type,
         }))
         setAvailableSections(storeSections)
-        
-        console.log('[StartupInitializer] Initialized with', storeSections.length, 'sections, role:', role)
       } catch (error) {
         console.error('[StartupInitializer] Error fetching OAuth data:', error)
         hasInitialized.current = false // Allow retry on error

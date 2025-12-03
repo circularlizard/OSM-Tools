@@ -104,7 +104,7 @@ function getProviders(): AuthOptions['providers'] {
       authorization: {
         url: `${OSM_OAUTH_URL}/oauth/authorize`,
         params: {
-          scope: 'section:member:read section:event:read section:programme:read',
+          scope: 'section:event:read',
         },
       },
       token: {
@@ -116,7 +116,6 @@ function getProviders(): AuthOptions['providers'] {
       clientId: process.env.OSM_CLIENT_ID,
       clientSecret: process.env.OSM_CLIENT_SECRET,
       async profile(profile: any) {
-        console.log('[OAuth] Profile data from OSM /oauth/resource:', JSON.stringify(profile, null, 2))
         // OSM returns { status, error, data: { user_id, full_name, email, sections, ... }, meta }
         const data = profile.data || {}
         const userId = String(data.user_id || 'unknown')
