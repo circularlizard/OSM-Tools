@@ -27,8 +27,11 @@ import flexiDefinitionsData from '@/mocks/data/flexi_definitions.json'
 import flexiStructureData from '@/mocks/data/flexi_structure.json'
 import membersData from '@/mocks/data/members.json'
 import patrolsData from '@/mocks/data/patrols.json'
+import listOfQMListsData from '@/mocks/data/listOfQMLists.json'
+import qmListData from '@/mocks/data/QMList.json'
 import startupConfigData from '@/mocks/data/startup_config.json'
 import startupDataData from '@/mocks/data/startup_data.json'
+import { API_ENDPOINTS } from '@/lib/api-endpoints'
 
 // Map mock data filenames to imported data
 const mockDataRegistry: Record<string, unknown> = {
@@ -45,6 +48,8 @@ const mockDataRegistry: Record<string, unknown> = {
   'flexi_structure.json': flexiStructureData,
   'members.json': membersData,
   'patrols.json': patrolsData,
+  'listOfQMLists.json': listOfQMListsData,
+  'QMList.json': qmListData,
   'startup_config.json': startupConfigData,
   'startup_data.json': startupDataData,
 }
@@ -119,6 +124,26 @@ function findMockData(path: string, queryParams: URLSearchParams): unknown | nul
     const mockData = mockDataRegistry[entry.mock_data_file]
     if (mockData) {
       console.log(`[Proxy] Returning mock data: ${entry.mock_data_file} for ${normalizedPath}${action ? ` (action=${action})` : ''}`)
+      return mockData
+    }
+  }
+
+  // Second fallback: Use API_ENDPOINTS definitions
+  // Match by path pattern (supporting tokens like {eventid}) and action
+  const endpoint = API_ENDPOINTS.find((ep) => {
+    // Normalize endpoint path
+    const epPath = `/${ep.path.replace(/^\/+/, '').replace(/\/+$/, '')}`
+    // Convert tokens like {eventid} into a matcher
+    const epRegex = new RegExp('^' + epPath.replace(/\{[^}]+\}/g, '[^/]+') + '$')
+    const pathMatches = epRegex.test(normalizedPath)
+    const actionMatches = (ep.action || null) === (action || null)
+    return pathMatches && actionMatches
+  })
+
+  if (endpoint && endpoint.exampleResponse) {
+    const mockData = mockDataRegistry[endpoint.exampleResponse]
+    if (mockData) {
+      console.log(`[Proxy] Fallback mock via API_ENDPOINTS: ${endpoint.exampleResponse} for ${normalizedPath}${action ? ` (action=${action})` : ''}`)
       return mockData
     }
   }

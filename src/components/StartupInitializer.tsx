@@ -39,7 +39,12 @@ export default function StartupInitializer() {
         // Fetch full section data from Redis
         const response = await fetch('/api/auth/oauth-data')
         if (!response.ok) {
-          console.error('[StartupInitializer] Failed to fetch OAuth data:', response.status, response.statusText)
+          if (response.status === 503) {
+            const { message } = await response.json().catch(() => ({ message: 'Redis unavailable' }))
+            console.warn('[StartupInitializer] OAuth cache unavailable (Redis).', message)
+          } else {
+            console.error('[StartupInitializer] Failed to fetch OAuth data:', response.status, response.statusText)
+          }
           return
         }
         

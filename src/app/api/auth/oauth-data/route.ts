@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { getAuthConfig } from '@/lib/auth'
-import { getOAuthData } from '@/lib/redis'
+import { getOAuthData, isRedisAvailable } from '@/lib/redis'
 
 /**
  * GET /api/auth/oauth-data
@@ -12,6 +12,19 @@ import { getOAuthData } from '@/lib/redis'
  */
 export async function GET() {
   try {
+    // Fast-fail if Redis is not available
+    const redisUp = await isRedisAvailable()
+    if (!redisUp) {
+      return NextResponse.json(
+        {
+          error: 'SERVICE_UNAVAILABLE',
+          message:
+            'OAuth cache store (Redis) is unavailable. Start it with: docker compose up -d redis',
+        },
+        { status: 503, headers: { 'Retry-After': '30' } }
+      )
+    }
+
     const session = await getServerSession(getAuthConfig())
     
     if (!session || !session.user) {
@@ -43,7 +56,7 @@ export async function GET() {
   } catch (error) {
     console.error('[OAuth Data] Error fetching OAuth data:', error)
     return NextResponse.json(
-      { error: 'Internal error', message: 'Failed to fetch OAuth data' },
+      { error: 'INTERNAL_ERROR', message: 'Failed to fetch OAuth data' },
       { status: 500 }
     )
   }

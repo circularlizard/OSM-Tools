@@ -29,8 +29,10 @@ cd certs
 mkcert localhost 127.0.0.1 ::1
 cd ..
 
-# Start local Redis (optional - for caching)
-docker-compose up -d
+# Start local Redis (REQUIRED for auth cache)
+# Redis stores OAuth resource data to keep JWTs small.
+# Without Redis running, you'll see 500 errors from /api/auth/oauth-data
+docker compose up -d redis
 
 # Start development server with HTTPS
 npm run dev
@@ -40,6 +42,20 @@ npm run dev:http
 ```
 
 Visit [https://localhost:3000](https://localhost:3000) to see the app.
+
+### Verify Redis is running
+
+```bash
+# Check the container health
+docker ps --filter name=seee-redis-local
+
+# Optional: ping Redis inside the container (should return PONG)
+docker exec -it seee-redis-local redis-cli ping
+```
+
+If Redis is not running, Startup initialization and the API Browser will fail with:
+`[StartupInitializer] Failed to fetch OAuth data: 500 "Internal Server Error"`.
+Start Redis with `docker compose up -d redis` and reload the page.
 
 ## 📁 Project Structure
 

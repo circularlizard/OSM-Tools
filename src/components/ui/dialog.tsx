@@ -36,7 +36,7 @@ export function DialogTrigger({ children, asChild, ...props }: React.HTMLAttribu
   const handleClick = () => context.onOpenChange(true)
   
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children, {
+    return React.cloneElement(children as React.ReactElement<{ onClick?: () => void }>, {
       onClick: handleClick,
     })
   }

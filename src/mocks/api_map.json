@@ -67,6 +67,23 @@
     "is_static_resource": false
   },
   {
+    "original_file": "getEvents_browser.txt",
+    "mock_data_file": "events.json",
+    "full_url": "https://www.onlinescoutmanager.co.uk/ext/events/events/?action=getEvents&sectionid=37458",
+    "path": "/ext/events/events/",
+    "method": "GET",
+    "action": "getEvents",
+    "query_params": {
+      "action": [
+        "getEvents"
+      ],
+      "sectionid": [
+        "37458"
+      ]
+    },
+    "is_static_resource": false
+  },
+  {
     "original_file": "getBadgeByPerson.txt",
     "mock_data_file": "badge_assignments.json",
     "full_url": "https://www.onlinescoutmanager.co.uk/ext/badges/badgesbyperson/?action=loadBadgesByMember&section=explorers&sectionid=37458&term_id=842886",

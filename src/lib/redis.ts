@@ -240,3 +240,16 @@ export async function closeRedis(): Promise<void> {
     redis = null
   }
 }
+
+/**
+ * Check if Redis is reachable and healthy.
+ */
+export async function isRedisAvailable(): Promise<boolean> {
+  try {
+    const client = getRedisClient()
+    const pong = await client.ping()
+    return pong === 'PONG'
+  } catch {
+    return false
+  }
+}
