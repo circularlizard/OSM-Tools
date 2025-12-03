@@ -93,34 +93,33 @@ function getProviders(): Provider[] {
     ]
   }
 
-  // Production: OSM OAuth provider
-  // Define as inline object to match NextAuth v5 beta structure
+  // Production: OSM OAuth provider for NextAuth v4
   return [
     {
       id: 'osm',
       name: 'Online Scout Manager',
-      type: 'oidc',
-      issuer: OSM_OAUTH_URL,
+      type: 'oauth',
+      version: '2.0',
       authorization: {
-        url: `${OSM_OAUTH_URL}/authorize`,
+        url: `${OSM_OAUTH_URL}/oauth/authorize`,
         params: {
-          scope: 'section:member:read section:events:read',
+          scope: 'section:member:read section:event:read section:programme:read',
         },
       },
       token: {
-        url: `${OSM_OAUTH_URL}/token`,
+        url: `${OSM_OAUTH_URL}/oauth/token`,
       },
       userinfo: {
-        url: `${OSM_API_URL}/api/user/info`,
+        url: `${OSM_OAUTH_URL}/oauth/resource`,
       },
       clientId: process.env.OSM_CLIENT_ID,
       clientSecret: process.env.OSM_CLIENT_SECRET,
       profile(profile: any) {
         return {
-          id: profile.user_id || profile.id,
-          name: profile.name || `${profile.firstname} ${profile.lastname}`,
-          email: profile.email,
-          image: profile.photo_guid ? `${OSM_API_URL}/api/member/photo/${profile.photo_guid}` : null,
+          id: String(profile.userid || profile.id || 'unknown'),
+          name: profile.name || profile.firstname && profile.lastname ? `${profile.firstname} ${profile.lastname}` : 'OSM User',
+          email: profile.email || null,
+          image: null,
         }
       },
     } as any,
@@ -128,51 +127,8 @@ function getProviders(): Provider[] {
 }
 
 export function getAuthConfig(): AuthOptions {
-  const providers = MOCK_AUTH_ENABLED 
-    ? [CredentialsProvider({
-        id: 'credentials',
-        name: 'Mock Login',
-        credentials: {
-          username: { label: 'Username', type: 'text' },
-          password: { label: 'Password', type: 'password' },
-        },
-        async authorize(credentials) {
-          const username = credentials?.username as string
-          const mockUser = getMockUser(username)
-          return {
-            id: mockUser.id,
-            name: mockUser.name,
-            email: mockUser.email,
-            image: mockUser.image,
-          }
-        },
-      })]
-    : [{
-        id: 'osm',
-        name: 'Online Scout Manager',
-        type: 'oauth',
-        authorization: {
-          url: `${OSM_OAUTH_URL}/authorize`,
-          params: {
-            scope: 'section:member:read section:events:read',
-          },
-        },
-        token: `${OSM_OAUTH_URL}/token`,
-        userinfo: `${OSM_API_URL}/api/user/info`,
-        clientId: process.env.OSM_CLIENT_ID,
-        clientSecret: process.env.OSM_CLIENT_SECRET,
-        profile(profile: any) {
-          return {
-            id: profile.user_id || profile.id,
-            name: profile.name || `${profile.firstname} ${profile.lastname}`,
-            email: profile.email,
-            image: profile.photo_guid ? `${OSM_API_URL}/api/member/photo/${profile.photo_guid}` : null,
-          }
-        },
-      } as any]
-
   return {
-    providers,
+    providers: getProviders(),
     callbacks: {
     async jwt({ token, account, user }) {
       // Mock authentication: skip token rotation

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useSession } from 'next-auth/react'
 import { getStartupData } from '@/lib/api'
 import { useStore } from '@/store/use-store'
 
@@ -11,16 +12,22 @@ import { useStore } from '@/store/use-store'
  * Client component that fetches startup data on mount and
  * populates the Zustand store with user role and available sections.
  *
- * Render at app layout level under QueryProvider so it's available globally.
+ * SAFETY: Only fetches data when user is authenticated to prevent 401 errors
+ * and maintain the safety-first architecture principle.
+ *
+ * Render at app layout level under SessionProvider and QueryProvider.
  */
 export default function StartupInitializer() {
+  const { data: session, status } = useSession()
   const setUserRole = useStore((s) => s.setUserRole)
   const setAvailableSections = useStore((s) => s.setAvailableSections)
 
+  // Only fetch startup data when user is authenticated
   const { data } = useQuery({
     queryKey: ['startupData'],
     queryFn: () => getStartupData(),
     staleTime: 5 * 60 * 1000,
+    enabled: status === 'authenticated' && !!session,
   })
 
   useEffect(() => {
