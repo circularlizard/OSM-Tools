@@ -15,10 +15,10 @@ export default function Header() {
   const selectedSectionName = currentSection?.sectionName ?? null;
   return (
     <header className="w-full border-b bg-background">
-      <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between">
+      <div className="px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <TentTree className="h-5 w-5 text-primary" aria-hidden />
-          <span className="font-semibold tracking-tight">SEEE Expedition Dashboard</span>
+          <TentTree className="h-6 w-6 text-primary" aria-hidden />
+          <span className="font-semibold tracking-tight text-lg">SEEE Expedition Dashboard</span>
           {selectedSectionName && (
             <span className="text-sm text-muted-foreground">• {selectedSectionName}</span>
           )}

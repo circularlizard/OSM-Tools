@@ -6,7 +6,8 @@ import Sidebar from "./Sidebar";
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   // Only render the full application chrome when authenticated.
-  if (status !== "authenticated") {
+  // Hide during loading state to prevent flash of navigation on login page
+  if (status === "loading" || status === "unauthenticated") {
     return <main className="min-h-screen">{children}</main>;
   }
   return (

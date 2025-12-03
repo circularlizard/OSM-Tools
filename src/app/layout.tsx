@@ -10,6 +10,9 @@ import ClientShell from '@/components/layout/ClientShell'
 export const metadata: Metadata = {
   title: 'SEEE Expedition Dashboard',
   description: 'Scout Event Management Dashboard',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
