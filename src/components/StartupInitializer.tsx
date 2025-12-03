@@ -1,21 +1,17 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useStore } from '@/store/use-store'
 
 /**
  * StartupInitializer
  *
- * Client component that initializes the Zustand store with user data from the session.
- * No API calls needed - all data comes from the OAuth /oauth/resource endpoint
- * which is stored in the NextAuth session.
+ * Client component that initializes the Zustand store with user data.
+ * Fetches full section data from Redis via API endpoint.
  *
  * SAFETY: Only processes data when user is authenticated.
- * The OAuth resource endpoint provides:
- * - User info (id, name, email)
- * - Sections with terms and permissions
- * - Scopes
+ * The OAuth resource endpoint provides sections/scopes stored in Redis.
  *
  * Render at app layout level under SessionProvider and QueryProvider.
  */
@@ -23,27 +19,48 @@ export default function StartupInitializer() {
   const { data: session, status } = useSession()
   const setUserRole = useStore((s) => s.setUserRole)
   const setAvailableSections = useStore((s) => s.setAvailableSections)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.sections) {
-      // Determine role based on permissions
-      // Check if user has admin-level access (events permission on any section)
-      const hasEventsAccess = session.sections.some(s => s.upgrades.events)
-      const hasProgrammeAccess = session.sections.some(s => s.upgrades.programme)
+    async function fetchSections() {
+      if (status !== 'authenticated' || !session?.user?.id || loading) return
       
-      // Role heuristic: events + programme = standard, events only = readonly
-      const role = hasEventsAccess && hasProgrammeAccess ? 'standard' : 'readonly'
-      setUserRole(role)
+      setLoading(true)
+      try {
+        // Fetch full section data from Redis
+        const response = await fetch('/api/auth/oauth-data')
+        if (!response.ok) {
+          console.error('Failed to fetch OAuth data:', response.statusText)
+          return
+        }
+        
+        const data = await response.json()
+        const sections = data.sections || []
+        
+        // Determine role based on permissions
+        const hasEventsAccess = sections.some((s: any) => s.upgrades.events)
+        const hasProgrammeAccess = sections.some((s: any) => s.upgrades.programme)
+        
+        // Role heuristic: events + programme = standard, events only = readonly
+        const role = hasEventsAccess && hasProgrammeAccess ? 'standard' : 'readonly'
+        setUserRole(role)
 
-      // Transform OAuth sections to store format
-      const sections = session.sections.map((s) => ({
-        sectionId: String(s.section_id),
-        sectionName: s.section_name,
-        sectionType: s.section_type,
-      }))
-      setAvailableSections(sections)
+        // Transform OAuth sections to store format
+        const storeSections = sections.map((s: any) => ({
+          sectionId: String(s.section_id),
+          sectionName: s.section_name,
+          sectionType: s.section_type,
+        }))
+        setAvailableSections(storeSections)
+      } catch (error) {
+        console.error('Error fetching OAuth data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [session, status, setUserRole, setAvailableSections])
+
+    fetchSections()
+  }, [session, status, loading, setUserRole, setAvailableSections])
 
   return null
 }

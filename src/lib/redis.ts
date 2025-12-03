@@ -72,6 +72,13 @@ export const CIRCUIT_BREAKER_KEYS = {
 } as const
 
 /**
+ * OAuth Data Keys
+ */
+export function getOAuthDataKey(userId: string): string {
+  return `oauth:${userId}:data`
+}
+
+/**
  * Cache Keys Helper
  */
 export function getCacheKey(path: string, params?: Record<string, string>): string {
@@ -189,6 +196,39 @@ export async function setCachedResponse(
 ): Promise<void> {
   const client = getRedisClient()
   await client.setex(cacheKey, ttl, data)
+}
+
+/**
+ * Store OAuth resource data in Redis
+ * @param userId User ID from OAuth provider
+ * @param data OAuth resource data (sections, scopes, etc.)
+ * @param ttl Time to live in seconds (default: 24 hours)
+ */
+export async function setOAuthData(
+  userId: string,
+  data: any,
+  ttl: number = 86400
+): Promise<void> {
+  const client = getRedisClient()
+  const key = getOAuthDataKey(userId)
+  await client.setex(key, ttl, JSON.stringify(data))
+  logRedis({ event: 'oauth_data_stored', userId, ttl })
+}
+
+/**
+ * Get OAuth resource data from Redis
+ * @param userId User ID from OAuth provider
+ * @returns OAuth resource data or null if not found
+ */
+export async function getOAuthData(userId: string): Promise<any | null> {
+  const client = getRedisClient()
+  const key = getOAuthDataKey(userId)
+  const data = await client.get(key)
+  if (data) {
+    logRedis({ event: 'oauth_data_retrieved', userId })
+    return JSON.parse(data)
+  }
+  return null
 }
 
 /**

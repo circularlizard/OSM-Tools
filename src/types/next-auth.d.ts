@@ -1,8 +1,6 @@
 import 'next-auth'
 import 'next-auth/jwt'
 
-import { SimplifiedOAuthSection } from '@/lib/schemas'
-
 declare module 'next-auth' {
   /**
    * Extends the built-in session types with our custom properties
@@ -10,7 +8,7 @@ declare module 'next-auth' {
   interface Session {
     accessToken: string
     error?: string
-    sections?: SimplifiedOAuthSection[]
+    sectionIds?: number[]
     scopes?: string[]
   }
 
@@ -32,7 +30,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     accessToken?: string
     accessTokenExpires?: number
-    sections?: SimplifiedOAuthSection[]
+    sectionIds?: number[]
     scopes?: string[]
     refreshToken?: string
     error?: string

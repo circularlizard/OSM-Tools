@@ -2,6 +2,7 @@ import type { AuthOptions } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getMockUser } from '@/mocks/mockSession'
+import { setOAuthData } from './redis'
 
 /**
  * NextAuth Configuration for SEEE Expedition Dashboard
@@ -114,29 +115,34 @@ function getProviders(): AuthOptions['providers'] {
       },
       clientId: process.env.OSM_CLIENT_ID,
       clientSecret: process.env.OSM_CLIENT_SECRET,
-      profile(profile: any) {
+      async profile(profile: any) {
         console.log('[OAuth] Profile data from OSM /oauth/resource:', JSON.stringify(profile, null, 2))
         // OSM returns { status, error, data: { user_id, full_name, email, sections, ... }, meta }
         const data = profile.data || {}
+        const userId = String(data.user_id || 'unknown')
         
-        // Simplify sections to reduce JWT size - only store essential info
-        const simplifiedSections = (data.sections || []).map((s: any) => ({
-          section_name: s.section_name,
-          section_id: s.section_id,
-          group_id: s.group_id,
-          section_type: s.section_type,
-          // Only store current/recent term (not all historical terms)
-          latest_term: s.terms && s.terms.length > 0 ? s.terms[s.terms.length - 1] : null,
-          upgrades: s.upgrades,
-        }))
+        // Store full OAuth data in Redis (avoids JWT size limits)
+        // This includes all sections with full term history
+        if (userId !== 'unknown') {
+          try {
+            await setOAuthData(userId, {
+              sections: data.sections || [],
+              scopes: data.scopes || [],
+              has_parent_access: data.has_parent_access,
+              has_section_access: data.has_section_access,
+            }, 86400) // 24 hours
+          } catch (error) {
+            console.error('[OAuth] Failed to store OAuth data in Redis:', error)
+          }
+        }
         
         return {
-          id: String(data.user_id || 'unknown'),
+          id: userId,
           name: data.full_name || 'OSM User',
           email: data.email || null,
           image: data.profile_picture_url || null,
-          // Store simplified sections and scopes
-          sections: simplifiedSections,
+          // Only store section IDs in JWT to keep it small
+          sectionIds: (data.sections || []).map((s: any) => s.section_id),
           scopes: data.scopes || [],
         }
       },
@@ -152,6 +158,17 @@ export function getAuthConfig(): AuthOptions {
       // Mock authentication: skip token rotation
       if (MOCK_AUTH_ENABLED) {
         if (account && user) {
+          // For mock mode, store full sections in Redis too
+          const userId = (user as any).id
+          try {
+            await setOAuthData(userId, {
+              sections: (user as any).sections || [],
+              scopes: (user as any).scopes || [],
+            }, 86400)
+          } catch (error) {
+            console.error('[Mock Auth] Failed to store OAuth data in Redis:', error)
+          }
+          
           // Initial sign-in: set mock tokens
           return {
             ...token,
@@ -159,7 +176,7 @@ export function getAuthConfig(): AuthOptions {
             accessTokenExpires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
             refreshToken: 'mock-refresh-token',
             user,
-            sections: (user as any).sections || [],
+            sectionIds: ((user as any).sections || []).map((s: any) => s.section_id),
             scopes: (user as any).scopes || [],
           }
         }
@@ -179,8 +196,8 @@ export function getAuthConfig(): AuthOptions {
           accessTokenExpires: account.expires_at ? account.expires_at * 1000 : Date.now() + 3600 * 1000,
           refreshToken: account.refresh_token,
           user,
-          // Store OAuth resource data in JWT
-          sections: (user as any).sections || [],
+          // Store only section IDs in JWT (full data is in Redis)
+          sectionIds: (user as any).sectionIds || [],
           scopes: (user as any).scopes || [],
         }
       }
@@ -208,9 +225,9 @@ export function getAuthConfig(): AuthOptions {
       }
       session.accessToken = token.accessToken as string
       session.error = token.error as string | undefined
-      // Attach OAuth resource data to session
-      session.sections = token.sections
-      session.scopes = token.scopes
+      // Store only section IDs in session (full data fetched from Redis when needed)
+      session.sectionIds = token.sectionIds as number[] | undefined
+      session.scopes = token.scopes as string[] | undefined
 
       return session
     },
