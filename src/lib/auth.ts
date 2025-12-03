@@ -118,13 +118,25 @@ function getProviders(): AuthOptions['providers'] {
         console.log('[OAuth] Profile data from OSM /oauth/resource:', JSON.stringify(profile, null, 2))
         // OSM returns { status, error, data: { user_id, full_name, email, sections, ... }, meta }
         const data = profile.data || {}
+        
+        // Simplify sections to reduce JWT size - only store essential info
+        const simplifiedSections = (data.sections || []).map((s: any) => ({
+          section_name: s.section_name,
+          section_id: s.section_id,
+          group_id: s.group_id,
+          section_type: s.section_type,
+          // Only store current/recent term (not all historical terms)
+          latest_term: s.terms && s.terms.length > 0 ? s.terms[s.terms.length - 1] : null,
+          upgrades: s.upgrades,
+        }))
+        
         return {
           id: String(data.user_id || 'unknown'),
           name: data.full_name || 'OSM User',
           email: data.email || null,
           image: data.profile_picture_url || null,
-          // Store sections and scopes for later use
-          sections: data.sections || [],
+          // Store simplified sections and scopes
+          sections: simplifiedSections,
           scopes: data.scopes || [],
         }
       },

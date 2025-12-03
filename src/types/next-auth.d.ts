@@ -1,7 +1,7 @@
 import 'next-auth'
 import 'next-auth/jwt'
 
-import { OAuthSection } from '@/lib/schemas'
+import { SimplifiedOAuthSection } from '@/lib/schemas'
 
 declare module 'next-auth' {
   /**
@@ -10,7 +10,7 @@ declare module 'next-auth' {
   interface Session {
     accessToken: string
     error?: string
-    sections?: OAuthSection[]
+    sections?: SimplifiedOAuthSection[]
     scopes?: string[]
   }
 
@@ -32,7 +32,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     accessToken?: string
     accessTokenExpires?: number
-    sections?: OAuthSection[]
+    sections?: SimplifiedOAuthSection[]
     scopes?: string[]
     refreshToken?: string
     error?: string

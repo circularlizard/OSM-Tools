@@ -43,11 +43,24 @@ export const OAuthUpgradesSchema = z.object({
 
 export const OAuthSectionSchema = z.object({
   section_name: z.string(),
-  group_name: z.string(),
+  group_name: z.string().optional(),
   section_id: z.number(),
   group_id: z.number(),
   section_type: z.string(),
   terms: z.array(OAuthTermSchema),
+  upgrades: OAuthUpgradesSchema,
+})
+
+/**
+ * Simplified OAuth Section Schema for JWT storage
+ * Only stores essential data to avoid JWT size limits
+ */
+export const SimplifiedOAuthSectionSchema = z.object({
+  section_name: z.string(),
+  section_id: z.number(),
+  group_id: z.number(),
+  section_type: z.string(),
+  latest_term: OAuthTermSchema.nullable(),
   upgrades: OAuthUpgradesSchema,
 })
 
@@ -72,6 +85,7 @@ export const OAuthResourceSchema = z.object({
 export type OAuthTerm = z.infer<typeof OAuthTermSchema>
 export type OAuthUpgrades = z.infer<typeof OAuthUpgradesSchema>
 export type OAuthSection = z.infer<typeof OAuthSectionSchema>
+export type SimplifiedOAuthSection = z.infer<typeof SimplifiedOAuthSectionSchema>
 export type OAuthResourceData = z.infer<typeof OAuthResourceDataSchema>
 export type OAuthResource = z.infer<typeof OAuthResourceSchema>
 

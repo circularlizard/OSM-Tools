@@ -1,4 +1,4 @@
-import { OAuthSection } from '@/lib/schemas'
+import { SimplifiedOAuthSection } from '@/lib/schemas'
 
 /**
  * Mock Session Data for Development and CI Testing
@@ -13,7 +13,7 @@ export interface MockUser {
   email: string
   image: string | null
   role: 'admin' | 'standard' | 'readonly'
-  sections: OAuthSection[]
+  sections: SimplifiedOAuthSection[]
   scopes: string[]
 }
 
@@ -31,14 +31,10 @@ export const mockUsers: Record<string, MockUser> = {
     sections: [
       {
         section_name: 'Explorer Unit Alpha',
-        group_name: 'Mock District',
         section_id: 12345,
         group_id: 1000,
         section_type: 'explorers',
-        terms: [
-          { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1001 },
-          { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1002 },
-        ],
+        latest_term: { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1002 },
         upgrades: {
           level: 'gold',
           badges: true,
@@ -57,14 +53,10 @@ export const mockUsers: Record<string, MockUser> = {
       },
       {
         section_name: 'Scout Troop Beta',
-        group_name: 'Mock District',
         section_id: 12346,
         group_id: 1000,
         section_type: 'scouts',
-        terms: [
-          { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1003 },
-          { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1004 },
-        ],
+        latest_term: { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1004 },
         upgrades: {
           level: 'gold',
           badges: true,
@@ -93,14 +85,10 @@ export const mockUsers: Record<string, MockUser> = {
     sections: [
       {
         section_name: 'Explorer Unit Alpha',
-        group_name: 'Mock District',
         section_id: 12345,
         group_id: 1000,
         section_type: 'explorers',
-        terms: [
-          { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1001 },
-          { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1002 },
-        ],
+        latest_term: { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1002 },
         upgrades: {
           level: 'gold',
           badges: true,
@@ -129,14 +117,10 @@ export const mockUsers: Record<string, MockUser> = {
     sections: [
       {
         section_name: 'Explorer Unit Alpha',
-        group_name: 'Mock District',
         section_id: 12345,
         group_id: 1000,
         section_type: 'explorers',
-        terms: [
-          { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1001 },
-          { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1002 },
-        ],
+        latest_term: { name: 'Winter 2025', startdate: '2025-01-01', enddate: '2025-04-20', term_id: 1002 },
         upgrades: {
           level: 'bronze',
           badges: false,
@@ -165,13 +149,10 @@ export const mockUsers: Record<string, MockUser> = {
     sections: [
       {
         section_name: 'Explorer Unit Alpha',
-        group_name: 'Mock District',
         section_id: 12345,
         group_id: 1000,
         section_type: 'explorers',
-        terms: [
-          { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1001 },
-        ],
+        latest_term: { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1001 },
         upgrades: {
           level: 'gold',
           badges: true,
@@ -190,13 +171,10 @@ export const mockUsers: Record<string, MockUser> = {
       },
       {
         section_name: 'Scout Troop Beta',
-        group_name: 'Mock District',
         section_id: 12346,
         group_id: 1000,
         section_type: 'scouts',
-        terms: [
-          { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1003 },
-        ],
+        latest_term: { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1003 },
         upgrades: {
           level: 'silver',
           badges: true,
@@ -215,13 +193,10 @@ export const mockUsers: Record<string, MockUser> = {
       },
       {
         section_name: 'Network Unit Gamma',
-        group_name: 'Mock District',
         section_id: 12347,
         group_id: 1000,
         section_type: 'network',
-        terms: [
-          { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1005 },
-        ],
+        latest_term: { name: 'Autumn 2024', startdate: '2024-08-01', enddate: '2024-12-31', term_id: 1005 },
         upgrades: {
           level: 'gold',
           badges: false,
