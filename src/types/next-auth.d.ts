@@ -10,6 +10,7 @@ declare module 'next-auth' {
     error?: string
     sectionIds?: number[]
     scopes?: string[]
+    roleSelection?: 'admin' | 'standard'
   }
 
   /**
@@ -32,6 +33,7 @@ declare module 'next-auth/jwt' {
     accessTokenExpires?: number
     sectionIds?: number[]
     scopes?: string[]
+    roleSelection?: 'admin' | 'standard'
     refreshToken?: string
     error?: string
     user?: {

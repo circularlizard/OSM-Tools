@@ -5,6 +5,23 @@ import { getMockUser } from '@/mocks/mockSession'
 import { setOAuthData } from './redis'
 
 /**
+ * Role-based scope calculator
+ * Determines OAuth scopes based on selected user role
+ */
+function getScopesForRole(role: 'admin' | 'standard'): string[] {
+  if (role === 'admin') {
+    return [
+      'section:event:read',
+      'section:member:read',
+      'section:programme:read',
+      'section:flexirecord:read',
+    ]
+  }
+  // Standard viewer - minimal scope
+  return ['section:event:read']
+}
+
+/**
  * NextAuth Configuration for SEEE Expedition Dashboard
  * 
  * Authentication Strategy:
@@ -77,17 +94,21 @@ function getProviders(): AuthOptions['providers'] {
         credentials: {
           username: { label: 'Username', type: 'text', placeholder: 'admin, standard, readonly, or multiSection' },
           password: { label: 'Password', type: 'password' },
+          roleSelection: { label: 'Role Selection', type: 'text', placeholder: 'admin or standard' },
         },
         async authorize(credentials) {
           const username = credentials?.username as string
+          const roleSelection = (credentials?.roleSelection || 'standard') as 'admin' | 'standard'
           const mockUser = getMockUser(username)
+          
           return {
             id: mockUser.id,
             name: mockUser.name,
             email: mockUser.email,
             image: mockUser.image,
             sections: mockUser.sections,
-            scopes: mockUser.scopes,
+            scopes: getScopesForRole(roleSelection),
+            roleSelection,
           }
         },
       }),
@@ -104,6 +125,7 @@ function getProviders(): AuthOptions['providers'] {
       authorization: {
         url: `${OSM_OAUTH_URL}/oauth/authorize`,
         params: {
+          // Default scope - will be overridden by role selection cookie
           scope: 'section:event:read',
         },
       },
@@ -177,6 +199,7 @@ export function getAuthConfig(): AuthOptions {
             user,
             sectionIds: ((user as any).sections || []).map((s: any) => s.section_id),
             scopes: (user as any).scopes || [],
+            roleSelection: (user as any).roleSelection || 'standard',
           }
         }
         // Subsequent requests: ensure accessToken is always present
@@ -198,6 +221,7 @@ export function getAuthConfig(): AuthOptions {
           // Store only section IDs in JWT (full data is in Redis)
           sectionIds: (user as any).sectionIds || [],
           scopes: (user as any).scopes || [],
+          roleSelection: 'standard', // Default role - will be updated by session callback
         }
       }
 
@@ -227,6 +251,7 @@ export function getAuthConfig(): AuthOptions {
       // Store only section IDs in session (full data fetched from Redis when needed)
       session.sectionIds = token.sectionIds as number[] | undefined
       session.scopes = token.scopes as string[] | undefined
+      session.roleSelection = token.roleSelection as 'admin' | 'standard' | undefined
 
       return session
     },
