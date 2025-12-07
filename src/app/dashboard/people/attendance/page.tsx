@@ -49,9 +49,19 @@ export default function AttendanceByPersonPage() {
                         <div className="table-cell p-4">{p.name}</div>
                         <div className="table-cell p-4 text-muted-foreground">{p.patrolId ?? '—'}</div>
                         <div className="table-cell p-4">
-                          <ul className="list-disc pl-5 text-muted-foreground">
+                          <ul className="list-disc pl-5 text-muted-foreground space-y-1">
                             {p.events.map((e) => (
-                              <li key={`${p.memberId}-${e.id}`}>{e.name}</li>
+                              <li key={`${p.memberId}-${e.id}`}>
+                                <div className="font-medium text-foreground">{e.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {e.startDate && e.endDate ? (
+                                    <span>
+                                      {new Date(e.startDate).toLocaleDateString()} — {new Date(e.endDate).toLocaleDateString()}
+                                    </span>
+                                  ) : null}
+                                  {e.location ? <span> • {e.location}</span> : null}
+                                </div>
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -74,9 +84,19 @@ export default function AttendanceByPersonPage() {
                             <div className="table-cell p-4">{p.name}</div>
                             <div className="table-cell p-4 text-muted-foreground">{p.patrolId ?? '—'}</div>
                             <div className="table-cell p-4">
-                              <ul className="list-disc pl-5 text-muted-foreground">
+                              <ul className="list-disc pl-5 text-muted-foreground space-y-1">
                                 {p.events.map((e) => (
-                                  <li key={`${p.memberId}-${e.id}`}>{e.name}</li>
+                                  <li key={`${p.memberId}-${e.id}`}>
+                                    <div className="font-medium text-foreground">{e.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {e.startDate && e.endDate ? (
+                                        <span>
+                                          {new Date(e.startDate).toLocaleDateString()} — {new Date(e.endDate).toLocaleDateString()}
+                                        </span>
+                                      ) : null}
+                                      {e.location ? <span> • {e.location}</span> : null}
+                                    </div>
+                                  </li>
                                 ))}
                               </ul>
                             </div>
@@ -97,9 +117,19 @@ export default function AttendanceByPersonPage() {
                       </CardHeader>
                       <CardContent className="text-sm text-muted-foreground">
                         <div className="mb-2">Patrol: {p.patrolId ?? '—'}</div>
-                        <ul className="list-disc pl-5">
+                        <ul className="list-disc pl-5 space-y-1">
                           {p.events.map((e) => (
-                            <li key={`m-${p.memberId}-${e.id}`}>{e.name}</li>
+                            <li key={`m-${p.memberId}-${e.id}`}>
+                              <div className="font-medium text-foreground">{e.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {e.startDate && e.endDate ? (
+                                  <span>
+                                    {new Date(e.startDate).toLocaleDateString()} — {new Date(e.endDate).toLocaleDateString()}
+                                  </span>
+                                ) : null}
+                                {e.location ? <span> • {e.location}</span> : null}
+                              </div>
+                            </li>
                           ))}
                         </ul>
                       </CardContent>
@@ -121,9 +151,19 @@ export default function AttendanceByPersonPage() {
                           </CardHeader>
                           <CardContent className="text-sm text-muted-foreground">
                             <div className="mb-2">Patrol: {p.patrolId ?? '—'}</div>
-                            <ul className="list-disc pl-5">
+                            <ul className="list-disc pl-5 space-y-1">
                               {p.events.map((e) => (
-                                <li key={`m-${p.memberId}-${e.id}`}>{e.name}</li>
+                                <li key={`m-${p.memberId}-${e.id}`}>
+                                  <div className="font-medium text-foreground">{e.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {e.startDate && e.endDate ? (
+                                      <span>
+                                        {new Date(e.startDate).toLocaleDateString()} — {new Date(e.endDate).toLocaleDateString()}
+                                      </span>
+                                    ) : null}
+                                    {e.location ? <span> • {e.location}</span> : null}
+                                  </div>
+                                </li>
                               ))}
                             </ul>
                           </CardContent>
