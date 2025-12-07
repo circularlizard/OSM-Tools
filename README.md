@@ -63,6 +63,28 @@ The SEEE Expedition Dashboard follows consistent UI patterns across the Events L
 
 These conventions are also documented in `/.github/copilot-instructions.md` and should be followed for new views and components.
 
+## Contributing
+
+- Follow `/.github/copilot-instructions.md` for architecture, data-access, and UI standards.
+- Match table and page styles per the UI Standards above.
+- Keep OSM data read-only; all calls must go through `/api/proxy`.
+- Use Zod for data parsing, TanStack Query for server data, and Zustand for client state.
+- Prefer shadcn/ui components from `@/components/ui/*`.
+
+Before opening a PR:
+
+```bash
+npx tsc --noEmit
+npm run lint
+npm run test
+```
+
+For E2E checks (optional):
+
+```bash
+npm run test:e2e
+```
+
 ### OAuth Callback URLs
 
 The application uses **two separate OAuth providers** to request different scopes based on user role:
