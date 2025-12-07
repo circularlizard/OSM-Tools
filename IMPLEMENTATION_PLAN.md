@@ -202,44 +202,72 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
   * [x] Apply access control selectors from Phase 2.8 to ensure filtered views (selectors ready)
   * [ ] E2E (scoped to this UI): Event detail loads; header visible; participants render from summary  
   
-* [ ] **3.2 First Aid Readiness Summary (Spec 3.3):**
+* [ ] **3.2 Per‑Person Attendance View (Spec 3.2.1):**
+  * [ ] Create `/dashboard/people/attendance` route (protected)
+  * [ ] Purpose: Show each person with a list of events they’ve said “Yes” to (attending)
+  * [ ] Data source: Use hydrated summaries (`meta.event.members`) + `useEventSummaryCache` to aggregate per person across events
+  * [ ] Mapping:
+    * Build person index by `member_id`
+    * For each event summary, if `attending === 'yes'`, append event to that person’s list
+    * Include event metadata (name, date range, location) for display
+  * [ ] UI Controls:
+    * Toggle: `Single List` vs `Group by Patrol`
+    * `Single List`: Flat list of people (Name) with nested list of “Yes” events
+    * `Group by Patrol`: Top-level groups by patrol, then people + their “Yes” events
+  * [ ] UI Standards:
+    * Page padding `p-4 md:p-6`; table/card typography `text-sm`
+    * Mobile-first: cards for people on mobile, table view on desktop (hidden md:table)
+    * Use shadcn components from `@/components/ui/*`
+  * [ ] Access control: Respect selectors from 2.8.1 (Standard users see only permitted members/events)
+  * [ ] Performance: Memoize person/event aggregation; avoid O(N^2) scans on re-render
+  * [ ] E2E: View loads; toggle switches grouping; counts of “Yes” events per person match summaries
+
+* [ ] **3.3 First Aid Readiness Summary (Spec 3.3):**
   * [ ] Compute and display "X/Y Participants are First Aid Qualified" with badge/percentage
   * [ ] Decide data source: Flexi-Record vs Badge-Record (adapter pattern hooks into Phase 4)
   * [ ] Implement Tier 2 handling: missing/invalid fields degrade gracefully
   * [ ] E2E (scoped to this UI): Readiness summary renders and updates with filters
 
-* [ ] **3.3 Logistics & Metadata Display:**  
+* [ ] **3.4 Logistics & Metadata Display:**  
   * [ ] Display event logistics section (tents, transport, equipment as applicable)  
   * [ ] Implement Tier 2 Validation: corrupted logistics data shows empty cells, not crashes  
   * [ ] Support Flexi-Record logistics columns (flexible schema)  
   * [ ] E2E (scoped to this UI): Logistics render; corrupted fields show empty, not crash  
   
-* [ ] **3.4 Mobile Transformation:**  
+* [ ] **3.5 Mobile Transformation:**  
   * [x] Implement hidden md:table logic for desktop participant table  
   * [x] Build **Participant Cards** grid for mobile (Name, Patrol, First Aid status badge)  
   * [ ] Responsive event header layout for mobile  
   * [ ] E2E (scoped to this UI): Table visible on Desktop (1024px), Cards visible on Mobile (375px)  
   
-* [ ] **3.5 Flexi-Column Mapping Dialog:**  
+* [ ] **3.6 Flexi-Column Mapping Dialog:**  
   * [ ] Build Dialog to resolve ambiguous columns from getFlexiRecordStructure  
   * [ ] Allow users to map columns (e.g., "Tent Group" vs "Tents" disambiguation)  
   * [ ] Persist mapping preferences to Zustand  
   * [ ] Show/hide columns based on mapping selection  
   * [ ] E2E (scoped to this UI): Dialog opens; mapping persists; columns toggle accordingly  
   
-* [ ] **3.6 Derived State & Memoization:**  
+* [ ] **3.7 Derived State & Memoization:**  
   * [ ] Implement memoized selectors for "First Aid Readiness" stats to avoid re-renders  
   * [ ] Cache computed participant lists by Patrol/Status grouping  
   * [ ] Optimize requery behavior for large events  
   * [ ] E2E/Perf Smoke: Basic interaction remains responsive with large mock datasets  
   
-* [ ] **3.7 E2E Verification (roll-up):**  
+* [ ] **3.7.1 UI Polishing (Detail & List Views):**
+  * [ ] Align table typography and spacing across list/detail (`text-sm`, `p-4`, muted header)
+  * [ ] Match page padding (`p-4 md:p-6`) and back-link placement
+  * [ ] Render custom fields as dynamic columns on detail table (only when populated)
+  * [ ] Add bidirectional sorting indicators in headers (↑/↓)
+  * [ ] Implement column header filtering controls (inline inputs/selects for Patrol, Attendance, Age, and dynamic custom columns)
+  * [ ] Ensure Patrol ID mapping via summary cross-reference remains visible
+
+* [ ] **3.8 E2E Verification (roll-up):**  
   * [ ] Consolidate and run end-to-end scenarios across all Phase 3 UIs  
   * [ ] Verify event detail participants; First Aid summary; Unit Filter  
   * [ ] Verify access control (Standard vs Admin visibility) via 2.8.1 selectors  
   * [ ] Verify mobile/desktop responsive layout end-to-end
 
-* [ ] **3.8 E2E Catch-up (non-UI-specific):**
+* [ ] **3.9 E2E Catch-up (non-UI-specific):**
   * [ ] Implement and verify remaining login/auth E2Es from 2.8.0.4:
     * Role selection UI presence
     * Provider selection correctness (`osm-admin` vs `osm-standard`)
