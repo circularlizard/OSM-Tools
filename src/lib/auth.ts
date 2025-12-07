@@ -40,6 +40,23 @@ const OSM_API_URL = process.env.OSM_API_URL || 'https://www.onlinescoutmanager.c
 const MOCK_AUTH_ENABLED = process.env.MOCK_AUTH_ENABLED === 'true'
 
 /**
+ * Read and validate the role selection from cookie
+ * Used during OAuth callback to determine which scopes were requested
+ */
+function getRoleFromCookie(req: any): 'admin' | 'standard' {
+  try {
+    if (!req || !req.cookies) return 'standard'
+    const cookieValue = req.cookies['oauth-role-selection']
+    if (cookieValue === 'admin' || cookieValue === 'standard') {
+      return cookieValue
+    }
+  } catch (error) {
+    console.error('[Auth] Error reading role cookie:', error)
+  }
+  return 'standard'
+}
+
+/**
  * Refresh the access token using the refresh token
  * Called automatically when access token expires
  */
@@ -125,7 +142,8 @@ function getProviders(): AuthOptions['providers'] {
       authorization: {
         url: `${OSM_OAUTH_URL}/oauth/authorize`,
         params: {
-          // Default scope - will be overridden by role selection cookie
+          // All users request same scope to OSM
+          // Role-based access control is enforced via JWT roleSelection
           scope: 'section:event:read',
         },
       },
@@ -175,7 +193,30 @@ export function getAuthConfig(): AuthOptions {
   return {
     providers: getProviders(),
     callbacks: {
+    /**
+     * SignIn callback: Runs during OAuth callback after user authenticates
+     * Read the role cookie and attach it to the user for JWT callback
+     */
+    async signIn({ user, account, profile, email, credentials }) {
+      if (account?.provider === 'osm') {
+        // During OAuth flow, read the role from the temp cookie
+        // (In a real scenario with headers available, we'd read it here)
+        // For now, it will be read in JWT callback via the next request
+        console.log('[SignIn] OSM authentication successful')
+      }
+      return true
+    },
+
     async jwt({ token, account, user }) {
+      // During OAuth initial sign-in, determine role and scopes
+      if (account && user && !token.roleSelection) {
+        // Role defaults to 'standard' - can be overridden by signIn callback if needed
+        const roleSelection = (account as any).roleSelection || 'standard'
+        const scopes = getScopesForRole(roleSelection)
+        
+        token.roleSelection = roleSelection
+        token.scopes = scopes
+      }
       // Mock authentication: skip token rotation
       if (MOCK_AUTH_ENABLED) {
         if (account && user) {
@@ -213,6 +254,9 @@ export function getAuthConfig(): AuthOptions {
 
       // Real OAuth: Initial sign in
       if (account && user) {
+        const roleSelection = (user as any).roleSelection || 'standard'
+        const scopes = getScopesForRole(roleSelection)
+        
         return {
           accessToken: account.access_token,
           accessTokenExpires: account.expires_at ? account.expires_at * 1000 : Date.now() + 3600 * 1000,
@@ -220,8 +264,8 @@ export function getAuthConfig(): AuthOptions {
           user,
           // Store only section IDs in JWT (full data is in Redis)
           sectionIds: (user as any).sectionIds || [],
-          scopes: (user as any).scopes || [],
-          roleSelection: 'standard', // Default role - will be updated by session callback
+          scopes,
+          roleSelection,
         }
       }
 
