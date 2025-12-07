@@ -3,6 +3,7 @@ import { Calendar, MapPin, Users } from 'lucide-react'
 import type { Event } from '@/lib/schemas'
 import Link from 'next/link'
 import { usePrefetchEventSummary } from '@/hooks/usePrefetchEventSummary'
+import { useViewportPrefetchSummary } from '@/hooks/useViewportPrefetchSummary'
 
 interface EventCardProps {
   event: Event
@@ -14,6 +15,7 @@ interface EventCardProps {
  */
 export function EventCard({ event }: EventCardProps) {
     const prefetchSummary = usePrefetchEventSummary()
+    const viewportRef = useViewportPrefetchSummary(event.eventid)
   // Calculate total attendance (yes responses)
   const totalAttendance = event.yes
 
@@ -33,6 +35,7 @@ export function EventCard({ event }: EventCardProps) {
       className="block"
       prefetch
       onMouseEnter={() => prefetchSummary(event.eventid)}
+      ref={viewportRef as any}
     >
       <Card className="hover:shadow-lg transition-shadow cursor-pointer">
         <CardHeader>

@@ -187,8 +187,8 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
 * [ ] **3.0 Data Model Hydration (Progressive Summaries):**
   * [x] Hover-based prefetch: prefetch event summary on link hover using `usePrefetchEventSummary`
   * [x] Queue-based hydration: enqueue visible event IDs and process with limited concurrency/backoff via `useEventSummaryQueue`
-  * [ ] Viewport prefetch (optional): prefetch summaries for first N visible events via IntersectionObserver
-  * [ ] Store summary-derived participant and custom field metadata in lightweight cache (Zustand/TanStack Query)
+  * [x] Viewport prefetch: prefetch summaries for visible events via IntersectionObserver (`useViewportPrefetchSummary`)
+  * [x] Store summary-derived metadata in lightweight cache (TanStack Query) and expose access via `useEventSummaryCache`
   * [ ] Respect rate limits: rely on proxy safety layer; limit client concurrency and use conservative `staleTime/gcTime`
   * [ ] Ensure model supports future pivot reports (per person and per patrol)
   * [ ] E2E: Verify summaries are fetched and cached as navigation occurs
@@ -196,7 +196,7 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
 * [ ] **3.1 Event Detail Route & View (Spec 3.2):**  
   * [x] Create `/dashboard/events/[id]` route with auth protection  
   * [x] Implement `useEventDetail` fetching `details` + `summary` (no attendance)  
-  * [ ] Display event header: Event Name, Dates, Location, Status (from summary/details)  
+  * [x] Display event header: Event Name, Dates, Location, Status (from cached summary/details)  
   * [x] Display participant list table with columns: Name, Patrol, Role, Status, Contact (derived from summary participants)
   * [x] Implement **Unit Filter** to filter participants by Patrol/Group (distinct from later Readiness Filter)  
   * [x] Apply access control selectors from Phase 2.8 to ensure filtered views (selectors ready)

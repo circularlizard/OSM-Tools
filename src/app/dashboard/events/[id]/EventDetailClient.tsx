@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useEventDetail } from '@/hooks/useEventDetail'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useEventSummaryCache } from '@/hooks/useEventSummaryCache'
 // Using event summary for participant-related info (custom fields names live here)
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export default function EventDetailClient({ eventId }: Props) {
   const { data, isLoading, isError } = useEventDetail(eventId)
   const [unitFilter, setUnitFilter] = useState<string>('')
+  const { getSummaryById } = useEventSummaryCache()
 
   const participants = useMemo(() => {
     // The event summary includes custom fields and often a list of attendees with names
@@ -59,11 +61,7 @@ export default function EventDetailClient({ eventId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold" data-testid="event-detail-title">Event Detail</h1>
-        <p className="text-muted-foreground">ID: {eventId}</p>
-        <p className="text-muted-foreground">Attendees: {participants.length}</p>
-      </div>
+      <Header eventId={eventId} data={data} getSummaryById={getSummaryById} />
 
       <Card className="p-4">
         <div className="flex items-center justify-between gap-4">
@@ -128,6 +126,37 @@ export default function EventDetailClient({ eventId }: Props) {
           </Card>
         ))}
       </div>
+    </div>
+  )
+}
+
+function Header({
+  eventId,
+  data,
+  getSummaryById,
+}: {
+  eventId: number
+  data: any
+  getSummaryById: (id: number) => any
+}) {
+  const summary = getSummaryById(eventId) || data?.summary || {}
+  const details = data?.details || {}
+
+  // Attempt to derive header fields from summary/details with graceful fallback
+  const name = summary?.name || details?.name || `Event ${eventId}`
+  const start = summary?.startdate || details?.startdate || summary?.date || ''
+  const end = summary?.enddate || details?.enddate || ''
+  const location = summary?.location || details?.location || ''
+  const status = summary?.status || details?.approval_status || ''
+
+  const dateRange = start && end && start !== end ? `${start} - ${end}` : start || end || ''
+
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold" data-testid="event-detail-title">{name}</h1>
+      {dateRange && <p className="text-muted-foreground">{dateRange}</p>}
+      {location && <p className="text-muted-foreground">{location}</p>}
+      {status && <p className="text-muted-foreground">Status: {status}</p>}
     </div>
   )
 }

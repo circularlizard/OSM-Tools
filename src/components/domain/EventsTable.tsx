@@ -1,6 +1,7 @@
 import type { Event } from '@/lib/schemas'
 import Link from 'next/link'
 import { usePrefetchEventSummary } from '@/hooks/usePrefetchEventSummary'
+import { useViewportPrefetchSummary } from '@/hooks/useViewportPrefetchSummary'
 
 interface EventsTableProps {
   events: Event[]
@@ -41,6 +42,7 @@ export function EventsTable({ events }: EventsTableProps) {
                   className="text-primary hover:underline"
                   prefetch
                   onMouseEnter={() => prefetchSummary(event.eventid)}
+                  ref={useViewportPrefetchSummary(event.eventid) as any}
                 >
                   {event.name}
                 </Link>
