@@ -1,11 +1,21 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const useMSW = process.env.NEXT_PUBLIC_USE_MSW === 'true';
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/?callbackUrl=/dashboard");
+    }
+  }, [status, router]);
 
   if (status === "loading") {
     return (
@@ -19,19 +29,9 @@ export default function DashboardPage() {
     );
   }
 
+  // Return null while redirecting (middleware should have already redirected, but this is a safety check)
   if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-2xl">
-          <CardHeader>
-            <CardTitle>Not Authenticated</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Please sign in to access the dashboard.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   return (
