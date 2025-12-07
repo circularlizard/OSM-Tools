@@ -30,12 +30,12 @@ export default function Home() {
   }
 
   const handleSignIn = () => {
-    // Store role selection in localStorage to persist through OAuth redirect
-    localStorage.setItem('oauth-role-selection', selectedRole);
-    console.log('[Login] Stored role in localStorage:', selectedRole);
+    // Call the appropriate OAuth provider based on role selection
+    // osm-admin requests 4 scopes, osm-standard requests 1 scope
+    const provider = selectedRole === 'admin' ? 'osm-admin' : 'osm-standard';
+    console.log('[Login] Signing in with provider:', provider);
     
-    // Initiate OAuth flow
-    signIn("osm", { callbackUrl: "/dashboard?roleSelection=" + selectedRole });
+    signIn(provider, { callbackUrl: "/dashboard" });
   };
 
   return (

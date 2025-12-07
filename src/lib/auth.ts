@@ -132,63 +132,63 @@ function getProviders(req?: any): AuthOptions['providers'] {
     ]
   }
 
-  // Production: OSM OAuth provider for NextAuth v4
-  // Request all possible scopes from OSM
-  // Role-based access control is enforced at application layer via JWT roleSelection
-  const allScopes = getScopesForRole('admin').join(' ')
+  // Production: OSM OAuth providers - separate provider per role
+  // This allows different OAuth scopes to be requested based on user's role selection
+  
+  const createOAuthProvider = (role: 'admin' | 'standard') => ({
+    id: role === 'admin' ? 'osm-admin' : 'osm-standard',
+    name: `Online Scout Manager (${role === 'admin' ? 'Administrator' : 'Standard Viewer'})`,
+    type: 'oauth' as const,
+    version: '2.0',
+    authorization: {
+      url: `${OSM_OAUTH_URL}/oauth/authorize`,
+      params: {
+        scope: getScopesForRole(role).join(' '),
+      },
+    },
+    token: {
+      url: `${OSM_OAUTH_URL}/oauth/token`,
+    },
+    userinfo: {
+      url: `${OSM_OAUTH_URL}/oauth/resource`,
+    },
+    clientId: process.env.OSM_CLIENT_ID,
+    clientSecret: process.env.OSM_CLIENT_SECRET,
+    async profile(profile: any) {
+      // OSM returns { status, error, data: { user_id, full_name, email, sections, ... }, meta }
+      const data = profile.data || {}
+      const userId = String(data.user_id || 'unknown')
+      
+      // Store full OAuth data in Redis (avoids JWT size limits)
+      if (userId !== 'unknown') {
+        try {
+          await setOAuthData(userId, {
+            sections: data.sections || [],
+            scopes: data.scopes || [],
+            has_parent_access: data.has_parent_access,
+            has_section_access: data.has_section_access,
+          }, 86400) // 24 hours
+        } catch (error) {
+          console.error('[OAuth] Failed to store OAuth data in Redis:', error)
+        }
+      }
+      
+      return {
+        id: userId,
+        name: data.full_name || 'OSM User',
+        email: data.email || null,
+        image: data.profile_picture_url || null,
+        // Store section IDs and role in user object
+        sectionIds: (data.sections || []).map((s: any) => s.section_id),
+        scopes: data.scopes || [],
+        roleSelection: role, // Embed role in user profile
+      }
+    },
+  })
 
   return [
-    {
-      id: 'osm',
-      name: 'Online Scout Manager',
-      type: 'oauth',
-      version: '2.0',
-      authorization: {
-        url: `${OSM_OAUTH_URL}/oauth/authorize`,
-        params: {
-          // Request all scopes - application will filter based on roleSelection
-          scope: allScopes,
-        },
-      },
-      token: {
-        url: `${OSM_OAUTH_URL}/oauth/token`,
-      },
-      userinfo: {
-        url: `${OSM_OAUTH_URL}/oauth/resource`,
-      },
-      clientId: process.env.OSM_CLIENT_ID,
-      clientSecret: process.env.OSM_CLIENT_SECRET,
-      async profile(profile: any) {
-        // OSM returns { status, error, data: { user_id, full_name, email, sections, ... }, meta }
-        const data = profile.data || {}
-        const userId = String(data.user_id || 'unknown')
-        
-        // Store full OAuth data in Redis (avoids JWT size limits)
-        // This includes all sections with full term history
-        if (userId !== 'unknown') {
-          try {
-            await setOAuthData(userId, {
-              sections: data.sections || [],
-              scopes: data.scopes || [],
-              has_parent_access: data.has_parent_access,
-              has_section_access: data.has_section_access,
-            }, 86400) // 24 hours
-          } catch (error) {
-            console.error('[OAuth] Failed to store OAuth data in Redis:', error)
-          }
-        }
-        
-        return {
-          id: userId,
-          name: data.full_name || 'OSM User',
-          email: data.email || null,
-          image: data.profile_picture_url || null,
-          // Only store section IDs in JWT to keep it small
-          sectionIds: (data.sections || []).map((s: any) => s.section_id),
-          scopes: data.scopes || [],
-        }
-      },
-    } as any,
+    createOAuthProvider('admin') as any,
+    createOAuthProvider('standard') as any,
   ]
 }
 
@@ -217,23 +217,16 @@ export function getAuthConfig(req?: any): AuthOptions {
     },
 
     async jwt({ token, account, user, trigger }) {
-      // During OAuth initial sign-in, read role from account or default to standard
+      // During OAuth initial sign-in, read role from user profile
       if (account && user && !token.roleSelection) {
-        // Check if role was passed through the account (from OAuth state or profile)
-        const roleSelection = ((account as any).roleSelection || (user as any).roleSelection || 'standard') as 'admin' | 'standard'
+        // Role is embedded in user profile by the OAuth provider
+        const roleSelection = (user as any).roleSelection || 'standard'
         const scopes = getScopesForRole(roleSelection)
         
         token.roleSelection = roleSelection
         token.scopes = scopes
         
-        console.log(`[JWT] Storing role "${roleSelection}" with scopes: ${scopes.join(', ')}`)
-      }
-      
-      // Handle role update via trigger
-      if (trigger === 'update' && token.roleSelection) {
-        // Recalculate scopes if role changed
-        token.scopes = getScopesForRole(token.roleSelection as 'admin' | 'standard')
-        console.log(`[JWT] Updated scopes for role "${token.roleSelection}": ${(token.scopes as string[]).join(', ')}`)
+        console.log(`[JWT] Provider: ${account.provider}, Role: "${roleSelection}", Scopes: ${scopes.join(', ')}`)
       }
       // Mock authentication: skip token rotation
       if (MOCK_AUTH_ENABLED) {

@@ -43,6 +43,20 @@ npm run dev:http
 
 Visit [https://localhost:3000](https://localhost:3000) to see the app.
 
+### OAuth Callback URLs
+
+The application uses **two separate OAuth providers** to request different scopes based on user role:
+
+- **Administrator**: `https://localhost:3000/api/auth/callback/osm-admin`
+  - Scopes: `section:event:read section:member:read section:programme:read section:flexirecord:read`
+- **Standard Viewer**: `https://localhost:3000/api/auth/callback/osm-standard`
+  - Scopes: `section:event:read`
+
+**OSM OAuth Configuration Required:**
+Both callback URLs must be whitelisted in your OSM Developer Portal OAuth application settings.
+
+For production deployment, replace `localhost:3000` with your actual domain.
+
 ### Verify Redis is running
 
 ```bash

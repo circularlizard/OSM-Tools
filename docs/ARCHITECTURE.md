@@ -54,9 +54,15 @@ This document defines the technical architecture for the SEEE Expedition Dashboa
 
 ### **3.5 Login & Section Selection Flow (Req 3.1)**
 
-* **Login Flow:** At the start of the login process, the user is presented with a choice to select their intended role ("Administrator" or "Standard Viewer"). This selection dynamically determines the OAuth scopes requested during authentication.
-  * **Administrator Scopes:** `section:event:read`, `section:member:read`, `section:programme:read`, `section:flexirecord:read`.
-  * **Standard Viewer Scopes:** `section:event:read`.
+* **Login Flow:** At the start of the login process, the user is presented with a choice to select their intended role ("Administrator" or "Standard Viewer"). This selection determines which OAuth provider is used for authentication.
+  * **Implementation:** The application registers **two separate OAuth providers** with NextAuth:
+    * `osm-admin` - Requests 4 scopes: `section:event:read`, `section:member:read`, `section:programme:read`, `section:flexirecord:read`
+    * `osm-standard` - Requests 1 scope: `section:event:read`
+  * **Flow:** When user clicks "Sign in with OSM", the frontend calls `signIn('osm-admin')` or `signIn('osm-standard')` based on their role selection
+  * **OAuth Callbacks:** Each provider has a unique callback URL that must be whitelisted in OSM:
+    * Administrator: `/api/auth/callback/osm-admin`
+    * Standard Viewer: `/api/auth/callback/osm-standard`
+  * **Role Persistence:** The selected role is embedded in the user profile during OAuth callback and stored in the JWT token
 * **Section Selection:** Upon successful login and role determination, if a user has access to multiple OSM Sections, a "Section Picker" modal must interrupt the flow.
 * **Component:** A simple Card-based selection UI presented before the Dashboard loads.
 * **Persistence:** The selected `section_id` and the determined `userRole` are stored in the **Zustand Session Store** (see 4.2) to persist across reloads.

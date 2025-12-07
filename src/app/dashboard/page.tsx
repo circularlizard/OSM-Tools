@@ -1,47 +1,10 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
-  const { data: session, status, update } = useSession();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const [roleFinalized, setRoleFinalized] = useState(false);
-
-  // After OAuth callback, finalize the role selection
-  useEffect(() => {
-    const finalizeRole = async () => {
-      if (status === 'authenticated' && !roleFinalized) {
-        // Check URL params first (from OAuth callback)
-        const roleFromUrl = searchParams?.get('roleSelection');
-        // Then check localStorage (fallback)
-        const roleFromStorage = localStorage.getItem('oauth-role-selection');
-        const role = roleFromUrl || roleFromStorage || 'standard';
-
-        // If session doesn't have role yet, or role doesn't match
-        if (role && (!session?.roleSelection || session.roleSelection !== role)) {
-          console.log('[Dashboard] Finalizing role:', role);
-          
-          // Update session with role - this triggers JWT callback with trigger='update'
-          await update({ roleSelection: role });
-          
-          // Clean up
-          localStorage.removeItem('oauth-role-selection');
-          if (roleFromUrl) {
-            // Remove role from URL
-            router.replace('/dashboard');
-          }
-        }
-        
-        setRoleFinalized(true);
-      }
-    };
-
-    finalizeRole();
-  }, [status, session, roleFinalized, searchParams, router, update]);
+  const { data: session, status } = useSession();
   const useMSW = process.env.NEXT_PUBLIC_USE_MSW === 'true';
 
   if (status === "loading") {
