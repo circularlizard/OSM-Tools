@@ -134,10 +134,13 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
 
 * [ ] **2.8.0.4 E2E Verification:**
   * [x] **TEST (E2E):** Unauthenticated access to `/dashboard` and `/dashboard/events` redirects to sign-in (updated redirect matcher)
-  * [ ] **TEST (E2E):** Verify role selection UI displays on login
-  * [ ] **TEST (E2E):** Verify correct provider called based on selection
-  * [ ] **TEST (E2E):** Verify admin role gets 4 scopes, standard gets 1 scope
-  * [ ] **TEST (E2E):** Verify role selection shown in session after login
+  * [x] **TEST (E2E):** Admin access route exists and is reachable by admin (`/dashboard/admin`)
+  * [x] **TEST (E2E):** Standard user is blocked from admin (`/dashboard/admin` shows Forbidden or redirects)
+  * [x] Move remaining login-related E2Es to Phase 3 catch-up (see 3.7):
+    * Verify role selection UI displays on login
+    * Verify correct provider called based on selection
+    * Verify admin role gets 4 scopes, standard gets 1 scope
+    * Verify role selection shown in session after login
 
 **Key Learnings:**
 - NextAuth v4 providers are static and cannot be configured dynamically per-request
@@ -172,9 +175,8 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
   * [x] **TEST (Unit):** Middleware behavior validated via proxy/route tests
   
 * [ ] **2.8.1.3 E2E Verification:**  
-  * [ ] **TEST (E2E):** Verify Standard Viewer sees only assigned Patrol members
-  * [ ] **TEST (E2E):** Verify Leader sees all members in their Event
-  * [ ] **TEST (E2E):** Verify Admin sees all data across all Events/Patrols
+  * [x] Admin route guard validated (admin passes, standard blocked)
+  * [k] Move remaining visibility E2Es to Phase 3 (see 3.6) after UI exists
 
 ---
 
@@ -192,35 +194,46 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
   * [ ] Display participant list table with columns: Name, Patrol, Role, Status, Contact  
   * [ ] Implement **Unit Filter** to filter participants by Patrol/Group (distinct from later Readiness Filter)  
   * [ ] Apply access control selectors from Phase 2.8 to ensure filtered views (selectors ready)
+  * [ ] E2E (scoped to this UI): Event detail loads; access control filters applied; header visible  
   
 * [ ] **3.2 Logistics & Metadata Display:**  
   * [ ] Display event logistics section (tents, transport, equipment as applicable)  
   * [ ] Implement Tier 2 Validation: corrupted logistics data shows empty cells, not crashes  
   * [ ] Support Flexi-Record logistics columns (flexible schema)  
+  * [ ] E2E (scoped to this UI): Logistics render; corrupted fields show empty, not crash  
   
 * [ ] **3.3 Mobile Transformation:**  
   * [ ] Implement hidden md:table logic for desktop participant table  
   * [ ] Build **Participant Cards** grid for mobile (Name, Patrol, First Aid status badge)  
   * [ ] Responsive event header layout for mobile  
-  * [ ] **TEST (E2E):** Table visible on Desktop (1024px), Cards visible on Mobile (375px)  
+  * [ ] E2E (scoped to this UI): Table visible on Desktop (1024px), Cards visible on Mobile (375px)  
   
 * [ ] **3.4 Flexi-Column Mapping Dialog:**  
   * [ ] Build Dialog to resolve ambiguous columns from getFlexiRecordStructure  
   * [ ] Allow users to map columns (e.g., "Tent Group" vs "Tents" disambiguation)  
   * [ ] Persist mapping preferences to Zustand  
   * [ ] Show/hide columns based on mapping selection  
+  * [ ] E2E (scoped to this UI): Dialog opens; mapping persists; columns toggle accordingly  
   
 * [ ] **3.5 Derived State & Memoization:**  
   * [ ] Implement memoized selectors for "First Aid Readiness" stats to avoid re-renders  
   * [ ] Cache computed participant lists by Patrol/Status grouping  
   * [ ] Optimize requery behavior for large events  
+  * [ ] E2E/Perf Smoke: Basic interaction remains responsive with large mock datasets  
   
-* [ ] **3.6 E2E Verification:**  
-  * [ ] **TEST (E2E):** Verify event detail loads with correct participants  
-  * [ ] **TEST (E2E):** Verify First Aid summary displays correctly  
-  * [ ] **TEST (E2E):** Verify Unit Filter works (toggle Patrol, see rows update)  
-  * [ ] **TEST (E2E):** Verify access control: Standard Viewer sees only assigned members (Phase 2.8.1 selectors in place)  
-  * [ ] **TEST (E2E):** Verify mobile/desktop responsive layout
+* [ ] **3.6 E2E Verification (roll-up):**  
+  * [ ] Consolidate and run end-to-end scenarios across all Phase 3 UIs  
+  * [ ] Verify event detail participants; First Aid summary; Unit Filter  
+  * [ ] Verify access control (Standard vs Admin visibility) via 2.8.1 selectors  
+  * [ ] Verify mobile/desktop responsive layout end-to-end
+
+* [ ] **3.7 E2E Catch-up (non-UI-specific):**
+  * [ ] Implement and verify remaining login/auth E2Es from 2.8.0.4:
+    * Role selection UI presence
+    * Provider selection correctness (`osm-admin` vs `osm-standard`)
+    * Session `roleSelection` persistence
+    * Scope assertions (admin: 4 scopes; standard: 1 scope)
+  * [ ] Any additional cross-cutting E2Es not tied to a single UI
 
 **Note on Training Data (Deferred to Phase 7):**
 - Spec 3.4 "Readiness & Training View" requires training data source decision (Flexi-Record vs Badge-Record)
