@@ -10,6 +10,9 @@ export default function Sidebar() {
         <Link className="block px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground" href="/dashboard/events">
           Events
         </Link>
+        <Link className="block px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground" href="/dashboard/people/attendance">
+          Attendance by Person
+        </Link>
         <Link className="block px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground" href="#">
           Patrols
         </Link>
