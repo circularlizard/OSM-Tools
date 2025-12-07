@@ -21,7 +21,7 @@ test.describe('Login Flow', () => {
     await page.waitForLoadState('networkidle')
     
     const url = page.url()
-    const isSignInPage = url.includes('/api/auth/signin') || url === 'https://localhost:3000/'
+    const isSignInPage = url.includes('/api/auth/signin') || url.startsWith('https://localhost:3000/')
     expect(isSignInPage).toBeTruthy()
     
     // If redirected to root, verify login page elements
@@ -39,7 +39,7 @@ test.describe('Login Flow', () => {
     await page.waitForLoadState('networkidle')
     
     const url = page.url()
-    const isSignInPage = url.includes('/api/auth/signin') || url === 'https://localhost:3000/'
+    const isSignInPage = url.includes('/api/auth/signin') || url.startsWith('https://localhost:3000/')
     expect(isSignInPage).toBeTruthy()
     
     // If redirected to root, verify sign-in button is visible

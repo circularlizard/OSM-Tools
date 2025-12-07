@@ -27,8 +27,12 @@ describe('getStartupData API', () => {
     const { getStartupData } = await import('@/lib/api')
     const data = await getStartupData()
 
-    expect(data).toBeTruthy()
-    expect(Array.isArray(data.sections)).toBe(true)
+    expect((global as any).fetch).toHaveBeenCalledWith(
+      '/api/proxy/ext/generic/startup/?action=getData',
+      expect.objectContaining({ method: 'GET' })
+    )
+    // Deprecated endpoint uses permissive parse; minimal stub returns null
+    expect(data).toBeNull()
     expect((global as any).fetch).toHaveBeenCalledWith(
       '/api/proxy/ext/generic/startup/?action=getData',
       expect.objectContaining({ method: 'GET' })

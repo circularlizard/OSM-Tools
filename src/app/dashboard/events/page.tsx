@@ -6,6 +6,7 @@ import { EventCard } from '@/components/domain/EventCard'
 import { EventsTable } from '@/components/domain/EventsTable'
 import { AlertCircle } from 'lucide-react'
 import type { Event } from '@/lib/schemas'
+import { getFilteredEvents } from '@/store/use-store'
 
 /**
  * Events List Page
@@ -44,17 +45,27 @@ export default function EventsPage() {
   }
 
   const events = data?.items || []
+  const filteredIds = new Set(
+    getFilteredEvents(
+      events.map((e) => ({
+        eventId: String(e.eventid),
+        // Some datasets may include patrolid tying event to patrol
+        patrolId: (e as any).patrolid ? String((e as any).patrolid) : null,
+      }))
+    ).map((e) => e.eventId)
+  )
+  const visibleEvents = events.filter((e) => filteredIds.has(String(e.eventid)))
 
   return (
     <div className="p-4 md:p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Events</h1>
         <p className="text-muted-foreground mt-1">
-          {events.length} {events.length === 1 ? 'event' : 'events'} found
+          {visibleEvents.length} {visibleEvents.length === 1 ? 'event' : 'events'} found
         </p>
       </div>
 
-      {events.length === 0 ? (
+      {visibleEvents.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <p>No events found for this section.</p>
         </div>
@@ -62,14 +73,14 @@ export default function EventsPage() {
         <>
           {/* Mobile Card View */}
           <div className="md:hidden grid gap-4">
-            {events.map((event: Event) => (
+            {visibleEvents.map((event: Event) => (
               <EventCard key={event.eventid} event={event} />
             ))}
           </div>
 
           {/* Desktop Table View */}
           <div className="hidden md:block">
-            <EventsTable events={events} />
+            <EventsTable events={visibleEvents} />
           </div>
         </>
       )}

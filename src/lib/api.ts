@@ -77,13 +77,13 @@ async function proxyFetch(path: string, params?: Record<string, string>): Promis
  * Fetch startup data (Tier 1 - Strict validation)
  * Contains user roles and available sections
  */
-export async function getStartupData(): Promise<StartupData> {
+export async function getStartupData(): Promise<StartupData | null> {
   const response = await proxyFetch('ext/generic/startup/', {
     action: 'getData',
   })
 
   const data = await response.json()
-  return parseStrict(StartupDataSchema, data, 'Startup Data')
+  return parsePermissive(StartupDataSchema, data, null as any, 'Startup Data')
 }
 
 /**

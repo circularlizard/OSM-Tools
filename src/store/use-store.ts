@@ -58,6 +58,18 @@ interface ConfigState {
   flexiColumnMappings: Record<string, string>
   setFlexiColumnMappings: (mappings: Record<string, string>) => void
 
+  // Access control strategy and mappings
+  // Strategy A: Patrol-based filtering (members/events tied to patrols)
+  // Strategy B: Event-based filtering (explicit event allowlists per role)
+  accessControlStrategy: 'A' | 'B'
+  setAccessControlStrategy: (strategy: 'A' | 'B') => void
+  // Map of patrolId -> allowed (for Strategy A)
+  allowedPatrolIds: Set<string>
+  setAllowedPatrolIds: (ids: Set<string>) => void
+  // Map of eventId -> allowed (for Strategy B)
+  allowedEventIds: Set<string>
+  setAllowedEventIds: (ids: Set<string>) => void
+
   // Configuration loaded flag
   configLoaded: boolean
   setConfigLoaded: (loaded: boolean) => void
@@ -125,6 +137,13 @@ export const useStore = create<StoreState>()(
       flexiColumnMappings: {},
       setFlexiColumnMappings: (mappings) => set({ flexiColumnMappings: mappings }),
 
+      accessControlStrategy: 'A',
+      setAccessControlStrategy: (strategy) => set({ accessControlStrategy: strategy }),
+      allowedPatrolIds: new Set<string>(),
+      setAllowedPatrolIds: (ids) => set({ allowedPatrolIds: ids }),
+      allowedEventIds: new Set<string>(),
+      setAllowedEventIds: (ids) => set({ allowedEventIds: ids }),
+
       configLoaded: false,
       setConfigLoaded: (loaded) => set({ configLoaded: loaded }),
 
@@ -132,6 +151,9 @@ export const useStore = create<StoreState>()(
         set({
           badgeMappings: {},
           flexiColumnMappings: {},
+          accessControlStrategy: 'A',
+          allowedPatrolIds: new Set<string>(),
+          allowedEventIds: new Set<string>(),
           configLoaded: false,
         }),
 
@@ -145,6 +167,9 @@ export const useStore = create<StoreState>()(
       partialize: (state) => ({
         currentSection: state.currentSection,
         userRole: state.userRole,
+        accessControlStrategy: state.accessControlStrategy,
+        allowedPatrolIds: state.allowedPatrolIds,
+        allowedEventIds: state.allowedEventIds,
         theme: state.theme,
       }),
     }
@@ -160,3 +185,57 @@ export const useUserRole = () => useStore((state) => state.userRole)
 export const useTheme = () => useStore((state) => state.theme)
 export const useBadgeMappings = () => useStore((state) => state.badgeMappings)
 export const useFlexiColumnMappings = () => useStore((state) => state.flexiColumnMappings)
+
+/**
+ * Access Control Selectors (Phase 2.8.1)
+ *
+ * These helpers filter domain arrays based on `userRole` and configured
+ * Strategy A/B plus allowed IDs. Admin role bypasses filters.
+ */
+
+type Member = {
+  memberId: string
+  patrolId?: string | null
+}
+
+type EventSummary = {
+  eventId: string
+  patrolId?: string | null
+}
+
+type LogisticsItem = {
+  id: string
+  eventId?: string | null
+  patrolId?: string | null
+}
+
+export function getFilteredMembers(members: Member[]): Member[] {
+  const { userRole, accessControlStrategy, allowedPatrolIds } = useStore.getState()
+  if (!userRole || userRole === 'admin') return members
+
+  if (accessControlStrategy === 'A') {
+    return members.filter((m) => !m.patrolId || allowedPatrolIds.has(m.patrolId))
+  }
+  // Strategy B does not constrain members directly
+  return members
+}
+
+export function getFilteredEvents(events: EventSummary[]): EventSummary[] {
+  const { userRole, accessControlStrategy, allowedPatrolIds, allowedEventIds } = useStore.getState()
+  if (!userRole || userRole === 'admin') return events
+
+  if (accessControlStrategy === 'A') {
+    return events.filter((e) => !e.patrolId || allowedPatrolIds.has(e.patrolId))
+  }
+  return events.filter((e) => allowedEventIds.has(e.eventId))
+}
+
+export function getFilteredLogistics(items: LogisticsItem[]): LogisticsItem[] {
+  const { userRole, accessControlStrategy, allowedPatrolIds, allowedEventIds } = useStore.getState()
+  if (!userRole || userRole === 'admin') return items
+
+  if (accessControlStrategy === 'A') {
+    return items.filter((i) => !i.patrolId || allowedPatrolIds.has(i.patrolId))
+  }
+  return items.filter((i) => (i.eventId ? allowedEventIds.has(i.eventId) : true))
+}

@@ -3,12 +3,19 @@ import Home from '@/app/page'
 
 jest.mock('next-auth/react', () => ({
   signIn: jest.fn(() => Promise.resolve(undefined)),
+  useSession: jest.fn(() => ({ data: null, status: 'unauthenticated' })),
 }))
 import * as nextAuthReact from 'next-auth/react'
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useSearchParams: () => ({ get: jest.fn(() => null) }),
+}))
 
 describe('Login Page', () => {
   beforeEach(() => {
     jest.spyOn(nextAuthReact, 'signIn').mockResolvedValueOnce(undefined as any)
+    jest.spyOn(nextAuthReact, 'useSession' as any).mockReturnValue({ data: null, status: 'unauthenticated' })
   })
 
   afterEach(() => {
@@ -35,8 +42,8 @@ describe('Login Page', () => {
     const spy = jest.spyOn(nextAuthReact, 'signIn').mockResolvedValueOnce(undefined as any)
     render(<Home />)
     fireEvent.click(screen.getByText('Sign in with OSM'))
-    expect(spy).toHaveBeenCalledWith('osm')
+    expect(spy).toHaveBeenCalledWith('osm-standard', expect.objectContaining({ callbackUrl: '/dashboard' }))
     fireEvent.click(screen.getByText('Dev: Mock Login'))
-    expect(spy).toHaveBeenCalledWith('credentials', { redirect: true })
+    expect(spy).toHaveBeenCalledWith('credentials', expect.objectContaining({ callbackUrl: '/dashboard' }))
   })
 })

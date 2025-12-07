@@ -21,9 +21,14 @@ describe('authConfig providers', () => {
     process.env = ORIGINAL_ENV
   })
 
-  it('uses OSM OAuth provider by default', async () => {
+  it('uses OSM OAuth provider by default (admin)', async () => {
     const { authConfig } = await import('@/lib/auth')
-    expect(authConfig.providers[0]).toHaveProperty('id', 'osm')
+    expect(authConfig.providers[0]).toHaveProperty('id', 'osm-admin')
+  })
+  it('includes standard provider with limited scope', async () => {
+    const { authConfig } = await import('@/lib/auth')
+    const ids = authConfig.providers.map((p: any) => p.id)
+    expect(ids).toContain('osm-standard')
   })
 
   it('uses credentials provider when MOCK_AUTH_ENABLED=true', async () => {

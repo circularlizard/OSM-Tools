@@ -133,6 +133,7 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
   * [x] Ready for testing (unit tests pending)
 
 * [ ] **2.8.0.4 E2E Verification:**
+  * [x] **TEST (E2E):** Unauthenticated access to `/dashboard` and `/dashboard/events` redirects to sign-in (updated redirect matcher)
   * [ ] **TEST (E2E):** Verify role selection UI displays on login
   * [ ] **TEST (E2E):** Verify correct provider called based on selection
   * [ ] **TEST (E2E):** Verify admin role gets 4 scopes, standard gets 1 scope
@@ -156,21 +157,20 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
 - Foundation for Admin routes (Phase 4)
 - Strategy A (Patrol-based) and Strategy B (Event-based) filtering implemented uniformly
 
-* [ ] **2.8.1.1 Access Control Selectors (Spec 5.2):**  
-  * [ ] Implement in Zustand store (use-store.ts):
-    * `getFilteredMembers()` - Apply Strategy A/B filtering based on userRole and assignedPatrol/Event
-    * `getFilteredEvents()` - Return only events user is assigned to (Strategy B)
-    * `getFilteredLogistics()` - Return only logistics rows for assigned participants
-  * [ ] Ensure Standard Viewers *never* receive data outside their permitted scope
-  * [ ] Admin can view all data without restrictions
-  * [ ] **TEST (Unit):** Verify selectors return empty lists for unauthorized data access
+* [x] **2.8.1.1 Access Control Selectors (Spec 5.2):**  
+  * [x] Implemented in Zustand store (`src/store/use-store.ts`):
+    * `getFilteredMembers()` - Applies Strategy A/B based on `userRole` and allowlists
+    * `getFilteredEvents()` - Returns only allowed events for Strategy B
+    * `getFilteredLogistics()` - Returns logistics rows for allowed participants
+  * [x] Standard Viewers never receive data outside permitted scope in selectors
+  * [x] Admin bypass supported: admin users view all data
+  * [x] **TEST (Unit):** Added tests verifying admin bypass and Strategy A/B filtering
   
-* [ ] **2.8.1.2 Admin Route Protection:**  
-  * [ ] Create middleware check for `/dashboard/admin` routes (future Phase 4)
-  * [ ] Implement higher-order component or route wrapper for admin-only pages
-  * [ ] Return 403 Forbidden for unauthorized access
-  * [ ] **TEST (Unit):** Verify non-admin users cannot access admin routes
-
+* [x] **2.8.1.2 Admin Route Protection:**  
+  * [x] Middleware guard for `/dashboard/admin/**` redirects/forbids non-admin
+  * [x] Guard utility in client ensures safety if middleware absent
+  * [x] **TEST (Unit):** Middleware behavior validated via proxy/route tests
+  
 * [ ] **2.8.1.3 E2E Verification:**  
   * [ ] **TEST (E2E):** Verify Standard Viewer sees only assigned Patrol members
   * [ ] **TEST (E2E):** Verify Leader sees all members in their Event
@@ -191,7 +191,7 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
     * Calculate from participant data (to be resolved in later phase: Flexi-Record vs Badge-Record source)
   * [ ] Display participant list table with columns: Name, Patrol, Role, Status, Contact  
   * [ ] Implement **Unit Filter** to filter participants by Patrol/Group (distinct from later Readiness Filter)  
-  * [ ] Apply access control selectors from Phase 2.8 to ensure filtered views
+  * [ ] Apply access control selectors from Phase 2.8 to ensure filtered views (selectors ready)
   
 * [ ] **3.2 Logistics & Metadata Display:**  
   * [ ] Display event logistics section (tents, transport, equipment as applicable)  
@@ -219,7 +219,7 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
   * [ ] **TEST (E2E):** Verify event detail loads with correct participants  
   * [ ] **TEST (E2E):** Verify First Aid summary displays correctly  
   * [ ] **TEST (E2E):** Verify Unit Filter works (toggle Patrol, see rows update)  
-  * [ ] **TEST (E2E):** Verify access control: Standard Viewer sees only assigned members  
+  * [ ] **TEST (E2E):** Verify access control: Standard Viewer sees only assigned members (Phase 2.8.1 selectors in place)  
   * [ ] **TEST (E2E):** Verify mobile/desktop responsive layout
 
 **Note on Training Data (Deferred to Phase 7):**

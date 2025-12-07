@@ -19,6 +19,9 @@ export default function StartupInitializer() {
   const { data: session, status } = useSession()
   const setUserRole = useStore((s) => s.setUserRole)
   const setAvailableSections = useStore((s) => s.setAvailableSections)
+  const setAccessControlStrategy = useStore((s) => s.setAccessControlStrategy)
+  const setAllowedPatrolIds = useStore((s) => s.setAllowedPatrolIds)
+  const setAllowedEventIds = useStore((s) => s.setAllowedEventIds)
   const hasInitialized = useRef(false)
 
   useEffect(() => {
@@ -66,6 +69,19 @@ export default function StartupInitializer() {
           sectionType: s.section_type,
         }))
         setAvailableSections(storeSections)
+
+        // Fetch access control config (placeholder values for now)
+        try {
+          const acResp = await fetch('/api/config/access')
+          if (acResp.ok) {
+            const ac = await acResp.json()
+            setAccessControlStrategy(ac.accessControlStrategy)
+            setAllowedPatrolIds(new Set<string>(ac.allowedPatrolIds || []))
+            setAllowedEventIds(new Set<string>(ac.allowedEventIds || []))
+          }
+        } catch (e) {
+          console.warn('[StartupInitializer] Failed to fetch access control config')
+        }
       } catch (error) {
         console.error('[StartupInitializer] Error fetching OAuth data:', error)
         hasInitialized.current = false // Allow retry on error

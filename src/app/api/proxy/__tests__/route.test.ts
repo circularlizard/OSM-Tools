@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
-jest.mock('next-auth', () => ({
+jest.mock('next-auth/next', () => ({
   getServerSession: jest.fn(async () => ({ accessToken: 'test-access-token' })),
 }))
 
@@ -15,7 +15,10 @@ jest.mock('next/server', () => ({
   },
 }))
 // Mock authConfig to avoid importing ESM providers in tests
-jest.mock('@/lib/auth', () => ({ authConfig: {} }))
+jest.mock('@/lib/auth', () => ({
+  authConfig: {},
+  getAuthConfig: () => ({}),
+}))
 const { GET, POST, PUT, DELETE, PATCH } = require('../[...path]/route')
 
 // Mock redis helpers to control circuit breaker and cache behavior

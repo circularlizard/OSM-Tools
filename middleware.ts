@@ -29,6 +29,15 @@ export default async function middleware(req: NextRequest) {
       signInUrl.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(signInUrl)
     }
+
+    // Admin-only guard for /dashboard/admin/**
+    if (pathname.startsWith('/dashboard/admin')) {
+      const role = (token as any)?.roleSelection || (token as any)?.userRole
+      if (role !== 'admin') {
+        const forbiddenUrl = new URL('/forbidden', req.url)
+        return NextResponse.redirect(forbiddenUrl)
+      }
+    }
   }
 
   // Protected API routes (proxy)
