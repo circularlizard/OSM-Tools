@@ -249,21 +249,27 @@ export async function GET(
     const cachedData = await getCachedResponse(cacheKey)
 
     if (cachedData) {
-      logCache({ operation: 'hit', key: cacheKey })
-      logProxyRequest({
-        method: 'GET',
-        path,
-        status: 200,
-        duration: Date.now() - startTime,
-        cached: true,
-      })
-      return NextResponse.json(JSON.parse(cachedData), {
-        status: 200,
-        headers: {
-          'X-Cache': 'HIT',
-          'X-Upstream-URL': targetUrl,
-        },
-      })
+      try {
+        const parsed = JSON.parse(cachedData)
+        logCache({ operation: 'hit', key: cacheKey })
+        logProxyRequest({
+          method: 'GET',
+          path,
+          status: 200,
+          duration: Date.now() - startTime,
+          cached: true,
+        })
+        return NextResponse.json(parsed, {
+          status: 200,
+          headers: {
+            'X-Cache': 'HIT',
+            'X-Upstream-URL': targetUrl,
+          },
+        })
+      } catch (e) {
+        // Corrupted cache (e.g., HTML accidentally stored). Treat as miss.
+        console.warn('[Proxy] Cache parse failed, treating as MISS', e)
+      }
     }
 
     logCache({ operation: 'miss', key: cacheKey })

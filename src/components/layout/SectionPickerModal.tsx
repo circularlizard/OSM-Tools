@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/store/use-store";
 
 interface Section { sectionId: string; sectionName: string }
@@ -9,37 +10,56 @@ interface Section { sectionId: string; sectionName: string }
 export default function SectionPickerModal() {
   const sections = useStore((s) => s.availableSections);
   const currentSection = useStore((s) => s.currentSection);
-  const setCurrentSection = useStore((s) => s.setCurrentSection);
+  const selectedSections = useStore((s) => s.selectedSections);
+  const setSelectedSections = useStore((s) => s.setSelectedSections);
   const [open, setOpen] = useState(false);
+  const forcedOpen = useStore((s) => s.sectionPickerOpen);
+  const setSectionPickerOpen = useStore((s) => s.setSectionPickerOpen);
 
   useEffect(() => {
     const multiple = sections && sections.length > 1;
-    const hasSelection = !!currentSection;
-    setOpen(multiple && !hasSelection);
-  }, [sections, currentSection]);
+    const hasSingleSelection = !!currentSection;
+    const hasMultiSelection = selectedSections && selectedSections.length > 0;
+    setOpen((multiple && !(hasSingleSelection || hasMultiSelection)) || forcedOpen);
+  }, [sections, currentSection, selectedSections, forcedOpen]);
 
-  if (!sections || sections.length <= 1) return null;
-
-  const handlePick = (section: Section) => {
-    setCurrentSection({ sectionId: section.sectionId, sectionName: section.sectionName, sectionType: '' });
+  const [picked, setPicked] = useState<string[]>(selectedSections.map(s => s.sectionId));
+  const handleSave = () => {
+    const selected = sections.filter(s => picked.includes(s.sectionId)).map(s => ({...s, sectionType: '' }));
+    setSelectedSections(selected);
     setOpen(false);
+    setSectionPickerOpen(false);
   };
 
+  if (!sections || sections.length <= 1) {
+    return null;
+  }
+
   return (
-    <Dialog open={open}>
+    <Dialog open={open} onOpenChange={(o) => setSectionPickerOpen(o)}>
       <DialogContent aria-describedby="section-picker-description">
         <DialogHeader>
           <DialogTitle>Select a Section</DialogTitle>
         </DialogHeader>
         <p id="section-picker-description" className="text-sm text-[var(--muted-foreground)]">
-          Choose which section to view. You can change this later from the header.
+          Choose one or more sections to view. You can change this later from the header.
         </p>
-        <div className="grid grid-cols-1 gap-2 mt-3">
+        <div className="grid grid-cols-1 gap-3 mt-3">
           {sections.map((s: Section) => (
-            <Button key={s.sectionId} variant={currentSection?.sectionId === s.sectionId ? "default" : "secondary"} onClick={() => handlePick(s)}>
-              {s.sectionName}
-            </Button>
+            <label key={s.sectionId} className="flex items-center gap-3 p-2 border rounded-md cursor-pointer">
+              <Checkbox
+                checked={picked.includes(s.sectionId)}
+                onCheckedChange={() => {
+                  setPicked((prev) => prev.includes(s.sectionId) ? prev.filter(x => x !== s.sectionId) : [...prev, s.sectionId]);
+                }}
+              />
+              <span>{s.sectionName}</span>
+            </label>
           ))}
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="secondary" onClick={() => setSectionPickerOpen(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={picked.length === 0}>Save</Button>
         </div>
       </DialogContent>
     </Dialog>

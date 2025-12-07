@@ -33,6 +33,10 @@ interface SessionState {
   currentSection: Section | null
   setCurrentSection: (section: Section | null) => void
 
+  // Multiple selected sections
+  selectedSections: Section[]
+  setSelectedSections: (sections: Section[]) => void
+
   // User role (determined from startup data)
   userRole: UserRole | null
   setUserRole: (role: UserRole | null) => void
@@ -43,6 +47,10 @@ interface SessionState {
 
   // Clear all session data (for logout)
   clearSession: () => void
+
+  // UI control to force-open Section Picker
+  sectionPickerOpen: boolean
+  setSectionPickerOpen: (open: boolean) => void
 }
 
 /**
@@ -117,6 +125,9 @@ export const useStore = create<StoreState>()(
       currentSection: null,
       setCurrentSection: (section) => set({ currentSection: section }),
 
+      selectedSections: [],
+      setSelectedSections: (sections) => set({ selectedSections: sections }),
+
       userRole: null,
       setUserRole: (role) => set({ userRole: role }),
 
@@ -126,9 +137,14 @@ export const useStore = create<StoreState>()(
       clearSession: () =>
         set({
           currentSection: null,
+          selectedSections: [],
           userRole: null,
           availableSections: [],
         }),
+
+      // UI control
+      sectionPickerOpen: false,
+      setSectionPickerOpen: (open) => set({ sectionPickerOpen: open }),
 
       // Configuration State
       badgeMappings: {},
@@ -166,11 +182,13 @@ export const useStore = create<StoreState>()(
       // Only persist session and theme, not configuration (config comes from Redis)
       partialize: (state) => ({
         currentSection: state.currentSection,
+        selectedSections: state.selectedSections,
         userRole: state.userRole,
         accessControlStrategy: state.accessControlStrategy,
         allowedPatrolIds: state.allowedPatrolIds,
         allowedEventIds: state.allowedEventIds,
         theme: state.theme,
+        sectionPickerOpen: state.sectionPickerOpen,
       }),
     }
   )

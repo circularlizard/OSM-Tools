@@ -19,6 +19,7 @@ export default function StartupInitializer() {
   const { data: session, status } = useSession()
   const setUserRole = useStore((s) => s.setUserRole)
   const setAvailableSections = useStore((s) => s.setAvailableSections)
+  const setCurrentSection = useStore((s) => s.setCurrentSection)
   const setAccessControlStrategy = useStore((s) => s.setAccessControlStrategy)
   const setAllowedPatrolIds = useStore((s) => s.setAllowedPatrolIds)
   const setAllowedEventIds = useStore((s) => s.setAllowedEventIds)
@@ -69,6 +70,15 @@ export default function StartupInitializer() {
           sectionType: s.section_type,
         }))
         setAvailableSections(storeSections)
+
+        // Auto-select when exactly one section is available and none selected yet
+        if (storeSections.length === 1) {
+          setCurrentSection({
+            sectionId: storeSections[0].sectionId,
+            sectionName: storeSections[0].sectionName,
+            sectionType: storeSections[0].sectionType,
+          })
+        }
 
         // Fetch access control config (placeholder values for now)
         try {

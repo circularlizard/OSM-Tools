@@ -1,6 +1,8 @@
 "use client";
 import { useStore } from "@/store/use-store";
+import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +14,18 @@ import { signOut } from "next-auth/react";
 
 export default function Header() {
   const currentSection = useStore((s) => s.currentSection);
+  const setSectionPickerOpen = useStore((s) => s.setSectionPickerOpen);
   const selectedSectionName = currentSection?.sectionName ?? null;
+  const { data: session } = useSession();
+  const initials = (() => {
+    const name = session?.user?.name || '';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 0) return 'SU';
+    const first = parts[0]?.[0] || '';
+    const last = parts.length > 1 ? parts[parts.length - 1]?.[0] || '' : '';
+    const value = (first + last).toUpperCase();
+    return value || 'SU';
+  })();
   return (
     <header className="w-full border-b bg-background">
       <div className="px-4 h-14 flex items-center justify-between">
@@ -22,12 +35,20 @@ export default function Header() {
           {selectedSectionName && (
             <span className="text-sm text-muted-foreground">• {selectedSectionName}</span>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-2"
+            onClick={() => setSectionPickerOpen(true)}
+          >
+            Change Section
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger className="rounded-full focus:outline-none" aria-label="User menu">
               <Avatar className="h-8 w-8">
-                <AvatarFallback>SU</AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

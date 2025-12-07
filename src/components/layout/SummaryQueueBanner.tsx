@@ -3,13 +3,16 @@
 import { useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { useEvents } from '@/hooks/useEvents'
+import { useCurrentSection } from '@/store/use-store'
 
 export default function SummaryQueueBanner() {
   const qc = useQueryClient()
+  const currentSection = useCurrentSection()
+  const { data } = useEvents()
 
   const { total, completed, pending } = useMemo(() => {
-    const allEventListQuery = qc.getQueryCache().find({ queryKey: ['events'] })
-    const events = (allEventListQuery?.state.data as any[]) ?? []
+    const events = (data?.items as any[]) ?? []
     const eventIds = events.map((e) => Number(e?.eventid)).filter(Boolean)
 
     const summaries = qc.getQueryCache().findAll({ queryKey: ['event-summary'] })
@@ -23,6 +26,13 @@ export default function SummaryQueueBanner() {
     const total = eventIds.length
     const pending = Math.max(total - completed, 0)
     return { total, completed, pending }
+  }, [qc, data])
+
+  const loadingCount = useMemo(() => {
+    const loading = qc.getQueryCache()
+      .findAll({ queryKey: ['event-summary'] })
+      .filter((q) => q.state.status === 'loading').length
+    return loading
   }, [qc])
 
   const isComplete = total > 0 && pending === 0
@@ -34,12 +44,22 @@ export default function SummaryQueueBanner() {
         isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
       )}
     >
-      <span>
-        Event summaries: {completed}/{total} completed
-      </span>
-      <span>
-        Queue pending: {pending}
-      </span>
+      <div className="flex items-center gap-2">
+        {!isComplete && (
+          <span className="inline-block h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-label="Loading" />
+        )}
+        <span>
+          {currentSection?.sectionName ? (
+            <>Event summaries: {completed}/{total} completed</>
+          ) : (
+            <>Select a section to start hydration</>
+          )}
+        </span>
+      </div>
+      <div className="flex items-center gap-4">
+        <span>Pending: {pending}</span>
+        {loadingCount > 0 && <span>Fetching: {loadingCount}</span>}
+      </div>
     </div>
   )
 }
