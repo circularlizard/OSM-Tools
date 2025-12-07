@@ -30,8 +30,12 @@ export default function Home() {
   }
 
   const handleSignIn = () => {
-    document.cookie = `oauth-role-selection=${selectedRole}; path=/; samesite=lax`;
-    signIn("osm", { callbackUrl: "/dashboard" });
+    // Store role selection in localStorage to persist through OAuth redirect
+    localStorage.setItem('oauth-role-selection', selectedRole);
+    console.log('[Login] Stored role in localStorage:', selectedRole);
+    
+    // Initiate OAuth flow
+    signIn("osm", { callbackUrl: "/dashboard?roleSelection=" + selectedRole });
   };
 
   return (

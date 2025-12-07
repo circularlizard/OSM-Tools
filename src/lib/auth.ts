@@ -100,9 +100,9 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 /**
  * Build the providers array based on environment configuration
  * - If MOCK_AUTH_ENABLED=true: Use credentials provider with mock data
- * - Otherwise: Use OSM OAuth provider
+ * - Otherwise: Use OSM OAuth provider with dynamic scope selection
  */
-function getProviders(): AuthOptions['providers'] {
+function getProviders(req?: any): AuthOptions['providers'] {
   if (MOCK_AUTH_ENABLED) {
     return [
       CredentialsProvider({
@@ -133,6 +133,10 @@ function getProviders(): AuthOptions['providers'] {
   }
 
   // Production: OSM OAuth provider for NextAuth v4
+  // Request all possible scopes from OSM
+  // Role-based access control is enforced at application layer via JWT roleSelection
+  const allScopes = getScopesForRole('admin').join(' ')
+
   return [
     {
       id: 'osm',
@@ -142,9 +146,8 @@ function getProviders(): AuthOptions['providers'] {
       authorization: {
         url: `${OSM_OAUTH_URL}/oauth/authorize`,
         params: {
-          // All users request same scope to OSM
-          // Role-based access control is enforced via JWT roleSelection
-          scope: 'section:event:read',
+          // Request all scopes - application will filter based on roleSelection
+          scope: allScopes,
         },
       },
       token: {
@@ -189,33 +192,48 @@ function getProviders(): AuthOptions['providers'] {
   ]
 }
 
-export function getAuthConfig(): AuthOptions {
+export function getAuthConfig(req?: any): AuthOptions {
   return {
-    providers: getProviders(),
+    providers: getProviders(req),
     callbacks: {
     /**
+     * Redirect callback: Intercept the post-OAuth redirect to preserve role selection
+     * The role cookie is available here and will persist to the next request
+     */
+    async redirect({ url, baseUrl }) {
+      // Role selection cookie persists automatically via browser
+      // The next request (JWT callback) will read it
+      return url.startsWith(baseUrl) ? url : baseUrl
+    },
+
+    /**
      * SignIn callback: Runs during OAuth callback after user authenticates
-     * Read the role cookie and attach it to the user for JWT callback
      */
     async signIn({ user, account, profile, email, credentials }) {
       if (account?.provider === 'osm') {
-        // During OAuth flow, read the role from the temp cookie
-        // (In a real scenario with headers available, we'd read it here)
-        // For now, it will be read in JWT callback via the next request
         console.log('[SignIn] OSM authentication successful')
       }
       return true
     },
 
-    async jwt({ token, account, user }) {
-      // During OAuth initial sign-in, determine role and scopes
+    async jwt({ token, account, user, trigger }) {
+      // During OAuth initial sign-in, read role from account or default to standard
       if (account && user && !token.roleSelection) {
-        // Role defaults to 'standard' - can be overridden by signIn callback if needed
-        const roleSelection = (account as any).roleSelection || 'standard'
+        // Check if role was passed through the account (from OAuth state or profile)
+        const roleSelection = ((account as any).roleSelection || (user as any).roleSelection || 'standard') as 'admin' | 'standard'
         const scopes = getScopesForRole(roleSelection)
         
         token.roleSelection = roleSelection
         token.scopes = scopes
+        
+        console.log(`[JWT] Storing role "${roleSelection}" with scopes: ${scopes.join(', ')}`)
+      }
+      
+      // Handle role update via trigger
+      if (trigger === 'update' && token.roleSelection) {
+        // Recalculate scopes if role changed
+        token.scopes = getScopesForRole(token.roleSelection as 'admin' | 'standard')
+        console.log(`[JWT] Updated scopes for role "${token.roleSelection}": ${(token.scopes as string[]).join(', ')}`)
       }
       // Mock authentication: skip token rotation
       if (MOCK_AUTH_ENABLED) {

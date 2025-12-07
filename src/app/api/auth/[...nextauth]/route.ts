@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth'
-import { getAuthConfig } from '@/lib/auth'
+import { authConfig } from '@/lib/auth'
 
 /**
  * NextAuth.js Route Handler
@@ -12,9 +12,11 @@ import { getAuthConfig } from '@/lib/auth'
  * - GET /api/auth/providers - Get available providers
  * - GET /api/auth/csrf - Get CSRF token
  * 
- * The configuration is imported from src/lib/auth.ts
+ * Note: Dynamic scope selection based on cookies is not fully supported
+ * in NextAuth v4 with App Router. The role selection will be enforced
+ * at the application layer via JWT token roleSelection field.
  */
 
-const handler = NextAuth(getAuthConfig())
+const handler = NextAuth(authConfig)
 
 export { handler as GET, handler as POST }
