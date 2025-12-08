@@ -97,14 +97,25 @@ export default function StartupInitializer() {
           })
         }
 
-        // Force-open the Section Picker if there are MULTIPLE sections and none are selected yet.
-        // Single-section users are auto-selected above and don't need the picker.
+        // Force-open the Section Picker if there are MULTIPLE sections and no VALID selection.
+        // A persisted section from localStorage might be stale (user no longer has access to it).
         const state = useStore.getState()
-        const noneSelected = !state.currentSection && (!state.selectedSections || state.selectedSections.length === 0)
-        if (storeSections.length > 1 && noneSelected) {
+        const sectionIds = new Set(storeSections.map((s: { sectionId: string }) => s.sectionId))
+        
+        // Check if persisted currentSection is still valid (exists in available sections)
+        const currentSectionValid = state.currentSection && sectionIds.has(state.currentSection.sectionId)
+        
+        // Check if any persisted selectedSections are still valid
+        const selectedSectionsValid = state.selectedSections && 
+          state.selectedSections.length > 0 &&
+          state.selectedSections.some(s => sectionIds.has(s.sectionId))
+        
+        const hasValidSelection = currentSectionValid || selectedSectionsValid
+        
+        if (storeSections.length > 1 && !hasValidSelection) {
           setSectionPickerOpen(true)
           if (process.env.NODE_ENV !== 'production') {
-            console.debug('[StartupInitializer] Forcing Section Picker open on login (multiple sections available, none selected)')
+            console.debug('[StartupInitializer] Forcing Section Picker open (multiple sections, no valid selection)')
           }
         }
 

@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useEventSummaryCache } from '@/hooks/useEventSummaryCache'
+import { useMemo, useSyncExternalStore } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface EventMeta {
   id: number
@@ -16,35 +16,71 @@ interface PersonAttendance {
   events: EventMeta[]
 }
 
-/** Summary shape from event-summary cache */
+/** 
+ * Summary shape from event-summary cache
+ * Matches the actual OSM API response structure
+ */
+interface EventSummaryMember {
+  scoutid?: number
+  member_id?: number  // fallback
+  attending?: string
+  patrol_id?: number | null
+  member?: { 
+    firstname?: string
+    lastname?: string
+    forename?: string  // fallback
+    surname?: string   // fallback
+  }
+}
+
 interface EventSummary {
   meta?: {
     event?: {
-      id?: number
+      eventid?: number
+      id?: number  // fallback
       name?: string
       startdate?: string
       enddate?: string
       location?: string
-      members?: Array<{
-        member_id?: number
-        attending?: string
-        patrol_id?: number | null
-        member?: { forename?: string; surname?: string }
-      }>
+      members?: EventSummaryMember[]
     }
   }
 }
 
+/**
+ * Hook to aggregate per-person attendance from cached event summaries.
+ * Uses useSyncExternalStore to react to TanStack Query cache changes.
+ */
 export function usePerPersonAttendance() {
-  const { getAllSummaries } = useEventSummaryCache()
+  const qc = useQueryClient()
+  
+  // Subscribe to cache changes for reactivity
+  const cacheVersion = useSyncExternalStore(
+    (onStoreChange) => {
+      const unsubscribe = qc.getQueryCache().subscribe(onStoreChange)
+      return unsubscribe
+    },
+    () => {
+      // Return a version string based on event-summary queries
+      const queries = qc.getQueryCache().findAll({ queryKey: ['event-summary'] })
+      return queries.map(q => `${q.queryKey[1]}-${q.state.dataUpdatedAt}`).join(',')
+    },
+    () => '' // Server snapshot
+  )
 
   const data: PersonAttendance[] = useMemo(() => {
-    const summaries = (getAllSummaries?.() ?? []) as EventSummary[]
+    const queries = qc.getQueryCache().findAll({ queryKey: ['event-summary'] })
+    const summaries = queries
+      .map((q) => q.state.data as EventSummary | undefined)
+      .filter((s): s is EventSummary => Boolean(s))
+    
     const personMap = new Map<number, PersonAttendance>()
 
     for (const summary of summaries) {
-      const evId = summary?.meta?.event?.id
+      // Support both 'eventid' (actual API) and 'id' (fallback)
+      const evId = summary?.meta?.event?.eventid ?? summary?.meta?.event?.id
       if (evId === undefined) continue
+      
       const evMeta: EventMeta = {
         id: evId,
         name: summary?.meta?.event?.name ?? 'Unknown Event',
@@ -56,27 +92,33 @@ export function usePerPersonAttendance() {
       const members = summary?.meta?.event?.members ?? []
 
       for (const m of members) {
-        if (m?.attending === 'yes') {
-          const memberId = Number(m?.member_id)
-          if (!memberId) continue
+        // Case-insensitive check for "Yes" attendance
+        const isAttending = m?.attending?.toLowerCase() === 'yes'
+        if (!isAttending) continue
+        
+        // Support both 'scoutid' (actual API) and 'member_id' (fallback)
+        const memberId = Number(m?.scoutid ?? m?.member_id)
+        if (!memberId) continue
 
-          const existing = personMap.get(memberId)
-          const name = [m?.member?.forename, m?.member?.surname].filter(Boolean).join(' ') || `Member ${memberId}`
-          const patrolId = m?.patrol_id ?? null
+        const existing = personMap.get(memberId)
+        // Support both firstname/lastname (actual API) and forename/surname (fallback)
+        const firstName = m?.member?.firstname ?? m?.member?.forename ?? ''
+        const lastName = m?.member?.lastname ?? m?.member?.surname ?? ''
+        const name = [firstName, lastName].filter(Boolean).join(' ') || `Member ${memberId}`
+        const patrolId = m?.patrol_id ?? null
 
-          if (existing) {
-            // Avoid duplicate event entries
-            if (!existing.events.some((e) => e.id === evMeta.id)) {
-              existing.events.push(evMeta)
-            }
-          } else {
-            personMap.set(memberId, {
-              memberId,
-              name,
-              patrolId,
-              events: evMeta.id ? [evMeta] : [],
-            })
+        if (existing) {
+          // Avoid duplicate event entries
+          if (!existing.events.some((e) => e.id === evMeta.id)) {
+            existing.events.push(evMeta)
           }
+        } else {
+          personMap.set(memberId, {
+            memberId,
+            name,
+            patrolId,
+            events: [evMeta],
+          })
         }
       }
     }
@@ -94,7 +136,7 @@ export function usePerPersonAttendance() {
     // Sort people alphabetically by name
     list.sort((a, b) => a.name.localeCompare(b.name))
     return list
-  }, [getAllSummaries])
+  }, [qc, cacheVersion]) // cacheVersion triggers re-computation when cache updates
 
   return { data }
 }
