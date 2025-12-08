@@ -1,8 +1,46 @@
-import type { AuthOptions } from 'next-auth'
+import type { AuthOptions, DefaultUser } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getMockUser } from '@/mocks/mockSession'
-import { setOAuthData } from './redis'
+import { setOAuthData, type OAuthData } from './redis'
+
+/**
+ * Extended user type with OSM-specific fields
+ */
+export interface ExtendedUser extends DefaultUser {
+  sections?: OAuthData['sections']
+  sectionIds?: number[]
+  scopes?: string[]
+  roleSelection?: 'admin' | 'standard'
+}
+
+/**
+ * OSM OAuth profile response shape
+ */
+interface OsmOAuthProfile {
+  status?: boolean
+  error?: string
+  data?: {
+    user_id?: string | number
+    full_name?: string
+    email?: string
+    profile_picture_url?: string
+    sections?: Array<{ section_id: number; section_name?: string; [key: string]: unknown }>
+    scopes?: string[]
+    has_parent_access?: boolean
+    has_section_access?: boolean
+  }
+  meta?: unknown
+}
+
+/**
+ * Section type from OSM
+ */
+interface OsmSection {
+  section_id: number
+  section_name?: string
+  [key: string]: unknown
+}
 
 /**
  * Role-based scope calculator
@@ -36,25 +74,7 @@ function getScopesForRole(role: 'admin' | 'standard'): string[] {
  */
 
 const OSM_OAUTH_URL = process.env.OSM_OAUTH_URL || 'https://www.onlinescoutmanager.co.uk/oauth'
-const OSM_API_URL = process.env.OSM_API_URL || 'https://www.onlinescoutmanager.co.uk'
 const MOCK_AUTH_ENABLED = process.env.MOCK_AUTH_ENABLED === 'true'
-
-/**
- * Read and validate the role selection from cookie
- * Used during OAuth callback to determine which scopes were requested
- */
-function getRoleFromCookie(req: any): 'admin' | 'standard' {
-  try {
-    if (!req || !req.cookies) return 'standard'
-    const cookieValue = req.cookies['oauth-role-selection']
-    if (cookieValue === 'admin' || cookieValue === 'standard') {
-      return cookieValue
-    }
-  } catch (error) {
-    console.error('[Auth] Error reading role cookie:', error)
-  }
-  return 'standard'
-}
 
 /**
  * Refresh the access token using the refresh token
@@ -102,7 +122,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
  * - If MOCK_AUTH_ENABLED=true: Use credentials provider with mock data
  * - Otherwise: Use OSM OAuth provider with dynamic scope selection
  */
-function getProviders(req?: any): AuthOptions['providers'] {
+function getProviders(): AuthOptions['providers'] {
   if (MOCK_AUTH_ENABLED) {
     return [
       CredentialsProvider({
@@ -154,7 +174,7 @@ function getProviders(req?: any): AuthOptions['providers'] {
     },
     clientId: process.env.OSM_CLIENT_ID,
     clientSecret: process.env.OSM_CLIENT_SECRET,
-    async profile(profile: any) {
+    async profile(profile: OsmOAuthProfile): Promise<ExtendedUser> {
       // OSM returns { status, error, data: { user_id, full_name, email, sections, ... }, meta }
       const data = profile.data || {}
       const userId = String(data.user_id || 'unknown')
@@ -176,10 +196,10 @@ function getProviders(req?: any): AuthOptions['providers'] {
       return {
         id: userId,
         name: data.full_name || 'OSM User',
-        email: data.email || null,
-        image: data.profile_picture_url || null,
+        email: data.email ?? null,
+        image: data.profile_picture_url ?? null,
         // Store section IDs and role in user object
-        sectionIds: (data.sections || []).map((s: any) => s.section_id),
+        sectionIds: (data.sections || []).map((s: OsmSection) => s.section_id),
         scopes: data.scopes || [],
         roleSelection: role, // Embed role in user profile
       }
@@ -187,14 +207,14 @@ function getProviders(req?: any): AuthOptions['providers'] {
   })
 
   return [
-    createOAuthProvider('admin') as any,
-    createOAuthProvider('standard') as any,
-  ]
+    createOAuthProvider('admin'),
+    createOAuthProvider('standard'),
+  ] as AuthOptions['providers']
 }
 
-export function getAuthConfig(req?: any): AuthOptions {
+export function getAuthConfig(): AuthOptions {
   return {
-    providers: getProviders(req),
+    providers: getProviders(),
     callbacks: {
     /**
      * Redirect callback: Intercept the post-OAuth redirect to preserve role selection
@@ -209,18 +229,19 @@ export function getAuthConfig(req?: any): AuthOptions {
     /**
      * SignIn callback: Runs during OAuth callback after user authenticates
      */
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ account }) {
       if (account?.provider === 'osm') {
         console.log('[SignIn] OSM authentication successful')
       }
       return true
     },
 
-    async jwt({ token, account, user, trigger }) {
+    async jwt({ token, account, user }) {
       // During OAuth initial sign-in, read role from user profile
       if (account && user && !token.roleSelection) {
         // Role is embedded in user profile by the OAuth provider
-        const roleSelection = (user as any).roleSelection || 'standard'
+        const extUser = user as ExtendedUser
+        const roleSelection = extUser.roleSelection || 'standard'
         const scopes = getScopesForRole(roleSelection)
         
         token.roleSelection = roleSelection
@@ -232,11 +253,12 @@ export function getAuthConfig(req?: any): AuthOptions {
       if (MOCK_AUTH_ENABLED) {
         if (account && user) {
           // For mock mode, store full sections in Redis too
-          const userId = (user as any).id
+          const extUser = user as ExtendedUser
+          const userId = extUser.id ?? 'unknown'
           try {
             await setOAuthData(userId, {
-              sections: (user as any).sections || [],
-              scopes: (user as any).scopes || [],
+              sections: extUser.sections || [],
+              scopes: extUser.scopes || [],
             }, 86400)
           } catch (error) {
             console.error('[Mock Auth] Failed to store OAuth data in Redis:', error)
@@ -249,9 +271,9 @@ export function getAuthConfig(req?: any): AuthOptions {
             accessTokenExpires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
             refreshToken: 'mock-refresh-token',
             user,
-            sectionIds: ((user as any).sections || []).map((s: any) => s.section_id),
-            scopes: (user as any).scopes || [],
-            roleSelection: (user as any).roleSelection || 'standard',
+            sectionIds: (extUser.sections || []).map((s: OsmSection) => s.section_id),
+            scopes: extUser.scopes || [],
+            roleSelection: extUser.roleSelection || 'standard',
           }
         }
         // Subsequent requests: ensure accessToken is always present
@@ -265,7 +287,8 @@ export function getAuthConfig(req?: any): AuthOptions {
 
       // Real OAuth: Initial sign in
       if (account && user) {
-        const roleSelection = (user as any).roleSelection || 'standard'
+        const extUser = user as ExtendedUser
+        const roleSelection = extUser.roleSelection || 'standard'
         const scopes = getScopesForRole(roleSelection)
         
         return {
@@ -274,7 +297,7 @@ export function getAuthConfig(req?: any): AuthOptions {
           refreshToken: account.refresh_token,
           user,
           // Store only section IDs in JWT (full data is in Redis)
-          sectionIds: (user as any).sectionIds || [],
+          sectionIds: extUser.sectionIds || [],
           scopes,
           roleSelection,
         }

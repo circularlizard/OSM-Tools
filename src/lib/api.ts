@@ -83,7 +83,7 @@ export async function getStartupData(): Promise<StartupData | null> {
   })
 
   const data = await response.json()
-  return parsePermissive(StartupDataSchema, data, null as any, 'Startup Data')
+  return parsePermissive(StartupDataSchema, data, null as StartupData | null, 'Startup Data')
 }
 
 /**

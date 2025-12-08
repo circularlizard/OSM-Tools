@@ -199,6 +199,16 @@ export async function setCachedResponse(
 }
 
 /**
+ * OAuth resource data stored in Redis
+ */
+export interface OAuthData {
+  sections: Array<{ section_id: number; section_name?: string; [key: string]: unknown }>
+  scopes: string[]
+  has_parent_access?: boolean
+  has_section_access?: boolean
+}
+
+/**
  * Store OAuth resource data in Redis
  * @param userId User ID from OAuth provider
  * @param data OAuth resource data (sections, scopes, etc.)
@@ -206,7 +216,7 @@ export async function setCachedResponse(
  */
 export async function setOAuthData(
   userId: string,
-  data: any,
+  data: OAuthData,
   ttl: number = 86400
 ): Promise<void> {
   const client = getRedisClient()
@@ -220,7 +230,7 @@ export async function setOAuthData(
  * @param userId User ID from OAuth provider
  * @returns OAuth resource data or null if not found
  */
-export async function getOAuthData(userId: string): Promise<any | null> {
+export async function getOAuthData(userId: string): Promise<OAuthData | null> {
   const client = getRedisClient()
   const key = getOAuthDataKey(userId)
   const data = await client.get(key)
