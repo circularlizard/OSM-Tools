@@ -1,6 +1,6 @@
 # SEEE Expedition Dashboard: Consolidated Plan
 
-_Last updated: 2025-12-08 (Phase 2 cleanup complete)_
+_Last updated: 2025-12-08 (Phase 2 complete, Phase 3 ready)_
 
 This document integrates the project health assessment, immediate cleanup tasks, and the Phase 3+ roadmap into a single actionable plan.
 
@@ -79,6 +79,23 @@ These must be resolved to unblock CI and maintain code quality.
 - [x] `src/hooks/useQueueProcessor.ts` – wrapped in production checks, removed emojis
 - [x] `src/components/layout/ClientShell.tsx` – wrapped in production checks
 - [x] `src/components/layout/SummaryQueueBanner.tsx` – wrapped in production checks
+
+### 2.5 Build & Runtime Error Fixes
+
+- [x] Fix `unknown` type in JSX conditional (`debug/oauth/page.tsx`)
+- [x] Fix `colSpan` on div element (`people/attendance/page.tsx`)
+- [x] Fix `EventsResponse` merged type missing `identifier` field
+- [x] Fix `usePerPersonAttendance` hook invalid store selector
+- [x] Fix Zustand store type inference
+- [x] Fix `useSearchParams` Suspense boundary (Next.js 15 requirement)
+- [x] Fix setState-during-render in `EventsPage` (moved `enqueueItems` to `useEffect`)
+
+### 2.6 Testing Infrastructure
+
+- [x] Add `npm run validate` script (tscheck + lint + build)
+- [x] Add E2E console error detection tests (`tests/e2e/console-errors.spec.ts`)
+- [x] Configure Playwright with mock auth env vars
+- [x] All 10 console error tests pass (chromium + mobile)
 
 ---
 
@@ -205,13 +222,15 @@ _Deferred pending decision on training data source (Flexi-Record vs Badge-Record
    - ~~Remove unused code and debug logs~~
    - ~~Delete `useEventSummaryQueue.ts`~~
 
-2. **Short-term (stabilize foundation):**
-   - Fix Section Picker Modal bug
-   - Clean up remaining lint errors in hooks and components
-   - Add missing E2E tests for event detail
+2. **Short-term (stabilize foundation):** ✅ DONE
+   - ~~Clean up remaining lint errors in hooks and components~~
+   - ~~Add E2E console error detection tests~~
+   - ~~Fix build errors and runtime React errors~~
+   - Section Picker Modal bug (deferred to Phase 3)
 
-3. **Phase 3 delivery:**
-   - Per-Person Attendance View (3.2)
+3. **Phase 3 delivery:** ← CURRENT
+   - Section Picker Modal bug fix (3.1)
+   - Per-Person Attendance View (3.2) - route exists, needs polish
    - First Aid Readiness Summary (3.3)
    - Logistics Display (3.4)
    - Flexi-Column Mapping Dialog (3.6)
