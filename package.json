@@ -16,7 +16,8 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
     "validate:safety": "./scripts/validate-safety-layer.sh",
-    "tscheck": "tsc --noEmit 2>&1 | grep -v '.next/types/validator.ts' || true"
+    "tscheck": "tsc --noEmit 2>&1 | grep -v '.next/types/validator.ts' || true",
+    "validate": "npm run tscheck && npm run lint && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
