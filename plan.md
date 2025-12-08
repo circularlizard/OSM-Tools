@@ -1,6 +1,6 @@
 # SEEE Expedition Dashboard: Consolidated Plan
 
-_Last updated: 2025-12-08 (Phase 2 cleanup in progress)_
+_Last updated: 2025-12-08 (Phase 2 cleanup complete)_
 
 This document integrates the project health assessment, immediate cleanup tasks, and the Phase 3+ roadmap into a single actionable plan.
 
@@ -16,7 +16,7 @@ This document integrates the project health assessment, immediate cleanup tasks,
 - **New safety net in CI:** PR checklist enforcement, architectural guards (no DB imports, no direct OSM calls outside proxy), lint:arch script.
 
 ### Risks / Rough Edges
-- **Lint errors blocking CI:** ~~40+ `no-explicit-any` errors~~ Reduced to ~15 in production files; hook dependency warnings resolved.
+- **Lint errors blocking CI:** ~~40+ `no-explicit-any` errors~~ **RESOLVED** - Zero lint errors.
 - **Section Picker Modal bug:** Known issue where modal doesn't always display for multi-section users.
 - **Dashboard homepage is debug-focused:** Currently shows session dump, not a product-ready overview.
 - **Phase 3 views incomplete:** Event detail, per-person attendance, readiness summary, logistics display still to build.
@@ -43,19 +43,19 @@ These must be resolved to unblock CI and maintain code quality.
 | `src/components/domain/EventsTable.tsx` | ✅ Done | Extracted `EventTableRow`, added `EventWithSection` type |
 | Test files (`__tests__/*`) | ✅ Done | Added per-file `eslint-disable` |
 
-**Remaining (in progress):**
+**All any issues are now resolved:**
 
-| File | Issue |
-|------|-------|
-| `src/app/api/auth/oauth-data/route.ts` | `any` in response handling |
-| `src/app/api/config/access/route.ts` | `any` in config access |
-| `src/app/dashboard/admin/page.tsx` | `any` in admin data |
-| `src/app/dashboard/debug/queue/page.tsx` | `any` in queue state |
-| `src/app/dashboard/events/[id]/EventDetailClient.tsx` | `any` in event detail |
-| `src/app/dashboard/events/page.tsx` | `any` in events page |
-| `src/app/dashboard/page.tsx` | `any` in dashboard |
-| `src/components/StartupInitializer.tsx` | `any` in startup data |
-| `src/components/domain/EventCard.tsx` | `any` in event card |
+| File | Status | Notes |
+|------|--------|-------|
+| `src/app/api/auth/oauth-data/route.ts` | ✅ Done | Proper type guard for session.user.id |
+| `src/app/api/config/access/route.ts` | ✅ Done | Type assertion for session.roleSelection |
+| `src/app/dashboard/admin/page.tsx` | ✅ Done | Type assertion for roleSelection |
+| `src/app/dashboard/debug/queue/page.tsx` | ✅ Done | Event type, fixed TanStack Query status |
+| `src/app/dashboard/events/[id]/EventDetailClient.tsx` | ✅ Done | eslint-disable (handles dynamic Tier 2 data) |
+| `src/app/dashboard/events/page.tsx` | ✅ Done | Removed deleted hook, proper types |
+| `src/app/dashboard/page.tsx` | ✅ Done | Type guard for session.user.id |
+| `src/components/StartupInitializer.tsx` | ✅ Done | Added OAuthSection type |
+| `src/components/domain/EventCard.tsx` | ✅ Done | RefCallback type |
 
 ### 2.2 Fix React Hook Dependency Warnings
 
