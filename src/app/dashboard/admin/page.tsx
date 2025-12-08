@@ -5,7 +5,8 @@ import { getAuthConfig } from '@/lib/auth'
 export default async function AdminPage() {
   const authOptions = await getAuthConfig()
   const session = await getServerSession(authOptions)
-  const role = (session as any)?.roleSelection
+  // roleSelection is added to session by our JWT callback
+  const role = (session as { roleSelection?: string } | null)?.roleSelection
 
   if (role !== 'admin') {
     return (

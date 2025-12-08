@@ -34,7 +34,8 @@ export async function GET() {
       )
     }
 
-    const userId = (session.user as any).id
+    // Session user has id from NextAuth JWT callback
+    const userId = session.user && 'id' in session.user ? (session.user as { id: string }).id : undefined
     if (!userId) {
       return NextResponse.json(
         { error: 'Invalid session', message: 'User ID not found in session' },

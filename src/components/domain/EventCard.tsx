@@ -4,6 +4,7 @@ import type { Event } from '@/lib/schemas'
 import Link from 'next/link'
 import { usePrefetchEventSummary } from '@/hooks/usePrefetchEventSummary'
 import { useViewportPrefetchSummary } from '@/hooks/useViewportPrefetchSummary'
+import type { RefCallback } from 'react'
 
 interface EventCardProps {
   event: Event
@@ -35,7 +36,7 @@ export function EventCard({ event }: EventCardProps) {
       className="block"
       prefetch
       onMouseEnter={() => prefetchSummary(event.eventid)}
-      ref={viewportRef as any}
+      ref={viewportRef as RefCallback<HTMLAnchorElement>}
     >
       <Card className="hover:shadow-lg transition-shadow cursor-pointer">
         <CardHeader>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useStore } from '@/store/use-store'
 import { useEvents } from '@/hooks/useEvents'
+import type { Event } from '@/lib/schemas'
 
 export default function QueueDebugPage() {
   const qc = useQueryClient()
@@ -16,12 +17,12 @@ export default function QueueDebugPage() {
   const { data } = useEvents()
 
   const summaries = qc.getQueryCache().findAll({ queryKey: ['event-summary'] })
-  const loadingIds = summaries.filter((q) => q.state.status === 'loading').map((q) => q.queryKey?.[1])
+  const loadingIds = summaries.filter((q) => q.state.status === 'pending').map((q) => q.queryKey?.[1])
   const successIds = summaries.filter((q) => q.state.status === 'success').map((q) => q.queryKey?.[1])
 
   const handleManualEnqueue = () => {
     const items = data?.items ?? []
-    const ids = Array.from(new Set(items.map((e: any) => e.eventid)))
+    const ids = Array.from(new Set(items.map((e: Event) => Number(e.eventid))))
     enqueueItems(ids)
   }
 

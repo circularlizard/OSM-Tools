@@ -47,7 +47,7 @@ export default function DashboardPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex gap-2">
                   <span className="font-medium text-muted-foreground">User ID:</span>
-                  <span>{(session.user as any)?.id}</span>
+                  <span>{session.user && 'id' in session.user ? (session.user as { id: string }).id : 'N/A'}</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="font-medium text-muted-foreground">Name:</span>

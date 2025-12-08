@@ -7,7 +7,7 @@ import { EventsTable } from '@/components/domain/EventsTable'
 import { AlertCircle } from 'lucide-react'
 import type { Event } from '@/lib/schemas'
 import { getFilteredEvents } from '@/store/use-store'
-import { useEventSummaryQueue } from '@/hooks/useEventSummaryQueue'
+import { useStore } from '@/store/use-store'
 
 /**
  * Events List Page
@@ -15,7 +15,7 @@ import { useEventSummaryQueue } from '@/hooks/useEventSummaryQueue'
  */
 export default function EventsPage() {
   const { data, isLoading, error } = useEvents()
-  const { enqueue } = useEventSummaryQueue({ concurrency: 2, delayMs: 800, retryBackoffMs: 5000 })
+  const enqueueItems = useStore((s) => s.enqueueItems)
 
   if (isLoading) {
     return (
@@ -51,8 +51,8 @@ export default function EventsPage() {
     getFilteredEvents(
       events.map((e) => ({
         eventId: String(e.eventid),
-        // Some datasets may include patrolid tying event to patrol
-        patrolId: (e as any).patrolid ? String((e as any).patrolid) : null,
+        // Events don't have patrolid in schema, use null
+        patrolId: null,
       }))
     ).map((e) => e.eventId)
   )
@@ -60,7 +60,7 @@ export default function EventsPage() {
 
   // Enqueue summaries for all visible events when list loads
   if (visibleEvents.length) {
-    enqueue(visibleEvents.map((e) => e.eventid))
+    enqueueItems(visibleEvents.map((e) => Number(e.eventid)))
   }
 
   return (

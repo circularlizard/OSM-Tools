@@ -18,7 +18,8 @@ export async function GET() {
     // Load global config to choose strategy defaults
     const appConfig = await loadConfig()
 
-    const role = (session.user as any).roleSelection || 'readonly'
+    // roleSelection is added to session by our JWT callback
+    const role = (session as { roleSelection?: string }).roleSelection || 'readonly'
     const roleConfig = appConfig.userRoles[role] || { accessStrategy: 'all' }
 
     // Map roleConfig.accessStrategy to our store strategies

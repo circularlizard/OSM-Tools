@@ -3,6 +3,14 @@
 import { useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useStore } from '@/store/use-store'
+import type { OAuthData } from '@/lib/redis'
+
+/** Section from OAuth data with optional upgrades and terms */
+type OAuthSection = OAuthData['sections'][number] & {
+  upgrades?: { events?: boolean; programme?: boolean }
+  terms?: Array<{ term_id?: string | number }>
+  section_type?: string
+}
 
 /**
  * StartupInitializer
@@ -23,10 +31,8 @@ export default function StartupInitializer() {
   const setAccessControlStrategy = useStore((s) => s.setAccessControlStrategy)
   const setAllowedPatrolIds = useStore((s) => s.setAllowedPatrolIds)
   const setAllowedEventIds = useStore((s) => s.setAllowedEventIds)
-  const sectionPickerOpen = useStore((s) => s.sectionPickerOpen)
   const setSectionPickerOpen = useStore((s) => s.setSectionPickerOpen)
-  const currentSection = useStore((s) => s.currentSection)
-  const selectedSections = useStore((s) => s.selectedSections)
+  // currentSection and sectionPickerOpen accessed via useStore.getState() below
   const hasInitialized = useRef(false)
 
   useEffect(() => {
@@ -35,7 +41,7 @@ export default function StartupInitializer() {
       return
     }
 
-    const userId = (session.user as any).id
+    const userId = session.user && 'id' in session.user ? (session.user as { id: string }).id : undefined
     if (!userId) {
       return
     }
@@ -60,15 +66,15 @@ export default function StartupInitializer() {
         const sections = data.sections || []
         
         // Determine role based on permissions
-        const hasEventsAccess = sections.some((s: any) => s.upgrades?.events)
-        const hasProgrammeAccess = sections.some((s: any) => s.upgrades?.programme)
+        const hasEventsAccess = sections.some((s: OAuthSection) => s.upgrades?.events)
+        const hasProgrammeAccess = sections.some((s: OAuthSection) => s.upgrades?.programme)
         
         // Role heuristic: events + programme = standard, events only = readonly
         const role = hasEventsAccess && hasProgrammeAccess ? 'standard' : 'readonly'
         setUserRole(role)
 
         // Transform OAuth sections to store format
-        const storeSections = sections.map((s: any) => {
+        const storeSections = sections.map((s: OAuthSection) => {
           const terms = Array.isArray(s.terms) ? s.terms : []
           const latestTerm = terms.length > 0 ? terms[terms.length - 1] : null
           const termId = latestTerm?.term_id ? String(latestTerm.term_id) : undefined
@@ -111,7 +117,7 @@ export default function StartupInitializer() {
             setAllowedPatrolIds(new Set<string>(ac.allowedPatrolIds || []))
             setAllowedEventIds(new Set<string>(ac.allowedEventIds || []))
           }
-        } catch (e) {
+        } catch {
           console.warn('[StartupInitializer] Failed to fetch access control config')
         }
       } catch (error) {
@@ -121,7 +127,7 @@ export default function StartupInitializer() {
     }
 
     fetchSections()
-  }, [status, session, setUserRole, setAvailableSections, setCurrentSection, setSectionPickerOpen])
+  }, [status, session, setUserRole, setAvailableSections, setCurrentSection, setSectionPickerOpen, setAccessControlStrategy, setAllowedPatrolIds, setAllowedEventIds])
 
   return null
 }

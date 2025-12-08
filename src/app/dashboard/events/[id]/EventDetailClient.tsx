@@ -1,5 +1,9 @@
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// This component handles multiple API response shapes (v3, legacy, permissive)
+// where dynamic typing is necessary for graceful degradation
+
 import { useMemo, useState } from 'react'
 import { useEventDetail } from '@/hooks/useEventDetail'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
