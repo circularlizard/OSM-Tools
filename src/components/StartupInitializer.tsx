@@ -97,14 +97,14 @@ export default function StartupInitializer() {
           })
         }
 
-        // Force-open the Section Picker if there are sections and none are selected yet,
-        // even if something is cached from a previous session.
+        // Force-open the Section Picker if there are MULTIPLE sections and none are selected yet.
+        // Single-section users are auto-selected above and don't need the picker.
         const state = useStore.getState()
         const noneSelected = !state.currentSection && (!state.selectedSections || state.selectedSections.length === 0)
-        if (storeSections.length > 0 && noneSelected && !state.sectionPickerOpen) {
+        if (storeSections.length > 1 && noneSelected) {
           setSectionPickerOpen(true)
           if (process.env.NODE_ENV !== 'production') {
-            console.debug('[StartupInitializer] Forcing Section Picker open on login (sections available, none selected)')
+            console.debug('[StartupInitializer] Forcing Section Picker open on login (multiple sections available, none selected)')
           }
         }
 

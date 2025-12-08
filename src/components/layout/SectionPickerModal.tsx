@@ -20,10 +20,11 @@ export default function SectionPickerModal() {
     const multiple = sections && sections.length > 1;
     const hasSingleSelection = !!currentSection;
     const hasMultiSelection = selectedSections && selectedSections.length > 0;
+    // Open if: (multiple sections AND no selection) OR forcedOpen is true
     const shouldOpen = (multiple && !(hasSingleSelection || hasMultiSelection)) || forcedOpen;
     setOpen(shouldOpen);
     if (process.env.NODE_ENV !== 'production') {
-      console.debug('[SectionPickerModal] sections:', sections?.length ?? 0, 'currentSection:', currentSection, 'selectedSections:', selectedSections?.length ?? 0, 'forcedOpen:', forcedOpen, 'shouldOpen:', shouldOpen)
+      console.debug('[SectionPickerModal] sections:', sections?.length ?? 0, 'currentSection:', !!currentSection, 'selectedSections:', selectedSections?.length ?? 0, 'forcedOpen:', forcedOpen, 'shouldOpen:', shouldOpen)
     }
   }, [sections, currentSection, selectedSections, forcedOpen]);
 
@@ -34,18 +35,18 @@ export default function SectionPickerModal() {
 
   const [picked, setPicked] = useState<string[]>(selectedSections.map(s => s.sectionId));
   const handleSave = () => {
-    const selected = sections.filter(s => picked.includes(s.sectionId)).map(s => ({...s, sectionType: '' }));
+    const selected = (sections || []).filter(s => picked.includes(s.sectionId)).map(s => ({...s, sectionType: '' }));
     setSelectedSections(selected);
     setOpen(false);
     setSectionPickerOpen(false);
   };
 
-  if (!sections || sections.length <= 1) {
-    return null;
-  }
+  // Don't render dialog content if no sections or single section
+  // But always render the component so it can react to state changes
+  const hasMultipleSections = sections && sections.length > 1;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); setSectionPickerOpen(o); }}>
+    <Dialog open={open && hasMultipleSections} onOpenChange={(o) => { setOpen(o); setSectionPickerOpen(o); }}>
       <DialogContent aria-describedby="section-picker-description">
         <DialogHeader>
           <DialogTitle>Select a Section</DialogTitle>
@@ -54,7 +55,7 @@ export default function SectionPickerModal() {
           Choose one or more sections to view. You can change this later from the header.
         </p>
         <div className="grid grid-cols-1 gap-3 mt-3">
-          {sections.map((s: Section) => (
+          {(sections || []).map((s: Section) => (
             <label key={s.sectionId} className="flex items-center gap-3 p-2 border rounded-md cursor-pointer">
               <Checkbox
                 checked={picked.includes(s.sectionId)}
@@ -71,7 +72,7 @@ export default function SectionPickerModal() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setPicked(sections.map(s => s.sectionId))}
+              onClick={() => setPicked((sections || []).map(s => s.sectionId))}
             >
               Select All
             </Button>
