@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useStore, getFilteredMembers, getFilteredEvents, getFilteredLogistics } from '@/store/use-store'
 
 describe('Access Control Selectors', () => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen } from '@testing-library/react'
 import SectionPickerModal from '@/components/layout/SectionPickerModal'
 import { useStore } from '@/store/use-store'
