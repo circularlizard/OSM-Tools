@@ -1,6 +1,6 @@
 # SEEE Expedition Dashboard: Consolidated Plan
 
-_Last updated: 2025-12-08 (Phase 2 complete, Phase 3 ready)_
+_Last updated: 2025-12-08 (Phase 2 complete, Phase 3.2 in progress)_
 
 This document integrates the project health assessment, immediate cleanup tasks, and the Phase 3+ roadmap into a single actionable plan.
 
@@ -103,7 +103,7 @@ These must be resolved to unblock CI and maintain code quality.
 
 ### 3.1 Section Picker Modal Not Displaying
 
-**Status:** ✅ FIXED
+**Status:** ⚠️ PARTIALLY FIXED - Still not displaying on login
 
 **Root cause:** Race condition + early return
 - Modal returned `null` when `sections.length <= 1`, preventing re-render when sections loaded
@@ -113,7 +113,14 @@ These must be resolved to unblock CI and maintain code quality.
 - [x] Remove early return, control visibility via Dialog `open` prop
 - [x] Change condition to `storeSections.length > 1` (multi-section only)
 - [x] Guard against undefined sections in all array operations
+- [x] Validate persisted section against available sections
 - [x] E2E tests updated and passing (6 tests)
+
+**TODO (next session):**
+- [ ] Debug why modal still doesn't appear on login for multi-section users
+- [ ] Add console logging to trace the flow in StartupInitializer
+- [ ] Check if `setSectionPickerOpen(true)` is being called but modal not rendering
+- [ ] Verify timing: OAuth data fetch vs modal render
 
 ---
 
@@ -132,6 +139,10 @@ These must be resolved to unblock CI and maintain code quality.
 - [x] Aggregate "Yes" attendance across all events per person using hydrated summaries
 - [x] Implement toggle: Single List vs Group by Patrol
 - [x] Apply mobile-first responsive design (cards on mobile, table on desktop)
+- [x] Fix field mappings to match OSM API (eventid, scoutid, firstname/lastname)
+- [x] Fix patrol lookup from data.members (not meta.event.members)
+- [x] Add reactivity via useSyncExternalStore for cache updates
+- [x] Make patrol groups collapsible with Expand/Collapse All
 - [ ] Respect access control selectors from Phase 2.8.1 (deferred - needs type alignment)
 - [x] **E2E:** View loads; toggle switches grouping (8 tests passing)
 
