@@ -65,7 +65,7 @@ function getBaseUrl(fullUrl: string): string {
  */
 function generateHandlers() {
   const handlers = (apiMap as ApiMapEntry[]).map((entry) => {
-    const { full_url, method, mock_data_file, is_static_resource, query_params } = entry
+    const { full_url, method, mock_data_file, is_static_resource } = entry
     
     // Get the mock data for this endpoint
     const mockData = mockDataRegistry[mock_data_file]

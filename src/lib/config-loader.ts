@@ -18,7 +18,6 @@ import defaultConfig from './defaults.json'
  */
 
 const CONFIG_KEY_PREFIX = 'config:'
-const CONFIG_VERSION_KEY = `${CONFIG_KEY_PREFIX}version`
 const CONFIG_INITIALIZED_KEY = `${CONFIG_KEY_PREFIX}initialized`
 
 /**
