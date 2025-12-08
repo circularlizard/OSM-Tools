@@ -1,13 +1,13 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { useEvents } from '@/hooks/useEvents'
 import { EventsListSkeleton } from '@/components/domain/EventsListSkeleton'
 import { EventCard } from '@/components/domain/EventCard'
 import { EventsTable } from '@/components/domain/EventsTable'
 import { AlertCircle } from 'lucide-react'
 import type { Event } from '@/lib/schemas'
-import { getFilteredEvents } from '@/store/use-store'
-import { useStore } from '@/store/use-store'
+import { getFilteredEvents, useStore } from '@/store/use-store'
 
 /**
  * Events List Page
@@ -16,7 +16,34 @@ import { useStore } from '@/store/use-store'
 export default function EventsPage() {
   const { data, isLoading, error } = useEvents()
   const enqueueItems = useStore((s) => s.enqueueItems)
+  
+  // Track which event IDs we've already enqueued to avoid re-enqueueing on every render
+  const enqueuedRef = useRef<Set<number>>(new Set())
 
+  // Compute visible events (safe to do even when loading/error - will be empty array)
+  const events = data?.items || []
+  const filteredIds = new Set(
+    getFilteredEvents(
+      events.map((e) => ({
+        eventId: String(e.eventid),
+        patrolId: null,
+      }))
+    ).map((e) => e.eventId)
+  )
+  const visibleEvents = events.filter((e) => filteredIds.has(String(e.eventid)))
+
+  // Enqueue summaries for visible events (in useEffect to avoid setState during render)
+  useEffect(() => {
+    if (visibleEvents.length === 0) return
+    const ids = visibleEvents.map((e) => Number(e.eventid))
+    const newIds = ids.filter((id) => !enqueuedRef.current.has(id))
+    if (newIds.length > 0) {
+      enqueueItems(newIds)
+      newIds.forEach((id) => enqueuedRef.current.add(id))
+    }
+  }, [visibleEvents, enqueueItems])
+
+  // Early returns AFTER all hooks
   if (isLoading) {
     return (
       <div className="p-4 md:p-6">
@@ -44,23 +71,6 @@ export default function EventsPage() {
         </div>
       </div>
     )
-  }
-
-  const events = data?.items || []
-  const filteredIds = new Set(
-    getFilteredEvents(
-      events.map((e) => ({
-        eventId: String(e.eventid),
-        // Events don't have patrolid in schema, use null
-        patrolId: null,
-      }))
-    ).map((e) => e.eventId)
-  )
-  const visibleEvents = events.filter((e) => filteredIds.has(String(e.eventid)))
-
-  // Enqueue summaries for all visible events when list loads
-  if (visibleEvents.length) {
-    enqueueItems(visibleEvents.map((e) => Number(e.eventid)))
   }
 
   return (
