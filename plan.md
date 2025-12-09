@@ -152,43 +152,28 @@ These must be resolved to unblock CI and maintain code quality.
 - [ ] Respect access control selectors from Phase 2.8.1 (deferred - needs type alignment)
 - [x] **E2E:** View loads; toggle switches grouping (8 tests passing)
 
-### 3.3 First Aid Readiness Summary (Spec 3.3)
-- [ ] Compute and display "X/Y Participants are First Aid Qualified" with badge/percentage
-- [ ] Decide data source: Flexi-Record vs Badge-Record (adapter pattern hooks into Phase 4)
-- [ ] Implement Tier 2 handling: missing/invalid fields degrade gracefully
-- [ ] **E2E:** Readiness summary renders and updates with filters
+**Upcoming refinements (before 3.3):**
+- [ ] Extend grouping/sorting modes to support:
+  - [ ] Alphabetical single list by member name
+  - [ ] Alphabetical list grouped by Patrol
+  - [ ] Alphabetical list grouped by Patrol and Event
+- [ ] **E2E:** Verify grouping mode selection and sorting behaviour on desktop and mobile
 
-### 3.4 Logistics & Metadata Display
-- [ ] Display event logistics section (tents, transport, equipment)
-- [ ] Implement Tier 2 Validation: corrupted logistics data shows empty cells, not crashes
-- [ ] Support Flexi-Record logistics columns
-- [ ] **E2E:** Logistics render; corrupted fields show empty, not crash
-
-### 3.5 Mobile Transformation
+### 3.3 Mobile Transformation
 - [x] Implement `hidden md:table` logic for desktop participant table
 - [x] Build Participant Cards grid for mobile
 - [ ] Responsive event header layout for mobile
 - [ ] **E2E:** Table visible on Desktop (1024px), Cards visible on Mobile (375px)
 
-### 3.6 Flexi-Column Mapping Dialog
-- [ ] Build Dialog to resolve ambiguous columns from `getFlexiRecordStructure`
-- [ ] Allow users to map columns (e.g., "Tent Group" vs "Tents" disambiguation)
-- [ ] Persist mapping preferences to Zustand
-- [ ] **E2E:** Dialog opens; mapping persists; columns toggle accordingly
-
-### 3.7 Derived State & Memoization
-- [ ] Implement memoized selectors for "First Aid Readiness" stats
-- [ ] Cache computed participant lists by Patrol/Status grouping
-- [ ] Optimize requery behavior for large events
-
-### 3.8 UI Polishing (Detail & List Views)
+### 3.4 UI Polishing (Detail & List Views)
 - [ ] Align table typography and spacing across list/detail
 - [ ] Match page padding (`p-4 md:p-6`) and back-link placement
 - [ ] Render custom fields as dynamic columns (only when populated)
 - [ ] Add bidirectional sorting indicators in headers
 - [ ] Implement column header filtering controls
+- [ ] **E2E/Visual:** Smoke test key tables/cards for consistent typography and spacing
 
-### 3.9 E2E Catch-up (Auth/Login)
+### 3.5 E2E Catch-up (Auth/Login)
 - [ ] Role selection UI presence
 - [ ] Provider selection correctness (`osm-admin` vs `osm-standard`)
 - [ ] Session `roleSelection` persistence
@@ -196,21 +181,45 @@ These must be resolved to unblock CI and maintain code quality.
 
 ---
 
-## 5. Phase 4: Configuration & Admin
+### 3.6 Dashboard Overview & Summary
 
-- [ ] **4.1 Adapter Pattern:** Create `FlexiAdapter` and `BadgeAdapter`
-- [ ] **4.2 Admin UI:** User management table, Configuration Editor, Factory Reset button
-- [ ] **4.3 E2E:** Standard user gets 403 on admin routes; Factory Reset updates KV; Config Editor reflects changes
+- [ ] Replace debug-focused `/dashboard` page with a product-facing overview
+- [ ] Show selected section(s) summary (name, type, multi-section context)
+- [ ] Show upcoming events snapshot for the selected section(s)
+- [ ] Show high-level attendance snapshot (e.g. count of members with ≥1 "Yes")
+- [ ] **E2E/Integration:** Dashboard loads with correct summary for a single-section and multi-section user
+
+### 3.7 Patrol Reference & Mapping (Admin + API Support)
+
+- [ ] Implement Admin patrol reference tools to refresh cached Patrol/Member structure in Redis
+- [ ] Expose patrol name mapping API and client hooks: `{ patrolId -> patrolName }`
+- [ ] Wire patrol name mapping into event and attendance views
+- [ ] **Unit/Integration:** Tests for patrol mapping utility and API shape
 
 ---
 
-## 6. Phase 5: Hardening & Export
+### 3.8 Patrol Display UX
 
-- [x] **5.1 API Browser:** Completed early
-- [ ] **5.2 PDF Export:** React-PDF generation for Patrol sheets
-- [ ] **5.3 Excel Export:** SheetJS export for offline editing
-- [ ] **5.4 Circuit Breaker UI:** "System Cooling Down" overlay for Soft Locks
-- [ ] **5.5 Final E2E Sweep:** Full walkthrough: Login → Select Section → Filter → Export PDF
+- [ ] Display patrol **names** instead of raw patrol IDs in event and attendance views (using 3.7 mapping)
+- [ ] Fall back to patrol ID only when no name is available in the patrol reference cache
+- [ ] **E2E:** Event and attendance views render patrol names when available and IDs as fallback
+
+---
+
+## 5. Phase 4: Reporting & Export
+
+- [ ] **4.1 PDF Export:** React-PDF generation for patrol sheets and event attendance summaries
+- [ ] **4.2 Excel/CSV Export:** SheetJS (or CSV) export for event and per-person/patrol attendance data
+- [ ] **4.3 Filter-Aware Export:** Ensure exports respect current filters (section selection, patrol filters, event filters)
+- [ ] **4.4 E2E:** Export flows – Login → Select Section → Filter → Export PDF/XLS
+
+---
+
+## 6. Phase 5: Configuration & Admin
+
+- [ ] **5.1 Adapter Pattern:** Create `FlexiAdapter` and `BadgeAdapter`
+- [ ] **5.2 Admin UI:** User management table, Configuration Editor, Factory Reset button
+- [ ] **5.3 E2E:** Standard user gets 403 on admin routes; Factory Reset updates KV; Config Editor reflects changes
 
 ---
 
@@ -224,12 +233,16 @@ These must be resolved to unblock CI and maintain code quality.
 
 ## 8. Phase 7: Training & Readiness Data (Future)
 
-_Deferred pending decision on training data source (Flexi-Record vs Badge-Record)._
+_Deferred pending decision on training data source (Flexi-Record vs Badge-Record)._ 
 
 - [ ] **7.1 Training Data Source Resolution**
 - [ ] **7.2 Readiness & Training View (Spec 3.4)**
 - [ ] **7.3 Readiness-Based Filtering**
-- [ ] **7.4 E2E Verification**
+- [ ] **7.4 First Aid Readiness Summary (Spec 3.3)**
+- [ ] **7.5 Logistics & Metadata Display**
+- [ ] **7.6 Flexi-Column Mapping Dialog**
+- [ ] **7.7 Derived Readiness State & Memoization**
+- [ ] **7.8 E2E Verification for Training & Readiness**
 
 ---
 
@@ -248,13 +261,14 @@ _Deferred pending decision on training data source (Flexi-Record vs Badge-Record
    - Section Picker Modal bug (deferred to Phase 3)
 
 3. **Phase 3 delivery:** ← CURRENT
-   - Section Picker Modal bug fix (3.1)
-   - Per-Person Attendance View (3.2) - route exists, needs polish
-   - First Aid Readiness Summary (3.3)
-   - Logistics Display (3.4)
-   - Flexi-Column Mapping Dialog (3.6)
-   - UI Polishing (3.8)
-   - E2E roll-up (3.9)
+   - Section Picker flow & section picker page (3.1 bug fixes + completed page work)
+   - Per-Person Attendance View (3.2) - implemented, with additional grouping refinements planned
+   - Mobile transformation (3.3)
+   - UI polishing for detail/list views (3.4)
+   - Auth/login E2E catch-up (3.5)
+   - Dashboard overview & summary (3.6)
+   - Patrol reference & mapping (3.7)
+   - Patrol display UX using patrol names (3.8)
 
 4. **Phase 4–6:**
    - Admin UI and adapters
