@@ -43,10 +43,26 @@ export class APIError extends Error {
 
 /**
  * Base fetch wrapper with error handling
+ * 
+ * Supports both client-side (relative URL) and server-side (absolute URL) contexts.
+ * Server-side calls require the APP_URL environment variable to be set.
  */
 async function proxyFetch(path: string, params?: Record<string, string>): Promise<Response> {
   const searchParams = new URLSearchParams(params)
-  const url = `/api/proxy/${path}${params ? `?${searchParams.toString()}` : ''}`
+  const relativePath = `/api/proxy/${path}${params ? `?${searchParams.toString()}` : ''}`
+  
+  // Detect server-side context and use absolute URL
+  const isServer = typeof window === 'undefined'
+  let url: string
+  
+  if (isServer) {
+    // Server-side: need absolute URL
+    const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    url = `${baseUrl}${relativePath}`
+  } else {
+    // Client-side: relative URL works
+    url = relativePath
+  }
 
   const response = await fetch(url, {
     method: 'GET',
@@ -129,13 +145,13 @@ export async function getEvents(params: {
 export async function getPatrols(params: {
   sectionid: number
   termid: number
-  includeNoPatrol?: boolean
+  section?: string
 }): Promise<PatrolsResponse> {
   const response = await proxyFetch('ext/members/patrols/', {
     action: 'getPatrolsWithPeople',
     sectionid: params.sectionid.toString(),
     termid: params.termid.toString(),
-    include_no_patrol: params.includeNoPatrol ? 'y' : 'n',
+    section: params.section || 'explorers',
   })
 
   const data = await response.json()

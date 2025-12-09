@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { getAuthConfig } from '@/lib/auth'
-import { getPatrols } from '@/lib/api'
+import { getPatrols, getStartupData } from '@/lib/api'
 import {
   setPatrolCache,
   setPatrolCacheMeta,
@@ -11,6 +11,49 @@ import {
   type PatrolCacheMeta,
 } from '@/lib/redis'
 import { getOAuthData } from '@/lib/redis'
+
+/**
+ * Term data structure from startup data
+ */
+interface TermData {
+  termid: string
+  sectionid: string
+  name: string
+  startdate: string
+  enddate: string
+}
+
+/**
+ * Find the current term for a section from startup data
+ * Returns the term that contains today's date, or the most recent term
+ */
+function findCurrentTermId(
+  terms: Record<string, TermData[]> | undefined,
+  sectionId: string
+): string | null {
+  if (!terms) return null
+  
+  const sectionTerms = terms[sectionId]
+  if (!sectionTerms || sectionTerms.length === 0) {
+    return null
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Find term that contains today
+  const currentTerm = sectionTerms.find(
+    (t) => t.startdate <= today && t.enddate >= today
+  )
+  if (currentTerm) {
+    return currentTerm.termid
+  }
+
+  // Fallback: find the most recent term (by end date)
+  const sorted = [...sectionTerms].sort((a, b) => 
+    b.enddate.localeCompare(a.enddate)
+  )
+  return sorted[0]?.termid || null
+}
 
 /**
  * GET /api/admin/patrols
@@ -79,27 +122,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No sections available' }, { status: 400 })
     }
 
+    // Get startup data to find term IDs and section types
+    const startupData = await getStartupData()
+    if (!startupData) {
+      return NextResponse.json({ error: 'Failed to fetch startup data' }, { status: 500 })
+    }
+
+    // Build a map of sectionId -> { termId, sectionType } from startup data roles
+    // Cast terms since the schema uses passthrough() and doesn't type this field
+    const terms = startupData.terms as Record<string, TermData[]> | undefined
+    const sectionInfo = new Map<string, { termId: string; sectionType: string; sectionName: string }>()
+    for (const role of startupData.globals.roles) {
+      const sectionId = role.sectionid
+      const termId = findCurrentTermId(terms, sectionId)
+      if (termId) {
+        sectionInfo.set(sectionId, {
+          termId,
+          sectionType: role.section || 'explorers',
+          sectionName: role.sectionname || `Section ${sectionId}`,
+        })
+      }
+    }
+
     const allPatrols: CachedPatrol[] = []
     const errors: string[] = []
 
     // Fetch patrol data for each section
     for (const section of oauthData.sections) {
       const sectionId = section.section_id.toString()
-      const sectionName = section.section_name || `Section ${sectionId}`
+      const info = sectionInfo.get(sectionId)
+      
+      if (!info) {
+        errors.push(`Section ${sectionId}: No term data available`)
+        continue
+      }
       
       try {
-        // Use termid 0 to get current term patrols
         const patrolsResponse = await getPatrols({
           sectionid: section.section_id,
-          termid: 0,
-          includeNoPatrol: true,
+          termid: parseInt(info.termId, 10),
+          section: info.sectionType,
         })
 
         const cachedPatrols: CachedPatrol[] = patrolsResponse.patrols.map((p) => ({
           patrolId: p.patrolid,
           patrolName: p.name,
           sectionId,
-          sectionName,
+          sectionName: info.sectionName,
           memberCount: 0, // OSM doesn't return member count in patrol list
         }))
 
@@ -108,7 +177,7 @@ export async function POST(request: NextRequest) {
         allPatrols.push(...cachedPatrols)
       } catch (error) {
         console.error(`Failed to fetch patrols for section ${sectionId}:`, error)
-        errors.push(`Section ${sectionName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        errors.push(`Section ${info.sectionName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     }
 
