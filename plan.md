@@ -152,11 +152,12 @@ These must be resolved to unblock CI and maintain code quality.
 - [ ] Respect access control selectors from Phase 2.8.1 (deferred - needs type alignment)
 - [x] **E2E:** View loads; toggle switches grouping (8 tests passing)
 
-**Upcoming refinements (before 3.3):**
-- [ ] Extend grouping/sorting modes to support:
-  - [ ] Alphabetical single list by member name
-  - [ ] Alphabetical list grouped by Patrol
-  - [ ] Alphabetical list grouped by Patrol and Event
+**Completed refinements:**
+- [x] Extend grouping/sorting modes to support:
+  - [x] Alphabetical single list by member name ("Single List")
+  - [x] Alphabetical list grouped by Patrol ("By Patrol") - **default**
+  - [x] Alphabetical list grouped by Patrol and Event ("By Patrol & Event")
+- [x] Added 14 unit tests for grouping helpers
 - [ ] **E2E:** Verify grouping mode selection and sorting behaviour on desktop and mobile
 
 ### 3.3 Mobile Transformation
@@ -183,25 +184,35 @@ These must be resolved to unblock CI and maintain code quality.
 
 ### 3.6 Dashboard Overview & Summary
 
-- [ ] Replace debug-focused `/dashboard` page with a product-facing overview
-- [ ] Show selected section(s) summary (name, type, multi-section context)
-- [ ] Show upcoming events snapshot for the selected section(s)
-- [ ] Show high-level attendance snapshot (e.g. count of members with ≥1 "Yes")
+- [x] Replace debug-focused `/dashboard` page with a product-facing overview
+- [x] Show selected section(s) summary (name, type, multi-section context)
+- [x] Show upcoming events snapshot (next 3 events as cards with colored headers)
+- [x] Display Yes/No/Invited counts on each event card
+- [x] Cards link to event detail page; "View All Events" button
+- [x] Handle empty state when no upcoming events
 - [ ] **E2E/Integration:** Dashboard loads with correct summary for a single-section and multi-section user
 
 ### 3.7 Patrol Reference & Mapping (Admin + API Support)
 
-- [ ] Implement Admin patrol reference tools to refresh cached Patrol/Member structure in Redis
-- [ ] Expose patrol name mapping API and client hooks: `{ patrolId -> patrolName }`
-- [ ] Wire patrol name mapping into event and attendance views
+- [x] Implement Admin patrol reference tools to refresh cached Patrol/Member structure in Redis
+  - [x] Redis cache with 90-day TTL per ARCHITECTURE.md
+  - [x] Admin API route: POST to refresh, GET to read
+  - [x] Admin UI with "Refresh Patrol Data" button
+  - [x] Last updated timestamp display
+  - [x] Patrol table showing ID, Name, Section
+- [x] Expose patrol name mapping API and client hooks: `usePatrolMap`, `usePatrolRefresh`
+- [x] Admin link in sidebar visible only to administrators
+- [ ] Wire patrol name mapping into event views (attendance done in 3.8)
 - [ ] **Unit/Integration:** Tests for patrol mapping utility and API shape
 
 ---
 
 ### 3.8 Patrol Display UX
 
-- [ ] Display patrol **names** instead of raw patrol IDs in event and attendance views (using 3.7 mapping)
-- [ ] Fall back to patrol ID only when no name is available in the patrol reference cache
+- [x] Display patrol **names** instead of raw patrol IDs in attendance views (using 3.7 mapping)
+- [x] Fall back to patrol ID only when no name is available in the patrol reference cache
+- [x] Patrol names shown in: Single List table, Group by Patrol headers, Group by Patrol & Event headers, Mobile cards
+- [ ] Wire patrol names into event detail view
 - [ ] **E2E:** Event and attendance views render patrol names when available and IDs as fallback
 
 ---

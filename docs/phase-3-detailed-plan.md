@@ -92,35 +92,37 @@ Target modes:
 2. Alphabetical list grouped by Patrol.
 3. Alphabetical list grouped by Patrol and Event.
 
-Implementation plan:
+**✅ COMPLETED Implementation:**
 
-- [ ] Add `groupMode: 'single' | 'patrol' | 'patrolEvent'` to state.
-- [ ] Introduce **stable sorting helpers**:
-  - Sort `data` by `name` (case-insensitive) once before rendering.
-  - Within each group (patrol / patrol+event), use sorted inputs.
-- [ ] Extend `groupByPatrol`:
-  - Accept already-sorted data and group by `patrolId` (or patrol name once mapping exists).
-- [ ] Implement `groupByPatrolAndEvent`:
-  - Decide on UX (see questions below) and implement grouping consistent with TanStack Table / spec goals.
+- [x] Add `groupMode: 'single' | 'patrol' | 'patrolEvent'` to state.
+- [x] Default changed to `'patrol'` (Group by Patrol).
+- [x] Introduce **stable sorting helpers**:
+  - [x] `sortByName()` - Sort data by name (case-insensitive) before rendering.
+  - [x] Within each group (patrol / patrol+event), use sorted inputs.
+- [x] Extend `groupByPatrol`:
+  - [x] Accept already-sorted data and group by `patrolId`.
+  - [x] Sort patrol keys alphabetically.
+- [x] Implement `groupByPatrolAndEvent`:
+  - [x] Uses **Patrol → Event → People** layout (event-centric within patrol).
+  - [x] Events sorted by start date (soonest first).
+  - [x] People sorted alphabetically within each event.
+- [x] Radio button labels: "Single List", "By Patrol", "By Patrol & Event".
+- [x] Expand/Collapse All works for both patrol and event levels.
 
-### 2.3 Open Design Questions (need your answers)
+### 2.3 Design Decisions Made
 
-1. **Patrol+Event grouping layout:**
-   - Option A: **Patrol → Person → Events (sorted by date)** (closest to current UI).
-   - Option B: **Patrol → Event → People** (event-centric, with lists of people under each event).
-   - Which is closer to your mental model for "grouped by patrol and by event" on this per-person view?
-
-2. **Default grouping mode:**
-   - Currently default is `single` (flat list).
-   - Do you want to change the default once the three modes exist?
+1. **Patrol+Event grouping layout:** Option B selected - **Patrol → Event → People** (event-centric).
+2. **Default grouping mode:** Changed to **Group by Patrol**.
 
 ### 2.4 Testing
 
 - **Unit / Integration:**
-  - [ ] Tests for grouping helpers (`groupByPatrol`, `groupByPatrolAndEvent`) to ensure:
+  - [x] Tests for grouping helpers (`sortByName`, `groupByPatrol`, `groupByPatrolAndEvent`) to ensure:
     - Deterministic alphabetical order.
     - Correct handling of missing patrol IDs (e.g. `"Unassigned"`).
-  - [ ] Component tests verifying each mode’s structure (e.g. correct headings and counts).
+    - Correct event date sorting.
+  - [x] **14 unit tests added** in `grouping-helpers.test.ts`.
+  - [ ] Component tests verifying each mode's structure (e.g. correct headings and counts).
 - **E2E:**
   - [ ] Verify grouping mode selection and sorting behaviour on desktop and mobile (per `plan.md` 3.2).
   - [ ] Confirm that access control filtered datasets (when wired) still produce correct groupings.
@@ -213,11 +215,18 @@ Implementation plan:
 
 ### 6.2 Implementation Tasks
 
-- [ ] Replace current debug `/dashboard` with:
-  - Section summary card (current section / multiple selected sections).
-  - Event snapshot (e.g. count + next N events from events list hook).
-  - Attendance snapshot (e.g. count of members with at least one "Yes", or total Yes responses).
-- [ ] Ensure all data comes from existing hooks (`useStore`, `useEvents`, `usePerPersonAttendance`) or new read-only hooks built on existing APIs.
+**✅ COMPLETED:**
+
+- [x] Replace current debug `/dashboard` with product-facing overview:
+  - [x] Section summary (current section name or "N sections selected" for multi-section).
+  - [x] Next 3 upcoming events as cards with colored primary headers.
+  - [x] Each card shows: event name, date range, location, Yes/No/Invited counts.
+  - [x] Cards link to event detail page.
+  - [x] "View All Events" button and link when >3 events exist.
+  - [x] Empty state when no upcoming events.
+- [x] Filter events by end date (only show future/active events).
+- [x] Sort events by start date (soonest first).
+- [x] Uses existing hooks (`useStore`, `useEvents`).
 
 ### 6.3 Testing
 
@@ -242,13 +251,24 @@ Implementation plan:
 
 ### 7.2 Implementation Tasks
 
-- [ ] Server-side:
-  - API route for admins to trigger patrol/member structure refresh.
-  - Read/write to Redis/KV respecting TTL and existing safety layer.
-- [ ] Client-side Admin UI:
-  - Simple admin-only control to invoke refresh and show last-updated timestamp.
-- [ ] Client-side mapping hook:
-  - `usePatrolNameMap()` or similar, reading from a proxy endpoint that exposes `{ patrolId -> patrolName }`.
+**✅ COMPLETED:**
+
+- [x] Server-side:
+  - [x] API route `/api/admin/patrols` for admins to trigger patrol/member structure refresh (POST).
+  - [x] API route `/api/admin/patrols` for all authenticated users to read cached data (GET).
+  - [x] Redis cache with 90-day TTL per ARCHITECTURE.md.
+  - [x] Cache metadata (last updated, updated by, section count, patrol count).
+- [x] Client-side Admin UI (`PatrolManagement.tsx`):
+  - [x] "Refresh Patrol Data" button.
+  - [x] Last updated timestamp display.
+  - [x] Patrol table showing ID, Name, Section.
+  - [x] Error display for partial failures.
+  - [x] Empty state when no cached data.
+- [x] Client-side mapping hooks:
+  - [x] `usePatrolMap()` - reads cached patrols, provides `getPatrolName(patrolId)` function.
+  - [x] `usePatrolRefresh()` - admin-only mutation to refresh patrol data.
+- [x] Admin link in sidebar visible only to administrators.
+- [x] Updated logger to support patrol cache events.
 
 ### 7.3 Testing
 
@@ -268,9 +288,20 @@ Implementation plan:
 
 ### 8.2 Implementation Tasks
 
-- [ ] Update attendance and event views to use patrol names via mapping hook.
-- [ ] Provide fallback to raw patrol ID when mapping is missing.
-- [ ] Ensure grouping keys and rendered labels stay in sync (avoid grouping by ID but showing a different label).
+**✅ COMPLETED (Attendance views):**
+
+- [x] Update attendance page to use patrol names via `usePatrolMap` hook.
+- [x] Provide fallback to raw patrol ID when mapping is missing.
+- [x] Patrol names shown in:
+  - [x] Single List table (Patrol column).
+  - [x] Group by Patrol headers.
+  - [x] Group by Patrol & Event headers.
+  - [x] Mobile card views.
+- [x] Grouping keys remain as IDs internally; labels use resolved names.
+
+**Remaining:**
+
+- [ ] Wire patrol names into event detail view.
 
 ### 8.3 Testing
 
@@ -295,23 +326,14 @@ Across all 3.x work, we must:
 
 ---
 
-## 10. Clarifications Needed
+## 10. Clarifications Resolved
 
-Before implementing this Phase 3 plan, I need your input on:
+The following design decisions were made during implementation:
 
-1. **Per-Person Patrol+Event layout (3.2):** Do you prefer:
-   - **Option A:** Patrol → Person → Events (person-centric, events listed under each person), or
-   - **Option B:** Patrol → Event → People (event-centric within patrol)?
+1. **Per-Person Patrol+Event layout (3.2):** ✅ **Option B selected** - Patrol → Event → People (event-centric within patrol).
 
-2. **Default grouping mode (3.2):** Once we add all three modes, should the default remain **Single List**, or switch to **Group by Patrol**?
+2. **Default grouping mode (3.2):** ✅ Changed to **Group by Patrol**.
 
-3. **Dashboard summary metrics (3.6):** For the high-level attendance snapshot, is your priority:
-   - (a) Number of members with ≥1 "Yes" across all events, or
-   - (b) Total count of "Yes" responses, or
-   - (c) Both, shown in separate badges?
+3. **Dashboard summary metrics (3.6):** ✅ Implemented as **event cards showing Yes/No/Invited counts** per event (next 3 upcoming events).
 
-4. **Admin patrol refresh UX (3.7):**
-   - Do you want a minimal button-only UI ("Refresh Patrol Data") with last-updated timestamp, or
-   - A fuller table listing patrols/members in the admin page as a sanity-check view?
-
-Once you confirm these points, we can start implementing Phase 3 in small, test-driven slices.
+4. **Admin patrol refresh UX (3.7):** ✅ **Fuller table** implemented - shows Refresh button, last-updated timestamp, and patrol table (ID, Name, Section).
