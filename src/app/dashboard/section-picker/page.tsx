@@ -133,15 +133,15 @@ function SectionPickerContent() {
     // Clear the event summary fetch queue (old section's events)
     clearQueue()
     
-    // Invalidate queries so they refetch with new section parameters
-    // Using invalidateQueries instead of clear() allows the events query
-    // to start fetching immediately when ClientShell re-renders
-    queryClient.invalidateQueries({ queryKey: ['events'] })
-    queryClient.invalidateQueries({ queryKey: ['event-summary'] })
-    queryClient.invalidateQueries({ queryKey: ['attendance'] })
+    // Remove old cached data to prevent showing stale events/people from previous section
+    // Then invalidate to trigger fresh fetches with new section parameters
+    queryClient.removeQueries({ queryKey: ['events'] })
+    queryClient.removeQueries({ queryKey: ['event-summary'] })
+    queryClient.removeQueries({ queryKey: ['attendance'] })
+    queryClient.removeQueries({ queryKey: ['per-person-attendance'] })
     
     if (process.env.NODE_ENV !== 'production') {
-      console.debug('[SectionPicker] Invalidated queries and cleared event queue after section change')
+      console.debug('[SectionPicker] Removed cached queries and cleared event queue after section change')
     }
     
     router.replace(redirect)
