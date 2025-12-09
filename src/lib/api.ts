@@ -44,25 +44,12 @@ export class APIError extends Error {
 /**
  * Base fetch wrapper with error handling
  * 
- * Supports both client-side (relative URL) and server-side (absolute URL) contexts.
- * Server-side calls require the APP_URL environment variable to be set.
+ * All API calls go through the proxy route. This function is designed for
+ * client-side use where the browser handles cookies/auth automatically.
  */
 async function proxyFetch(path: string, params?: Record<string, string>): Promise<Response> {
   const searchParams = new URLSearchParams(params)
-  const relativePath = `/api/proxy/${path}${params ? `?${searchParams.toString()}` : ''}`
-  
-  // Detect server-side context and use absolute URL
-  const isServer = typeof window === 'undefined'
-  let url: string
-  
-  if (isServer) {
-    // Server-side: need absolute URL
-    const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    url = `${baseUrl}${relativePath}`
-  } else {
-    // Client-side: relative URL works
-    url = relativePath
-  }
+  const url = `/api/proxy/${path}${params ? `?${searchParams.toString()}` : ''}`
 
   const response = await fetch(url, {
     method: 'GET',

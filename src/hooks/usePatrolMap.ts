@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
+import { getStartupData, getPatrols } from '@/lib/api'
 
 /**
  * Cached patrol data from the server
@@ -30,7 +31,49 @@ interface RefreshResponse extends PatrolsResponse {
 }
 
 /**
- * Fetch patrol data from the API
+ * Term data structure from startup data
+ */
+interface TermData {
+  termid: string
+  sectionid: string
+  name: string
+  startdate: string
+  enddate: string
+}
+
+/**
+ * Find the current term for a section from startup data
+ */
+function findCurrentTermId(
+  terms: Record<string, TermData[]> | undefined,
+  sectionId: string
+): string | null {
+  if (!terms) return null
+  
+  const sectionTerms = terms[sectionId]
+  if (!sectionTerms || sectionTerms.length === 0) {
+    return null
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Find term that contains today
+  const currentTerm = sectionTerms.find(
+    (t) => t.startdate <= today && t.enddate >= today
+  )
+  if (currentTerm) {
+    return currentTerm.termid
+  }
+
+  // Fallback: find the most recent term (by end date)
+  const sorted = [...sectionTerms].sort((a, b) => 
+    b.enddate.localeCompare(a.enddate)
+  )
+  return sorted[0]?.termid || null
+}
+
+/**
+ * Fetch patrol data from the API cache
  */
 async function fetchPatrols(): Promise<PatrolsResponse> {
   const response = await fetch('/api/admin/patrols')
@@ -42,16 +85,77 @@ async function fetchPatrols(): Promise<PatrolsResponse> {
 
 /**
  * Refresh patrol data (admin only)
+ * 1. Fetches startup data to get section info and term IDs
+ * 2. Fetches patrols for each section via the proxy
+ * 3. Sends the collected data to the server to cache in Redis
  */
 async function refreshPatrols(): Promise<RefreshResponse> {
+  const errors: string[] = []
+  
+  // Step 1: Get startup data to find sections and terms
+  const startupData = await getStartupData()
+  if (!startupData) {
+    throw new Error('Failed to fetch startup data')
+  }
+
+  // Build section info from startup data
+  const terms = startupData.terms as Record<string, TermData[]> | undefined
+  const roles = startupData.globals.roles
+  
+  // Step 2: Fetch patrols for each section
+  const allPatrols: CachedPatrol[] = []
+  
+  for (const role of roles) {
+    const sectionId = role.sectionid
+    const termId = findCurrentTermId(terms, sectionId)
+    
+    if (!termId) {
+      errors.push(`Section ${role.sectionname}: No term data available`)
+      continue
+    }
+    
+    try {
+      const patrolsResponse = await getPatrols({
+        sectionid: parseInt(sectionId, 10),
+        termid: parseInt(termId, 10),
+        section: role.section || 'explorers',
+      })
+
+      const cachedPatrols: CachedPatrol[] = patrolsResponse.patrols.map((p) => ({
+        patrolId: p.patrolid,
+        patrolName: p.name,
+        sectionId,
+        sectionName: role.sectionname,
+        memberCount: 0,
+      }))
+
+      allPatrols.push(...cachedPatrols)
+    } catch (error) {
+      console.error(`Failed to fetch patrols for section ${sectionId}:`, error)
+      errors.push(`Section ${role.sectionname}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // Step 3: Send to server to cache in Redis
   const response = await fetch('/api/admin/patrols', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ patrols: allPatrols }),
   })
+  
   if (!response.ok) {
     const data = await response.json()
-    throw new Error(data.error || 'Failed to refresh patrol data')
+    throw new Error(data.error || 'Failed to store patrol data')
   }
-  return response.json()
+  
+  const result = await response.json() as RefreshResponse
+  
+  // Add any fetch errors to the response
+  if (errors.length > 0) {
+    result.errors = [...(result.errors || []), ...errors]
+  }
+  
+  return result
 }
 
 /**

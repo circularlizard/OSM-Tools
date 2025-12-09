@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { getAuthConfig } from '@/lib/auth'
-import { getPatrols, getStartupData } from '@/lib/api'
 import {
   setPatrolCache,
   setPatrolCacheMeta,
@@ -10,50 +9,6 @@ import {
   type CachedPatrol,
   type PatrolCacheMeta,
 } from '@/lib/redis'
-import { getOAuthData } from '@/lib/redis'
-
-/**
- * Term data structure from startup data
- */
-interface TermData {
-  termid: string
-  sectionid: string
-  name: string
-  startdate: string
-  enddate: string
-}
-
-/**
- * Find the current term for a section from startup data
- * Returns the term that contains today's date, or the most recent term
- */
-function findCurrentTermId(
-  terms: Record<string, TermData[]> | undefined,
-  sectionId: string
-): string | null {
-  if (!terms) return null
-  
-  const sectionTerms = terms[sectionId]
-  if (!sectionTerms || sectionTerms.length === 0) {
-    return null
-  }
-
-  const today = new Date().toISOString().split('T')[0]
-  
-  // Find term that contains today
-  const currentTerm = sectionTerms.find(
-    (t) => t.startdate <= today && t.enddate >= today
-  )
-  if (currentTerm) {
-    return currentTerm.termid
-  }
-
-  // Fallback: find the most recent term (by end date)
-  const sorted = [...sectionTerms].sort((a, b) => 
-    b.enddate.localeCompare(a.enddate)
-  )
-  return sorted[0]?.termid || null
-}
 
 /**
  * GET /api/admin/patrols
@@ -93,8 +48,12 @@ export async function GET() {
 
 /**
  * POST /api/admin/patrols
- * Refresh patrol data from OSM API
- * Admin only - fetches fresh patrol data for all accessible sections
+ * Store patrol data in Redis cache
+ * Admin only - receives patrol data from client and caches it
+ * 
+ * Request body: {
+ *   patrols: CachedPatrol[]
+ * }
  */
 export async function POST(request: NextRequest) {
   const authOptions = await getAuthConfig()
@@ -111,95 +70,45 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get user's accessible sections from OAuth data
-    const userId = (session.user as { id?: string })?.id
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID not found' }, { status: 400 })
+    const body = await request.json()
+    const patrols = body.patrols as CachedPatrol[]
+    
+    if (!patrols || !Array.isArray(patrols)) {
+      return NextResponse.json({ error: 'Invalid request body - patrols array required' }, { status: 400 })
     }
 
-    const oauthData = await getOAuthData(userId)
-    if (!oauthData?.sections || oauthData.sections.length === 0) {
-      return NextResponse.json({ error: 'No sections available' }, { status: 400 })
+    // Group patrols by section and store each group
+    const patrolsBySection = new Map<string, CachedPatrol[]>()
+    for (const patrol of patrols) {
+      const existing = patrolsBySection.get(patrol.sectionId) || []
+      existing.push(patrol)
+      patrolsBySection.set(patrol.sectionId, existing)
     }
 
-    // Get startup data to find term IDs and section types
-    const startupData = await getStartupData()
-    if (!startupData) {
-      return NextResponse.json({ error: 'Failed to fetch startup data' }, { status: 500 })
-    }
-
-    // Build a map of sectionId -> { termId, sectionType } from startup data roles
-    // Cast terms since the schema uses passthrough() and doesn't type this field
-    const terms = startupData.terms as Record<string, TermData[]> | undefined
-    const sectionInfo = new Map<string, { termId: string; sectionType: string; sectionName: string }>()
-    for (const role of startupData.globals.roles) {
-      const sectionId = role.sectionid
-      const termId = findCurrentTermId(terms, sectionId)
-      if (termId) {
-        sectionInfo.set(sectionId, {
-          termId,
-          sectionType: role.section || 'explorers',
-          sectionName: role.sectionname || `Section ${sectionId}`,
-        })
-      }
-    }
-
-    const allPatrols: CachedPatrol[] = []
-    const errors: string[] = []
-
-    // Fetch patrol data for each section
-    for (const section of oauthData.sections) {
-      const sectionId = section.section_id.toString()
-      const info = sectionInfo.get(sectionId)
-      
-      if (!info) {
-        errors.push(`Section ${sectionId}: No term data available`)
-        continue
-      }
-      
-      try {
-        const patrolsResponse = await getPatrols({
-          sectionid: section.section_id,
-          termid: parseInt(info.termId, 10),
-          section: info.sectionType,
-        })
-
-        const cachedPatrols: CachedPatrol[] = patrolsResponse.patrols.map((p) => ({
-          patrolId: p.patrolid,
-          patrolName: p.name,
-          sectionId,
-          sectionName: info.sectionName,
-          memberCount: 0, // OSM doesn't return member count in patrol list
-        }))
-
-        // Store in cache
-        await setPatrolCache(sectionId, cachedPatrols)
-        allPatrols.push(...cachedPatrols)
-      } catch (error) {
-        console.error(`Failed to fetch patrols for section ${sectionId}:`, error)
-        errors.push(`Section ${info.sectionName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      }
+    // Store each section's patrols in cache
+    for (const [sectionId, sectionPatrols] of patrolsBySection) {
+      await setPatrolCache(sectionId, sectionPatrols)
     }
 
     // Update metadata
+    const userId = (session.user as { id?: string })?.id || 'unknown'
     const meta: PatrolCacheMeta = {
       lastUpdated: new Date().toISOString(),
       updatedBy: session.user.name || userId,
-      sectionCount: oauthData.sections.length,
-      patrolCount: allPatrols.length,
+      sectionCount: patrolsBySection.size,
+      patrolCount: patrols.length,
     }
     await setPatrolCacheMeta(meta)
 
     return NextResponse.json({
       success: true,
       meta,
-      patrols: allPatrols,
-      errors: errors.length > 0 ? errors : undefined,
+      patrols,
     })
   } catch (error) {
-    console.error('Failed to refresh patrol data:', error)
+    console.error('Failed to store patrol data:', error)
     return NextResponse.json(
-      { error: 'Failed to refresh patrol data' },
+      { error: 'Failed to store patrol data' },
       { status: 500 }
     )
   }
