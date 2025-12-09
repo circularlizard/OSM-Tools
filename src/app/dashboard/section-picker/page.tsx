@@ -130,15 +130,18 @@ function SectionPickerContent() {
       }
     }
     
-    // Clear all cached data to prevent mixing data from different sections
-    // Clear TanStack Query cache (events, event summaries, attendance data)
-    queryClient.clear()
-    
-    // Clear the event summary fetch queue
+    // Clear the event summary fetch queue (old section's events)
     clearQueue()
     
+    // Invalidate queries so they refetch with new section parameters
+    // Using invalidateQueries instead of clear() allows the events query
+    // to start fetching immediately when ClientShell re-renders
+    queryClient.invalidateQueries({ queryKey: ['events'] })
+    queryClient.invalidateQueries({ queryKey: ['event-summary'] })
+    queryClient.invalidateQueries({ queryKey: ['attendance'] })
+    
     if (process.env.NODE_ENV !== 'production') {
-      console.debug('[SectionPicker] Cleared query cache and event queue after section change')
+      console.debug('[SectionPicker] Invalidated queries and cleared event queue after section change')
     }
     
     router.replace(redirect)

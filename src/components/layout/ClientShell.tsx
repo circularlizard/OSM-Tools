@@ -16,7 +16,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const currentSection = useStore((s) => s.currentSection);
   const selectedSections = useStore((s) => s.selectedSections);
   const enqueueItems = useStore((s) => s.enqueueItems);
-  const { data } = useEvents();
+  const { data, isFetched } = useEvents();
   
   // Hide sidebar on section picker page for focused UX
   const isSectionPickerPage = pathname === '/dashboard/section-picker';
@@ -60,7 +60,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sectionName is only for logging, not logic
-  }, [currentSection?.sectionId, selectedSections, data, enqueueItems]);
+  }, [currentSection?.sectionId, selectedSections, data, isFetched, enqueueItems]);
   // Only render the full application chrome when authenticated.
   // Hide during loading state to prevent flash of navigation on login page
   if (status === "loading" || status === "unauthenticated") {

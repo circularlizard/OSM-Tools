@@ -151,19 +151,19 @@ export async function getPatrols(params: {
   // Normalize into `{ patrols: Patrol[] }` regardless of upstream shape
   let normalized: { patrols: Array<{ patrolid: number; name: string; active?: boolean }> }
 
-  if (raw && typeof raw === 'object' && Array.isArray((raw as any).patrols)) {
+  const rawObj = raw as Record<string, unknown> | null
+  if (rawObj && Array.isArray(rawObj.patrols)) {
     // Already in the expected shape
-    normalized = { patrols: (raw as any).patrols }
+    normalized = { patrols: rawObj.patrols as Array<{ patrolid: number; name: string; active?: boolean }> }
   } else if (raw && typeof raw === 'object') {
     // OSM-style object keyed by patrolid plus optional "unallocated" key
     const values = Object.values(raw as Record<string, unknown>)
     const patrols = values
-      .filter((v) => v && typeof v === 'object' && 'patrolid' in (v as any) && 'name' in (v as any))
+      .filter((v): v is Record<string, unknown> => v !== null && typeof v === 'object' && 'patrolid' in v && 'name' in v)
       .map((v) => {
-        const p = v as { patrolid: unknown; name: unknown; active?: unknown }
-        const patrolid = typeof p.patrolid === 'string' ? parseInt(p.patrolid, 10) : Number(p.patrolid)
-        const name = String(p.name ?? '')
-        const activeValue = (p as any).active
+        const patrolid = typeof v.patrolid === 'string' ? parseInt(v.patrolid, 10) : Number(v.patrolid)
+        const name = String(v.name ?? '')
+        const activeValue = v.active
         const active =
           typeof activeValue === 'boolean'
             ? activeValue
