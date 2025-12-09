@@ -121,6 +121,7 @@ These must be resolved to unblock CI and maintain code quality.
 - [ ] Add console logging to trace the flow in StartupInitializer
 - [ ] Check if `setSectionPickerOpen(true)` is being called but modal not rendering
 - [ ] Verify timing: OAuth data fetch vs modal render
+- [ ] Clear stored event/member data (queue + TanStack Query cache) when section selection changes, so attendance and events views don’t show stale data when switching sections
 
 ---
 
