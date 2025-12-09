@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { usePerPersonAttendance } from '@/hooks/usePerPersonAttendance'
+import { usePatrolMap } from '@/hooks/usePatrolMap'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -82,6 +83,7 @@ export default function AttendanceByPersonPage() {
   const [openPatrols, setOpenPatrols] = useState<Set<string>>(new Set())
   const [openEvents, setOpenEvents] = useState<Set<string>>(new Set())
   const { data } = usePerPersonAttendance()
+  const { getPatrolName } = usePatrolMap()
   
   const togglePatrol = (patrolKey: string) => {
     setOpenPatrols(prev => {
@@ -185,7 +187,7 @@ export default function AttendanceByPersonPage() {
                     {sortedData.map((p) => (
                       <div key={p.memberId} className="table-row border-b last:border-b-0 hover:bg-muted/50 transition-colors">
                         <div className="table-cell p-4">{p.name}</div>
-                        <div className="table-cell p-4 text-muted-foreground">{p.patrolId ?? '—'}</div>
+                        <div className="table-cell p-4 text-muted-foreground">{getPatrolName(p.patrolId)}</div>
                         <div className="table-cell p-4">
                           <ul className="list-disc pl-5 text-muted-foreground space-y-1">
                             {p.events.map((e) => (
@@ -224,7 +226,7 @@ export default function AttendanceByPersonPage() {
                         ) : (
                           <ChevronRight className="h-4 w-4" />
                         )}
-                        <span>Patrol: {patrolKey}</span>
+                        <span>Patrol: {getPatrolName(patrolKey)}</span>
                         <span className="text-muted-foreground font-normal text-sm ml-auto">
                           {persons.length} {persons.length === 1 ? 'person' : 'people'}
                         </span>
@@ -283,7 +285,7 @@ export default function AttendanceByPersonPage() {
                         ) : (
                           <ChevronRight className="h-4 w-4" />
                         )}
-                        <span>Patrol: {patrolKey}</span>
+                        <span>Patrol: {getPatrolName(patrolKey)}</span>
                         <span className="text-muted-foreground font-normal text-sm ml-auto">
                           {events.length} {events.length === 1 ? 'event' : 'events'}
                         </span>
@@ -347,7 +349,7 @@ export default function AttendanceByPersonPage() {
                     <CardTitle className="text-base font-semibold">{p.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
-                    <div className="mb-2">Patrol: {p.patrolId ?? '—'}</div>
+                    <div className="mb-2">Patrol: {getPatrolName(p.patrolId)}</div>
                     <ul className="list-disc pl-5 space-y-1">
                       {p.events.map((e) => (
                         <li key={`m-${p.memberId}-${e.id}`}>
@@ -379,7 +381,7 @@ export default function AttendanceByPersonPage() {
                     ) : (
                       <ChevronRight className="h-4 w-4" />
                     )}
-                    <span>Patrol: {patrolKey}</span>
+                    <span>Patrol: {getPatrolName(patrolKey)}</span>
                     <span className="text-muted-foreground font-normal text-sm ml-auto">
                       {persons.length}
                     </span>
@@ -425,7 +427,7 @@ export default function AttendanceByPersonPage() {
                     ) : (
                       <ChevronRight className="h-4 w-4" />
                     )}
-                    <span>Patrol: {patrolKey}</span>
+                    <span>Patrol: {getPatrolName(patrolKey)}</span>
                     <span className="text-muted-foreground font-normal text-sm ml-auto">
                       {events.length} {events.length === 1 ? 'event' : 'events'}
                     </span>
