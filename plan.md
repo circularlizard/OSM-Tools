@@ -116,19 +116,17 @@ These must be resolved to unblock CI and maintain code quality.
 - [x] Validate persisted section against available sections
 - [x] E2E tests updated and passing (6 tests)
 
-**TODO (next session):**
-- [ ] Debug why modal still doesn't appear on login for multi-section users
-- [ ] Add console logging to trace the flow in StartupInitializer
-- [ ] Check if `setSectionPickerOpen(true)` is being called but modal not rendering
-- [ ] Verify timing: OAuth data fetch vs modal render
-- [ ] Clear stored event/member data (queue + TanStack Query cache) when section selection changes, so attendance and events views don’t show stale data when switching sections
-
-**Planned UX change:**
-- [ ] Replace auto-opening modal with dedicated `/dashboard/section-picker` page
-  - [ ] Show page only for multi-section users with no valid remembered selection
-  - [ ] Add "Remember my selection on this device" option backed by localStorage
-  - [ ] Redirect back to the originally requested dashboard route via `redirect` query param
-  - [ ] Provide a "Change sections" action in the header that links to the section picker page
+**Completed (section picker page implementation):**
+- [x] Replaced auto-opening modal with dedicated `/dashboard/section-picker` page
+- [x] Page shows only for multi-section users with no valid remembered selection
+- [x] "Remember my selection on this device" option backed by localStorage with userId validation
+- [x] Redirect back to originally requested dashboard route via `redirect` query param
+- [x] "Change sections" button in header links to section picker page
+- [x] "Skip for now" link when valid existing selection exists
+- [x] Clear TanStack Query cache and event queue when section selection changes
+- [x] Removed old SectionPickerModal component and related store state
+- [x] Added 15 unit tests for section picker functionality
+- [x] See `docs/section-picker-page-plan.md` for detailed design
 
 ---
 
