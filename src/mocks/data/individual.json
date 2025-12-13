@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "read_only": [],
+  "data": {
+    "scoutid": "746435",
+    "firstname": "Torin",
+    "lastname": "Reid",
+    "photo_guid": "bc692504-cddb-47c6-a54e-6932bbf0b0ed",
+    "dob": "2008-01-31",
+    "started": "2014-03-01",
+    "created_date": "0000-00-00 00:00:00",
+    "last_accessed": "2025-12-01 10:01:03",
+    "patrolid": "192279",
+    "patrolleader": "0",
+    "startedsection": "2022-08-08",
+    "enddate": null,
+    "age": "17 years and 10 months",
+    "age_simple": "17 / 10",
+    "sectionid": 37458,
+    "active": true,
+    "meetings": "6",
+    "others": [
+      "Pentland District: DofE Support Group",
+      "South East Scotland Region: SEEE Expedition Past Members"
+    ]
+  },
+  "meta": []
+}

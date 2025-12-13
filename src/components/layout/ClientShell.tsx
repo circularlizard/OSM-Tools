@@ -7,6 +7,7 @@ import SummaryQueueBanner from "./SummaryQueueBanner";
 import { useEvents } from "@/hooks/useEvents";
 import { useEffect, useRef } from "react";
 import { useQueueProcessor } from "@/hooks/useQueueProcessor";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useStore, type Section } from "@/store/use-store";
 import type { Event } from "@/lib/schemas";
 
@@ -17,6 +18,9 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const selectedSections = useStore((s) => s.selectedSections);
   const enqueueItems = useStore((s) => s.enqueueItems);
   const { data, isFetched } = useEvents();
+  
+  // Global inactivity timeout for authenticated users
+  useSessionTimeout();
   
   // Hide sidebar on section picker page for focused UX
   const isSectionPickerPage = pathname === '/dashboard/section-picker';

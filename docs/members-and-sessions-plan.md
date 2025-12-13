@@ -11,6 +11,28 @@ This plan covers:
   - Adding a **Members** page with a sortable table of members.
   - Adding a **Member data issues** view that highlights problems with member data quality.
 
+### 1.1. Dependency diagram
+
+High-level dependencies between phases:
+
+```text
+Section 2 (sidebar / section selector)
+        │
+        ▼
+Section 3 (session timeout)
+        │
+        ▼
+Section 4 (member data hydration)
+        │
+        ▼
+Section 5 (members page) ──► Section 6 (member data issues)
+        │
+        └─────────────────────────► Section 7 (navigation updates)
+
+Section 8 (section selector hardening) is partially independent but
+benefits from Section 2 being in place.
+```
+
 ---
 
 ## 2. Move section controls into the sidebar
@@ -67,6 +89,27 @@ This plan covers:
   - There is still some residual flash of the main page before the section selector appears in certain flows. This needs a deeper follow-up (e.g. coordinating `StartupInitializer`, initial route rendering, and dashboard gating) and will be revisited later.
 - Aside from the flash issue, section 2 work is effectively complete and implementation can proceed to section 3 (session timeout) next.
 
+### 2.6. Single-section selection (NEW)
+
+**Rationale**: To avoid the complexity of merging potentially conflicting data structures from different sections (especially `getCustomData` which can have section-specific custom fields), the section picker should be changed to allow **only a single section** to be selected at a time.
+
+**Changes required**:
+1. **Section picker UI** (`src/app/dashboard/section-picker/page.tsx`):
+   - Replace checkboxes with radio buttons (only one can be selected).
+   - Remove "Select All" / "Clear All" buttons.
+   - Update `selectedIds` state to hold a single ID instead of a `Set`.
+   - Always set `currentSection` (never `selectedSections` array).
+
+2. **Store simplification**:
+   - The `selectedSections` array in the store becomes unused for now.
+   - All code should read from `currentSection` only.
+
+3. **Sidebar display**:
+   - Always show single section name (no "N selected" case).
+
+4. **Remembered selection**:
+   - Store a single `selectedSectionId` instead of `selectedSectionIds[]`.
+
 ---
 
 ## 3. Session timeout & redirect to login
@@ -116,6 +159,19 @@ This plan covers:
    - Import and call `useSessionTimeout` inside `ClientShell.tsx` so it runs for all authenticated pages.
    - Ensure it does not interfere with the OAuth callback or section-picker redirect flows.
 
+### 3.5. Current status
+
+- **Implemented**:
+  - `useSessionTimeout` hook created in `src/hooks/useSessionTimeout.ts`.
+  - Tracks user activity (mousemove, keydown, click, focus, visibilitychange).
+  - After 15 minutes of inactivity, calls `getSession()` and redirects to `/?callbackUrl=<current URL>` if session is expired.
+  - Hook is mounted globally in `ClientShell.tsx` for all authenticated users.
+  - Unit tests added in `src/hooks/__tests__/useSessionTimeout.test.tsx` covering:
+    - No redirect when session is still valid after inactivity.
+    - Redirect to login when session has expired after inactivity.
+    - No checks performed when user is unauthenticated.
+- Section 3 is **complete**.
+
 ---
 
 ## 4. Admin: hydrate members for selected sections
@@ -126,40 +182,260 @@ This plan covers:
   - In addition to events, hydrate the client model with **members** for the selected sections.
 - The members data should reflect OSM permissions: only members the user can see.
 
-### 4.2. API and schemas
+### 4.2. API structure (based on OSM API analysis)
 
-1. **Zod schemas**
-   - In `src/lib/schemas.ts`, define:
-     - `MemberSchema` for a normalized member view, including:
-       - `id` (OSM member id), `firstName`, `lastName`.
-       - `age` (derived from DOB if available).
-       - `sections: { sectionId: string; sectionName: string; sectionType: string }[]`.
-       - Contact info: postal address, phone, email.
-       - Flags: `hasPhotoConsent`, `hasMedicalInfo`, `hasAllergies`.
-     - `MembersResponseSchema` for API responses.
+The OSM API requires **two calls per member** to get full data:
 
-2. **Proxy helpers**
-   - In `src/lib/api.ts`, add:
-     - `getMembersForSection({ sectionid, termid, sectionType }): Promise<MembersResponse>`.
-     - All calls go via `/api/proxy/...` per existing architecture.
-   - Validate all responses with the Zod schemas (no `any`).
+1. **`getMembers`** (one call per section)
+   - Returns a flat array of members with **summary data only**:
+     - `scoutid`, `firstname`, `lastname`, `full_name`
+     - `patrolid`, `patrol`, `sectionid`
+     - `age` (string like "17 / 10")
+     - `photo_guid`, `active`, `enddate`
+   - **Does NOT include**: contact info, medical info, emergency contacts, consents
 
-### 4.3. Client hook for members
+2. **`getCustomData`** (one call per member)
+   - Returns rich nested data for a single member.
+   - Structure: `{ status, error, data: Group[] }` where each `Group` has:
+     - `group_id`, `identifier`, `name`, `custom_order`
+     - `columns[]` - array of fields with `column_id`, `varname`, `label`, `value`, `type`, `order`
+   - **Key groups** (by `identifier`):
+     - `contact_primary_member` - Member's own contact info (address, phone, email, medical/dietary/allergy notes)
+     - `contact_primary_1` - Primary Contact 1 (parent/guardian)
+     - `contact_primary_2` - Primary Contact 2 (second parent/guardian)
+     - `emergency` - Emergency Contact (must be different from primary contacts)
+     - `doctor` - Doctor's Surgery info
+     - `standard_fields` - Essential Information (medical, allergies, dietary, swimmer, etc.)
+     - `consents` - Photo consent, medical consent
+     - `customisable_data` - Section-specific custom fields (structure varies by section)
 
-- New hook `useMembers` in `src/hooks/useMembers.ts`:
-  - Reads `currentSection`, `selectedSections`, `availableSections` from the store.
-  - Uses `useSession` to determine if the user is an admin (`roleSelection === 'admin'`).
-  - For admins and when sections are selected:
-    - Multi-section mode: `useQueries` per section.
-    - Single-section mode: `useQuery`.
-  - Normalizes and merges data into a single `Member[]`:
-    - De-duplicate members who appear in multiple sections and merge `sections` arrays.
+3. **`getIndividual`** (required for DOB)
+   - Returns DOB, membership history, and other sections the member belongs to.
+   - **Upstream URL**: `https://www.onlinescoutmanager.co.uk/ext/members/contact/?action=getIndividual&sectionid={sectionid}&scoutid={scoutid}&termid={termid}&context=members`
+   - **Parameters**:
+     - `action=getIndividual` (fixed)
+     - `sectionid` - section ID
+     - `scoutid` - member ID
+     - `termid` - term ID
+     - `context=members` (fixed)
+   - **Key fields returned**: `dob`, `started`, `startedsection`, `meetings`, `others` (other sections)
 
-### 4.4. Testing
+4. **`getCustomData`** (required for contact/medical data)
+   - **Upstream URL**: `https://www.onlinescoutmanager.co.uk/ext/customdata/?action=getData&section_id={sectionid}&associated_id={scoutid}&associated_type=member&associated_is_section=null&varname_filter=null&context=members&group_order=section`
+   - **Parameters**:
+     - `action=getData` (fixed)
+     - `section_id` - section ID
+     - `associated_id` - member ID (scoutid)
+     - `associated_type=member` (fixed)
+     - `associated_is_section=null` (fixed)
+     - `varname_filter=null` (fixed)
+     - `context=members` (fixed)
+     - `group_order=section` (fixed)
 
-- Member data model:
-  - Zod schemas (`MemberSchema`, `MembersResponseSchema`).
-  - Normalization logic for merging multi-section membership.
+5. **API call summary per member**:
+   - `getMembers`: 1 call per section (returns all members in section)
+   - `getIndividual`: 1 call per member (for DOB)
+   - `getCustomData`: 1 call per member (for contacts, medical, consents)
+   - **Total**: For N members: 1 + N + N = 2N + 1 calls per section
+
+### 4.3. Rate limiting considerations
+
+- **Problem**: For N members in a section, we need:
+  - 1 call to `getMembers` (returns all members)
+  - N calls to `getIndividual` (for DOB)
+  - N calls to `getCustomData` (for contacts, medical, consents)
+- For a typical section with ~50 members, this is ~101 API calls.
+
+- **Rate limiting is already implemented** in `src/lib/bottleneck.ts`:
+  - Uses Bottleneck library with `maxConcurrent: 5` and `minTime: 50ms` between requests.
+  - Parses `X-RateLimit-*` headers from OSM API responses.
+  - Dynamically adjusts reservoir based on remaining quota (80% safety factor).
+  - Triggers soft lock when quota drops below 10%.
+  - All proxy requests go through `scheduleRequest()` which respects the rate limiter.
+
+- **Implementation approach**:
+  1. **Eager loading**: Start fetching `getCustomData` as soon as section selection is confirmed.
+  2. **Use existing rate limiter**: All calls go through `/api/proxy/...` which already uses `scheduleRequest()`.
+  3. **Progressive loading**: Show member list immediately from `getMembers`, then progressively load `getCustomData` in the background.
+  4. **Caching**: Cache `getCustomData` responses for **12 hours** (data changes infrequently).
+
+### 4.4. Unified data retrieval progress bar
+
+- The existing header space showing event retrieval progress should be **generalized** into a unified progress component that tracks all data loads:
+  - "Loading events..." (existing)
+  - "Loading members..." (new, for `getMembers`)
+  - "Loading member info..." (new, for `getIndividual` calls - DOB)
+  - "Loading member details..." (new, for `getCustomData` calls - contacts/medical)
+- Reuse the existing header location for this unified progress display.
+- The component should show:
+  - Current data type being loaded.
+  - Progress (e.g., "Loading member details: 15/48").
+  - Overall completion state.
+
+### 4.5. Zod schemas
+
+1. **Raw API response schemas** (in `src/lib/schemas.ts`):
+   - `MemberSummarySchema` - for `getMembers` response items
+   - `IndividualResponseSchema` - for `getIndividual` response (DOB, membership history)
+   - `CustomDataColumnSchema` - for individual columns in `getCustomData`
+   - `CustomDataGroupSchema` - for groups in `getCustomData`
+   - `CustomDataResponseSchema` - for full `getCustomData` response
+
+2. **Normalized member schema**:
+   - `NormalizedMemberSchema` - unified view combining summary + individual + custom data:
+     - `id`, `firstName`, `lastName`, `fullName`
+     - `age` (string from `getMembers`)
+     - `dateOfBirth` (from `getIndividual`)
+     - `started`, `startedSection` (membership dates from `getIndividual`)
+     - `sectionId`, `sectionName` - current section
+     - `memberContact` - member's own contact info
+     - `primaryContact1`, `primaryContact2` - parent/guardian contacts
+     - `emergencyContact` - emergency contact
+     - `doctorInfo` - doctor/surgery info
+     - `consents` - photo consent, medical consent flags
+     - `medicalInfo` - medical details, allergies, dietary requirements
+
+### 4.6. Proxy helpers
+
+In `src/lib/api.ts`, add:
+- `getMembersForSection({ sectionid, termid, section }): Promise<MemberSummary[]>`
+- `getMemberIndividual({ sectionid, scoutid, termid, section }): Promise<IndividualResponse>` - for DOB
+- `getMemberCustomData({ sectionid, scoutid, termid, section }): Promise<CustomDataResponse>` - for contacts/medical
+
+All calls go via `/api/proxy/...` per existing architecture.
+
+### 4.7. Client hook for members
+
+New hook `useMembers` in `src/hooks/useMembers.ts`:
+- Reads `currentSection` from the store (single section only).
+- Uses `useSession` to determine if the user is an admin.
+- **Phase 1**: Fetch member summaries for the selected section.
+- **Phase 2**: Queue `getIndividual` calls for each member (for DOB).
+- **Phase 3**: Queue `getCustomData` calls for each member (for contacts/medical).
+- Normalizes data into `NormalizedMember[]`.
+
+### 4.8. Custom data parsing
+
+Create helper functions to extract structured data from the `getCustomData` response:
+- `parseCustomDataGroups(data: CustomDataGroup[]): ParsedMemberData`
+- Extract by `identifier`:
+  - `contact_primary_member` → `memberContact`
+  - `contact_primary_1` → `primaryContact1`
+  - `contact_primary_2` → `primaryContact2`
+  - `emergency` → `emergencyContact`
+  - `doctor` → `doctorInfo`
+  - `standard_fields` → `essentialInfo`
+  - `consents` → `consents`
+- Within each group, extract columns by `varname` (e.g., `email1`, `phone1`, `address1`, etc.)
+
+### 4.9. Acceptance criteria
+
+For Section 4 to be considered complete:
+- Admin user selects a section and, after a short delay, sees:
+  - A populated members list on the Members page.
+  - A unified header progress bar that steps through events → members → member info → member details.
+- Each member in the list has:
+  - Name, age, DOB, section, and contact/medical/consent flags populated from normalized data.
+- Hydration respects rate limiting and does not trigger hard or soft locks under normal usage.
+- When network/API errors occur:
+  - Other members still load.
+  - Failed members show an error state with an option to retry.
+- Changing the selected section:
+  - Cancels in-flight member hydration for the previous section.
+  - Clears previous member data and starts fresh hydration for the new section.
+- All new Zod schemas validate real mock data (`members.json`, `individual.json`, `user_custom_data.json`).
+
+### 4.10. Error handling and resilience
+
+1. **Partial failure handling**:
+   - If `getIndividual` or `getCustomData` fails for one member, continue with others.
+   - Store error state per member (e.g., `loadingState: 'error'`).
+   - Display failed members with retry option in UI.
+
+2. **Cancellation on section change**:
+   - When user changes section mid-hydration, abort in-flight requests.
+   - Clear partial data from previous section.
+
+3. **Network errors**:
+   - Handle timeouts, 429 responses, and connection failures gracefully.
+   - Show error state with retry button.
+
+4. **Loading state granularity**:
+   - Track per-member state: `'pending' | 'summary' | 'individual' | 'customData' | 'complete' | 'error'`.
+   - Allow UI to show partial data while remaining fields load.
+
+### 4.11. Store design
+
+Add to Zustand store (`src/store/use-store.ts`):
+- `members: NormalizedMember[]` - array of normalized members.
+- `membersLoadingState: 'idle' | 'loading-summary' | 'loading-individual' | 'loading-custom' | 'complete' | 'error'`.
+- `membersProgress: { total: number; completed: number; phase: string }`.
+- `membersLastUpdated: Date | null` - for "Last updated X minutes ago" display.
+- `setMembers`, `updateMember`, `clearMembers` actions.
+
+### 4.12. Cache and freshness
+
+1. **Cache strategy**:
+   - `getMembers`: Cache for 12 hours (list rarely changes).
+   - `getIndividual`: Cache for 12 hours (DOB doesn't change).
+   - `getCustomData`: Cache for 12 hours (contact info changes infrequently).
+   - Cache in React Query only (not localStorage) due to data sensitivity.
+
+2. **Cache invalidation**:
+   - Clear member cache when section changes.
+   - Provide manual "Refresh" button to force re-fetch.
+
+3. **Freshness indicator**:
+   - Display "Last updated: X minutes ago" in UI.
+   - Consider stale indicator if data is >1 hour old.
+
+### 4.13. Security considerations
+
+1. **Admin role check**:
+   - Verify admin role in `useMembers` hook before fetching (not just UI hiding).
+   - Proxy route should also verify admin role for member data endpoints.
+
+2. **Data sensitivity**:
+   - Member contact/medical data is sensitive.
+   - Do not persist to localStorage.
+   - Consider logging access to member detail data for audit.
+
+### 4.14. Missing API documentation
+
+**`getMembers`** upstream URL (to be confirmed):
+- URL pattern: `https://www.onlinescoutmanager.co.uk/ext/members/contact/?action=getListOfMembers&sectionid={sectionid}&termid={termid}&section={section}`
+- Parameters:
+  - `action=getListOfMembers` (fixed)
+  - `sectionid` - section ID
+  - `termid` - term ID
+  - `section` - section type (e.g., "scouts")
+
+### 4.15. Testing
+
+**Unit tests**:
+- **Zod schemas**: Validate against mock data samples and edge cases (missing fields, unexpected types, null values).
+- **Custom data parsing**: Test extraction with missing groups, empty columns, null values, unexpected group identifiers.
+- **Normalization logic**: Test combining summary + individual + custom data into `NormalizedMember`.
+
+**Integration tests**:
+- **Rate limiting**: Verify ~101 calls complete without triggering soft lock (use mock API with `NEXT_PUBLIC_USE_MOCK_API=true`).
+- **Error handling**: Test API timeout, 429 response, partial member failures.
+- **Cache behavior**: Verify 12h TTL, cache invalidation on section change.
+
+**Hook tests** (`useMembers`):
+- Loading states transition correctly through phases (summary → individual → customData → complete).
+- Cancellation on section change aborts in-flight requests.
+- Non-admin users receive no data (not just hidden UI).
+- Error state set correctly when API fails.
+
+**Component tests**:
+- Progress bar updates correctly as calls complete.
+- Error states display appropriately for failed members.
+- "Last updated" timestamp displays correctly.
+
+**Environment setup for tests**:
+- Set `NEXT_PUBLIC_USE_MOCK_API=true` to use mock data for rate limiting and integration tests.
+- Mock data files: `members.json`, `individual.json`, `user_custom_data.json`.
 
 ---
 
@@ -204,6 +480,13 @@ This plan covers:
   - Sorting behavior for name, age, and sections.
   - Correct rendering of section lists per member.
   - Correct icons for photo consent, medical info, and allergies.
+
+### 5.5. Future enhancements
+
+- Add text search by name and filters (e.g. by patrol, by data completeness).
+- Consider pagination or virtual scrolling for very large sections (100+ members).
+- Add a member detail view (modal or separate route) showing full normalized member data.
+- Allow configurable column visibility (hide/show optional columns such as separate first-name column or DOB).
 
 ---
 
@@ -253,6 +536,13 @@ This plan covers:
   - Member issue helpers (`hasCompleteMemberContact`, `hasCompleteOtherContacts`, `hasDoctorInfo`, `hasDuplicateEmergencyContact`, etc.).
   - Correct grouping of members into each issue category.
 
+### 6.5. Future enhancements
+
+- Add issue types for missing photo consent and missing medical consent.
+- Introduce severity levels (e.g. critical vs minor) for different issue types.
+- Provide an "Export to CSV" option for issue tables so leaders can share or work offline.
+- Allow leaders to mark specific issues as acknowledged/waived (e.g. parent declined to provide email).
+
 ---
 
 ## 7. Navigation updates
@@ -278,6 +568,10 @@ This plan covers:
 - Routing / URLs and navigation:
   - Ensure route helpers or navigation components reference `/dashboard/members*` and `/dashboard/events/attendance` as expected.
   - Verify non-admin users do not see Members-related links.
+
+### 7.4. Future enhancements
+
+- Add breadcrumb navigation for members routes (e.g. `Dashboard / Members / Data issues`).
 
 ---
 
@@ -340,3 +634,11 @@ This plan covers:
 
 6. **Section selector hardening**
    - After login, users are redirected to the correct page without a flash of the main dashboard content.
+
+### 9.3. End-to-end testing
+
+- Add E2E tests (e.g. with Playwright) for critical admin flows:
+  - Hydrating members and loading the Members page.
+  - Viewing member data issues and verifying issue counts.
+  - Navigating via sidebar between Dashboard, Members, and Member data issues.
+  - Login → section selection → dashboard without flash.

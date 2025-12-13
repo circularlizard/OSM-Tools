@@ -28,7 +28,9 @@ SANITIZED_MAPPING = {
     "getListOfLists.txt": "listOfQMLists.json",  # Added: Maps the list of lists URL to the mock data
     "getList.txt": "QMList.json",
     # Added: Maps the image URL structure to the mock image lookup table
-    "memberImage.txt": "images.json", 
+    "memberImage.txt": "images.json",
+    "getIndividual.txt": "individual.json",
+    "getCustomData.txt": "user_custom_data.json"
 }
 
 def generate_api_map():

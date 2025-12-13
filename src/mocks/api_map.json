@@ -1,5 +1,40 @@
 [
   {
+    "original_file": "getCustomData.txt",
+    "mock_data_file": "user_custom_data.json",
+    "full_url": "https://www.onlinescoutmanager.co.uk/ext/customdata/?action=getData&section_id=37458&associated_id=746435&associated_type=member&associated_is_section=null&varname_filter=null&context=members&group_order=section",
+    "path": "/ext/customdata/",
+    "method": "GET",
+    "action": "getData",
+    "query_params": {
+      "action": [
+        "getData"
+      ],
+      "section_id": [
+        "37458"
+      ],
+      "associated_id": [
+        "746435"
+      ],
+      "associated_type": [
+        "member"
+      ],
+      "associated_is_section": [
+        "null"
+      ],
+      "varname_filter": [
+        "null"
+      ],
+      "context": [
+        "members"
+      ],
+      "group_order": [
+        "section"
+      ]
+    },
+    "is_static_resource": false
+  },
+  {
     "original_file": "getEventSummary2.txt",
     "mock_data_file": "event_summary_2.json",
     "full_url": "https://www.onlinescoutmanager.co.uk/v3/events/event/1631576/summary",
@@ -67,23 +102,6 @@
     "is_static_resource": false
   },
   {
-    "original_file": "getEvents.txt",
-    "mock_data_file": "events.json",
-    "full_url": "https://www.onlinescoutmanager.co.uk/ext/events/summary/?action=get",
-    "path": "/ext/events/summary/",
-    "method": "GET",
-    "action": "get",
-    "query_params": {
-      "action": [
-        "getEvents"
-      ],
-      "sectionid": [
-        "37458"
-      ]
-    },
-    "is_static_resource": false
-  },
-  {
     "original_file": "getBadgeByPerson.txt",
     "mock_data_file": "badge_assignments.json",
     "full_url": "https://www.onlinescoutmanager.co.uk/ext/badges/badgesbyperson/?action=loadBadgesByMember&section=explorers&sectionid=37458&term_id=842886",
@@ -129,6 +147,32 @@
       ],
       "client_time": [
         "1764510520335"
+      ]
+    },
+    "is_static_resource": false
+  },
+  {
+    "original_file": "getIndividual.txt",
+    "mock_data_file": "individual.json",
+    "full_url": "https://www.onlinescoutmanager.co.uk/ext/members/contact/?action=getIndividual&sectionid=37458&scoutid=746435&termid=842886&context=members",
+    "path": "/ext/members/contact/",
+    "method": "GET",
+    "action": "getIndividual",
+    "query_params": {
+      "action": [
+        "getIndividual"
+      ],
+      "sectionid": [
+        "37458"
+      ],
+      "scoutid": [
+        "746435"
+      ],
+      "termid": [
+        "842886"
+      ],
+      "context": [
+        "members"
       ]
     },
     "is_static_resource": false

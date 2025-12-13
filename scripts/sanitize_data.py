@@ -24,6 +24,8 @@ FILE_MAPPING = {
     "getEventDetails.txt": "event_details.json",
     "getEventSummary.txt": "event_summary.json",
     "getEventSummary2.txt": "event_summary_2.json",
+    "getIndividual.txt": "individual.json",
+    "getCustomData.txt": "user_custom_data.json",
     
     # Structure / Definitions (Pass-through)
     "getFlexiRecordStructure.txt": "flexi_structure.json",
