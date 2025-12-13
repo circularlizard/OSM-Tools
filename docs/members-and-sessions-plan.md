@@ -437,6 +437,75 @@ Add to Zustand store (`src/store/use-store.ts`):
 - Set `NEXT_PUBLIC_USE_MOCK_API=true` to use mock data for rate limiting and integration tests.
 - Mock data files: `members.json`, `individual.json`, `user_custom_data.json`.
 
+### 4.16. Current status
+
+**Implemented** (December 2025):
+
+1. **Zod schemas** (`src/lib/schemas.ts`):
+   - `IndividualDataSchema` / `IndividualResponseSchema` - for `getIndividual` API response (DOB, membership history).
+   - `CustomDataColumnSchema` / `CustomDataGroupSchema` / `CustomDataResponseSchema` - for `getCustomData` API response.
+   - `NormalizedContactSchema`, `NormalizedConsentsSchema`, `NormalizedMemberSchema` - normalized member data structure.
+   - `MemberSchema.photo_guid` updated to allow `null` (some members have no photo).
+   - `CustomDataColumnSchema.value` updated to handle objects (e.g., confirmation fields with `{by, date}`).
+   - `CustomDataColumnSchema.permissions` updated to handle both arrays and empty strings.
+
+2. **Proxy helper functions** (`src/lib/api.ts`):
+   - `getMemberIndividual({ sectionid, scoutid, termid })` - fetches DOB and membership history.
+   - `getMemberCustomData({ sectionid, scoutid })` - fetches contacts, medical, consents.
+
+3. **Mock data registration** (`src/app/api/proxy/[...path]/route.ts`):
+   - Added `individual.json` and `user_custom_data.json` to mock data registry.
+
+4. **Zustand store** (`src/store/use-store.ts`):
+   - Added `MembersState` interface with `members`, `membersLoadingState`, `membersProgress`, `membersLastUpdated`, `membersSectionId`.
+   - Added actions: `setMembers`, `updateMember`, `setMembersLoadingState`, `setMembersProgress`, `setMembersLastUpdated`, `setMembersSectionId`, `clearMembers`.
+   - Added selector hooks: `useMembers`, `useMembersLoadingState`, `useMembersProgress`, `useMembersLastUpdated`.
+   - Member data is NOT persisted to localStorage (security).
+
+5. **Custom data parsing** (`src/lib/member-data-parser.ts` - new file):
+   - `parseCustomDataGroups()` - extracts normalized contact, medical, consent data from `getCustomData` groups.
+   - `extractContactInfo()`, `extractMedicalInfo()`, `extractConsentInfo()` - group-specific extractors.
+   - `createNormalizedMemberFromSummary()` - creates initial member from `getMembers` response.
+   - `updateMemberWithIndividualData()` - enriches member with DOB from `getIndividual`.
+   - `updateMemberWithCustomData()` - enriches member with contacts/medical/consents from `getCustomData`.
+
+6. **Members hydration hook** (`src/hooks/useMembersHydration.ts` - new file):
+   - Three-phase hydration: `getMembers` → `getIndividual` (per member) → `getCustomData` (per member).
+   - Progressive loading: members appear immediately from Phase 1, details fill in during Phases 2 & 3.
+   - Cancellation: section change aborts in-flight hydration and clears data.
+   - Error resilience: individual member failures don't block others; error state tracked per member.
+   - 12-hour cache TTL for member data freshness.
+   - Admin role check before fetching.
+
+7. **Global integration** (`src/components/layout/ClientShell.tsx`):
+   - `useMembersHydration` hook mounted globally for admin users.
+   - Debug logging shows hydration progress in development.
+
+8. **Single-section selection** (`src/app/dashboard/section-picker/page.tsx`):
+   - Changed from multi-select (checkboxes) to single-select (radio button behavior).
+   - Removed "Select All" / "Clear All" buttons.
+   - Updated `RememberedSelection` interface to store `selectedSectionId` (string) instead of `selectedSectionIds` (array).
+   - Tests updated in `src/app/dashboard/section-picker/__tests__/section-picker.test.tsx`.
+
+9. **Role detection** (`src/components/StartupInitializer.tsx`):
+   - Fixed to use `roleSelection` from session (set during OAuth login) instead of deriving from permissions.
+   - Admin users who log in with `osm-admin` provider now correctly get `userRole: 'admin'`.
+
+**Verified working**:
+- Logging in as admin triggers member hydration.
+- All 48 members in mock data are fetched with individual and custom data.
+- Hydration completes in ~3 seconds with mock API.
+- No validation errors with real mock data.
+
+**Still outstanding**:
+- Unit tests for `useMembersHydration` hook.
+- Unit tests for `member-data-parser.ts` functions.
+- Integration tests for rate limiting behavior.
+- Progress bar UI component (not yet implemented).
+- Members page UI (Section 5).
+
+Section 4 core implementation is **complete**. Proceed to Section 5 (Members page).
+
 ---
 
 ## 5. Members page (admin): sortable member list

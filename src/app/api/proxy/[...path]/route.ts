@@ -26,6 +26,8 @@ import flexiDataData from '@/mocks/data/flexi_data.json'
 import flexiDefinitionsData from '@/mocks/data/flexi_definitions.json'
 import flexiStructureData from '@/mocks/data/flexi_structure.json'
 import membersData from '@/mocks/data/members.json'
+import individualData from '@/mocks/data/individual.json'
+import userCustomData from '@/mocks/data/user_custom_data.json'
 import patrolsData from '@/mocks/data/patrols.json'
 import listOfQMListsData from '@/mocks/data/listOfQMLists.json'
 import qmListData from '@/mocks/data/QMList.json'
@@ -47,6 +49,8 @@ const mockDataRegistry: Record<string, unknown> = {
   'flexi_definitions.json': flexiDefinitionsData,
   'flexi_structure.json': flexiStructureData,
   'members.json': membersData,
+  'individual.json': individualData,
+  'user_custom_data.json': userCustomData,
   'patrols.json': patrolsData,
   'listOfQMLists.json': listOfQMListsData,
   'QMList.json': qmListData,

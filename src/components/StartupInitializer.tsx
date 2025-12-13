@@ -75,13 +75,27 @@ export default function StartupInitializer() {
         const data = await response.json()
         const sections = data.sections || []
         
-        // Determine role based on permissions
-        const hasEventsAccess = sections.some((s: OAuthSection) => s.upgrades?.events)
-        const hasProgrammeAccess = sections.some((s: OAuthSection) => s.upgrades?.programme)
+        // Use roleSelection from session (set during OAuth login based on provider choice)
+        // Falls back to permission-based heuristic if not available
+        const sessionRole = (session as { roleSelection?: 'admin' | 'standard' }).roleSelection
+        let role: 'admin' | 'standard' | 'readonly'
         
-        // Role heuristic: events + programme = standard, events only = readonly
-        const role = hasEventsAccess && hasProgrammeAccess ? 'standard' : 'readonly'
+        if (sessionRole === 'admin') {
+          role = 'admin'
+        } else if (sessionRole === 'standard') {
+          role = 'standard'
+        } else {
+          // Fallback: determine role based on permissions
+          const hasEventsAccess = sections.some((s: OAuthSection) => s.upgrades?.events)
+          const hasProgrammeAccess = sections.some((s: OAuthSection) => s.upgrades?.programme)
+          role = hasEventsAccess && hasProgrammeAccess ? 'standard' : 'readonly'
+        }
+        
         setUserRole(role)
+        
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[StartupInitializer] User role set to:', role, '(from session:', sessionRole, ')')
+        }
 
         // Transform OAuth sections to store format
         const storeSections = sections.map((s: OAuthSection) => {

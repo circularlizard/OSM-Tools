@@ -104,7 +104,7 @@ export const MemberSchema = z.object({
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   full_name: z.string().min(1),
-  photo_guid: z.string().uuid(),
+  photo_guid: z.string().uuid().nullable(),
   patrolid: z.number(),
   patrol: z.string(),
   sectionid: z.number(),
@@ -293,14 +293,20 @@ export const CustomDataColumnSchema = z.object({
   config: z.unknown(), // Can be array or object
   varname: z.string(),
   label: z.string(),
-  value: z.union([z.string(), z.number(), z.boolean(), z.null()]).transform((v) => 
-    v === null ? '' : String(v)
-  ),
+  // Value can be string, number, boolean, null, or object (e.g., confirmation fields have {by, date})
+  value: z.unknown().transform((v) => {
+    if (v === null || v === undefined) return ''
+    if (typeof v === 'object') return JSON.stringify(v) // Convert objects to string for consistency
+    return String(v)
+  }),
   is_core: z.string(),
   order: z.string(),
   force_read_only: z.string(),
   special_permissions: z.string(),
-  permissions: z.array(z.unknown()),
+  // Permissions can be array or empty string
+  permissions: z.union([z.array(z.unknown()), z.string()]).transform((v) => 
+    Array.isArray(v) ? v : []
+  ),
   orig_label: z.string(),
 })
 
