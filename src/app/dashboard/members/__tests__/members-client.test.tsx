@@ -185,33 +185,6 @@ describe('MembersClient', () => {
     ).toBeInTheDocument()
   })
 
-  test('shows global loading state when no members but loading is in progress', () => {
-    mockUseMembers.mockReturnValue([])
-    mockUseMembersLoadingState.mockReturnValue('loading-summary' as any)
-    mockUseMembersProgress.mockReturnValue({ total: 10, completed: 3 })
-
-    render(<MembersClient />)
-
-    // Progress bar is visible with phase message and counts
-    expect(
-      screen.getByText(/loading member list/i)
-    ).toBeInTheDocument()
-    expect(screen.getByText('3 / 10')).toBeInTheDocument()
-    // Loading message below
-    expect(screen.getByText(/loading members/i)).toBeInTheDocument()
-  })
-
-  test('shows error state in hydration progress when loadingState is error', () => {
-    mockUseMembers.mockReturnValue([])
-    mockUseMembersLoadingState.mockReturnValue('error' as any)
-    mockUseMembersProgress.mockReturnValue({ total: 5, completed: 2 })
-
-    render(<MembersClient />)
-
-    expect(screen.getByText('Error loading members')).toBeInTheDocument()
-    expect(screen.getByText('2 / 5')).toBeInTheDocument()
-  })
-
   test('renders per-member loading icons for complete, error, and in-progress states', () => {
     const members: NormalizedMember[] = [
       createMember({ id: 'complete', loadingState: 'complete' }),

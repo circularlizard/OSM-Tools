@@ -277,50 +277,6 @@ function MemberCard({ member, onClick }: { member: NormalizedMember; onClick?: (
 }
 
 /**
- * Progress bar for member hydration
- */
-function HydrationProgress() {
-  const loadingState = useMembersLoadingState()
-  const progress = useMembersProgress()
-  
-  if (loadingState === 'idle' || loadingState === 'complete') return null
-  
-  const percentage = progress.total > 0 
-    ? Math.round((progress.completed / progress.total) * 100) 
-    : 0
-  
-  const phaseLabels: Record<string, string> = {
-    'loading-summary': 'Loading member list...',
-    'loading-individual': 'Loading member details...',
-    'loading-custom': 'Loading contact information...',
-    'error': 'Error loading members',
-  }
-  
-  return (
-    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">
-          {phaseLabels[loadingState] || 'Loading...'}
-        </span>
-        <span className="font-medium">
-          {progress.completed} / {progress.total}
-        </span>
-      </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div 
-          className="h-full bg-primary transition-all duration-300"
-          style={{ width: `${percentage}%` }}
-          role="progressbar"
-          aria-valuenow={percentage}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        />
-      </div>
-    </div>
-  )
-}
-
-/**
  * Main members table/list component
  */
 export function MembersClient() {
@@ -368,9 +324,6 @@ export function MembersClient() {
   
   return (
     <div className="space-y-4">
-      {/* Progress bar during hydration */}
-      <HydrationProgress />
-      
       {/* Summary stats */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>{members.length} members</span>

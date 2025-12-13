@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import SummaryQueueBanner from "./SummaryQueueBanner";
+import { MembersHydrationBanner } from "./MembersHydrationBanner";
 import { useEvents } from "@/hooks/useEvents";
 import { useEffect, useRef } from "react";
 import { useQueueProcessor } from "@/hooks/useQueueProcessor";
@@ -87,6 +88,9 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      {membersHydration.isAdmin && (
+        <MembersHydrationBanner />
+      )}
       {!isSectionPickerPage && <SummaryQueueBanner />}
       <div className="flex flex-1">
         {!isSectionPickerPage && <Sidebar />}
