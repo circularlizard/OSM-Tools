@@ -519,22 +519,26 @@ Section 4 core implementation is **complete**. Proceed to Section 5 (Members pag
 
 ### 5.2. Table requirements
 
-- Columns:
+- Columns (desktop):
+  - **Status**: per-member hydration state (icon-only column; sortable).
   - **Name**: "Last name, First name" (primary sort column).
-  - **First name** (optional separate column if desired).
   - **Age**.
-  - **Sections**: list of sections the member belongs to.
-  - **Flags**: icons for photo consent, medical info, allergies.
+  - **DOB**.
+  - **Details**: icons for photo consent, medical info, allergies.
+  - **Patrol**: member's patrol in the currently selected section.
+  - **Sections**: list of *other* sections the member belongs to (excluding the current patrol).
 
 - Behavior:
   - Table is client-side sortable by clicking column headers:
-    - At minimum: Name, Age, Sections.
+    - At minimum: Status, Name, Age, Patrol.
   - Icons:
-    - Use small `lucide-react` or similar icons, e.g.:
+    - Use small `lucide-react` icons, e.g.:
       - Photo consent: camera icon.
-      - Medical info: cross or stethoscope icon.
+      - Medical info: stethoscope icon.
       - Allergies: alert triangle icon.
-    - Each icon should have `aria-label` and/or a tooltip for accessibility.
+      - Hydration status: circular loader, warning triangle, and green tick.
+    - Each icon has `aria-label` and/or a tooltip for accessibility.
+  - An inline **icon legend** (key) appears above the table explaining all status and detail icons.
 
 ### 5.3. Layout
 
@@ -568,13 +572,16 @@ Section 4 core implementation is **complete**. Proceed to Section 5 (Members pag
 
 2. **Client component** (`src/app/dashboard/members/MembersClient.tsx`):
    - Uses `useMembers`, `useMembersLoadingState`, `useMembersProgress` from Zustand store.
-   - Sortable columns: Name, Age, DOB, Patrol, Loading status.
+   - Sortable columns: Status (hydration state), Name, Age, DOB, Patrol.
    - Sort direction toggle (asc/desc) with visual indicators.
-   - Status icons for photo consent, medical info, allergies.
-   - Per-member loading state indicator (pending, loading, error).
+   - **Sections** column shows all *other* sections a member belongs to.
+   - **Details** column shows icons for photo consent, medical info, and allergies.
+   - Per-member loading state indicator (pending, loading, error, complete) rendered as icons.
    - Progress bar during hydration showing phase and completion count.
+   - Inline icon legend explaining all status/detail icons.
    - Empty state when no section selected.
    - Loading state while hydration in progress.
+   - Jest tests in `src/app/dashboard/members/__tests__/members-client.test.tsx` covering sorting, sections display, icons, loading states, and mobile cards.
 
 3. **Responsive layout**:
    - Desktop: Table view with sortable column headers.
@@ -593,7 +600,6 @@ Section 4 core implementation is **complete**. Proceed to Section 5 (Members pag
 - Mobile card view renders correctly.
 
 **Still outstanding**:
-- Unit tests for `MembersClient` component.
 - Text search and filtering.
 - Member detail view (modal or separate route).
 

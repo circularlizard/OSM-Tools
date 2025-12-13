@@ -16,7 +16,14 @@ import { useMembers, useMembersLoadingState, useMembersProgress } from '@/store/
 import type { NormalizedMember } from '@/lib/schemas'
 import { cn } from '@/lib/utils'
 
-type SortField = 'name' | 'age' | 'dob' | 'patrol' | 'status'
+/**
+ * Format other sections for display (excludes the primary patrol)
+ */
+function formatSections(otherSections: string[]): string {
+  return otherSections.filter(Boolean).join(', ');
+}
+
+type SortField = 'name' | 'age' | 'dob' | 'patrol' | 'sections' | 'status'
 type SortDirection = 'asc' | 'desc'
 
 interface SortConfig {
@@ -183,27 +190,40 @@ function MemberStatusIcons({ member }: { member: NormalizedMember }) {
  * Loading state indicator for individual member
  */
 function MemberLoadingState({ state }: { state: NormalizedMember['loadingState'] }) {
-  if (state === 'complete') return null
-  if (state === 'error') {
+  if (state === 'complete') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-destructive">
-        <AlertCircle className="h-3 w-3" aria-hidden />
-        Error
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700" 
+            title="Data fully loaded"
+            aria-label="Data fully loaded">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
       </span>
     )
   }
   
-  const labels: Record<string, string> = {
+  if (state === 'error') {
+    return (
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700"
+            title="Error loading data"
+            aria-label="Error loading data">
+        <AlertTriangle className="h-4 w-4" aria-hidden />
+      </span>
+    )
+  }
+  
+  const loadingLabels: Record<string, string> = {
     pending: 'Pending',
-    summary: 'Loading...',
-    individual: 'Loading details...',
-    customData: 'Loading contacts...',
+    summary: 'Loading member',
+    individual: 'Loading details',
+    customData: 'Loading contacts',
   }
   
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-      <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-      {labels[state] || 'Loading...'}
+    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700"
+          title={loadingLabels[state] || 'Loading...'}
+          aria-label={loadingLabels[state] || 'Loading...'}>
+      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
     </span>
   )
 }
@@ -213,6 +233,9 @@ function MemberLoadingState({ state }: { state: NormalizedMember['loadingState']
  */
 function MemberCard({ member, onClick }: { member: NormalizedMember; onClick?: () => void }) {
   const age = calculateAge(member.dateOfBirth)
+  const sections = member.otherSections.length > 0 
+    ? `Also in: ${formatSections(member.otherSections)}`
+    : '';
   
   return (
     <div 
@@ -222,27 +245,32 @@ function MemberCard({ member, onClick }: { member: NormalizedMember; onClick?: (
       tabIndex={onClick ? 0 : undefined}
     >
       <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-semibold text-base">
-            {member.lastName}, {member.firstName}
-          </h3>
-          <p className="text-sm text-muted-foreground">{member.patrolName}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0">
+            <MemberLoadingState state={member.loadingState} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-base">
+              {member.lastName}, {member.firstName}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {member.patrolName} • {age !== null ? `${age} years` : '—'}
+            </p>
+          </div>
         </div>
-        <MemberLoadingState state={member.loadingState} />
+        <div className="flex items-center gap-2">
+          <MemberStatusIcons member={member} />
+        </div>
       </div>
       
-      <div className="flex items-center justify-between text-sm">
-        <div className="space-y-1">
-          <p>
-            <span className="text-muted-foreground">Age:</span>{' '}
-            {age !== null ? `${age} years` : '—'}
-          </p>
-          <p>
-            <span className="text-muted-foreground">DOB:</span>{' '}
-            {formatDob(member.dateOfBirth)}
-          </p>
-        </div>
-        <MemberStatusIcons member={member} />
+      <div className="text-sm space-y-1">
+        <p>
+          <span className="text-muted-foreground">DOB:</span>{' '}
+          {formatDob(member.dateOfBirth)}
+        </p>
+        {sections && (
+          <p className="text-sm text-muted-foreground">{sections}</p>
+        )}
       </div>
     </div>
   )
@@ -359,12 +387,72 @@ export function MembersClient() {
           </button>
         )}
       </div>
+
+      {/* Icon legend */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground border rounded-lg p-3 bg-muted/30">
+        <span className="font-medium">Key:</span>
+        <div className="flex items-center gap-6 flex-wrap">
+          {/* Status icons */}
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span>Loaded</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700">
+              <Loader2 className="h-3 w-3" aria-hidden />
+            </span>
+            <span>Loading</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700">
+              <AlertTriangle className="h-3 w-3" aria-hidden />
+            </span>
+            <span>Error</span>
+          </div>
+          
+          {/* Divider */}
+          <span className="text-muted-foreground/30">|</span>
+          
+          {/* Detail icons */}
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-700">
+              <Camera className="h-3 w-3" aria-hidden />
+            </span>
+            <span>Photo consent</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700">
+              <Stethoscope className="h-3 w-3" aria-hidden />
+            </span>
+            <span>Medical notes</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700">
+              <AlertTriangle className="h-3 w-3" aria-hidden />
+            </span>
+            <span>Allergies</span>
+          </div>
+        </div>
+      </div>
       
       {/* Desktop table view */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
+              <th className="text-center py-3 px-2 w-16">
+                <SortableHeader 
+                  label="Status" 
+                  field="status" 
+                  currentSort={sortConfig} 
+                  onSort={handleSort}
+                  className="justify-center"
+                />
+              </th>
               <th className="text-left py-3 px-2">
                 <SortableHeader 
                   label="Name" 
@@ -389,6 +477,9 @@ export function MembersClient() {
                   onSort={handleSort} 
                 />
               </th>
+              <th className="text-center py-3 px-2">
+                Details
+              </th>
               <th className="text-left py-3 px-2">
                 <SortableHeader 
                   label="Patrol" 
@@ -397,15 +488,7 @@ export function MembersClient() {
                   onSort={handleSort} 
                 />
               </th>
-              <th className="text-left py-3 px-2">Status</th>
-              <th className="text-left py-3 px-2">
-                <SortableHeader 
-                  label="Loading" 
-                  field="status" 
-                  currentSort={sortConfig} 
-                  onSort={handleSort} 
-                />
-              </th>
+              <th className="text-left py-3 px-2">Sections</th>
             </tr>
           </thead>
           <tbody>
@@ -416,6 +499,9 @@ export function MembersClient() {
                   key={member.id} 
                   className="border-b hover:bg-muted/50 transition-colors"
                 >
+                  <td className="py-3 px-2 text-center">
+                    <MemberLoadingState state={member.loadingState} />
+                  </td>
                   <td className="py-3 px-2 font-medium">
                     {member.lastName}, {member.firstName}
                   </td>
@@ -425,14 +511,18 @@ export function MembersClient() {
                   <td className="py-3 px-2 text-muted-foreground">
                     {formatDob(member.dateOfBirth)}
                   </td>
-                  <td className="py-3 px-2">
-                    {member.patrolName}
-                  </td>
-                  <td className="py-3 px-2">
+                  <td className="py-3 px-2 text-center">
                     <MemberStatusIcons member={member} />
                   </td>
                   <td className="py-3 px-2">
-                    <MemberLoadingState state={member.loadingState} />
+                    {member.patrolName}
+                  </td>
+                  <td className="py-3 px-2 text-muted-foreground text-sm">
+                    {member.otherSections.length > 0 ? (
+                      member.otherSections.join(', ')
+                    ) : (
+                      <span className="text-muted-foreground/50">—</span>
+                    )}
                   </td>
                 </tr>
               )
