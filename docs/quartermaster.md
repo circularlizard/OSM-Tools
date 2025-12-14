@@ -82,16 +82,23 @@ We need to create and track and inventory of 100th Pentland and Bore Stane kit. 
 ## Dosign questions
 * Can we build on top of the OSM QM feature?
     * Would this require all users to have access to that OSM section - can a user be given quartermaster access only?
+        A - Quartermaster records are a separate permission in OSM and can be none, read only or read-write.
+        So we could have all group leaders in the sections where the lists are managed and grant them no other access eg to members or programme.
+        Need to investigate how list sharing works.
     * Would be best, as it reduces dependency on a custom app
     * Would require trustees and other interested parties to have an OSM login
+        A - Could be limited to QM lists only
     * Need to investigate OM feature capabilities
     * Can OSM access be used to determine who has admin access?
+        A - Probably not, as OSM permissions for QM aren't all that granular
 * Should check in/out be done against section members (inc leaders) - if so, do we still need the ability to enter a free form person responsible (eg if kit is loaned outside the section)
     * What if a leader has access to multiple sections, do we need to get all of the people they _could_ issue to?
     * Typeahead when selecting?
     * How would we handle reporting if the user can't access a section?
+        A - We could just show the section name
 * What data will we store outside of OSM?
     * Try to minimise and make it so this data can be lost without serious issue - might create inconvenience to recostruct reports
+        A - QM columns are Name, Quantity, Description, Condition (drop-down - Excellent/Good/Fair/Repair required/Cleaning required), Number broken/unavailable, location, purchase date, renewal price, notes
     * Spec will need to specifically record what data is stored where
 
 ## Non-functionals
