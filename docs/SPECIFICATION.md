@@ -13,6 +13,9 @@ Before final implementation, the following strategic decisions must be resolved:
 * **Access Control Configuration:** Which Access Control Strategy (Patrol-based vs. Event-based) will be the default for Standard Viewers?  
   * *Impact:* Determines how the User Configuration List is populated and maintained.
 
+* **TanStack React Query Migration Approach (Resolved):** The implementation plan has selected an orchestrated pipeline approach with progressive enrichment for members data.
+  * *Reference:* `docs/members-and-sessions-plan.md` (Section 8).
+
 ## **2\. Project Overview**
 
 **Goal:** Develop a read-only web-based dashboard that automates the display of Explorer Scout expedition data for the South East Edinburgh Explorers (SEEE).
@@ -38,6 +41,17 @@ Before final implementation, the following strategic decisions must be resolved:
   * **Standard Viewer (Unit/Expedition Leader):** Requires minimal access for viewing events.
     * `section:event:read`
 * **Section Selection:** Upon successful login, if a user has access to multiple OSM sections (e.g., different Units or Regional levels), they must be presented with a choice to select which Section they wish to view.
+
+**Implementation alignment (Dec 2025)**:
+
+* **Single-section selection:** The application must treat one `currentSection` as active at a time.
+* **Primary control location:** Section selection controls live in the **sidebar** (desktop), with a compact mobile affordance in the header.
+* **No-flash requirement:** Multi-section users without a remembered selection must be routed to the section picker **before** the main dashboard content renders.
+
+### **3.1.1 Session timeout**
+
+* **Requirement:** If the user is inactive for 15 minutes and their NextAuth/OSM session has expired, they must be redirected to login.
+* **Callback behavior:** After re-authentication, the user should return to the page they were on.
 
 ### **3.2 Event Dashboard**
 
@@ -123,6 +137,20 @@ To support offline analysis and physical record-keeping during expeditions:
   * **Formatting:** The PDF should be styled for readability (e.g., table layouts, clear headers) and suitable for printing to take on expeditions.  
   * **Content:** Like the spreadsheet, the PDF must reflect the currently applied filters and access controls.
 
+### **3.7 Admin: Members views & data quality**
+
+* **Scope:** Administrator-only views for exploring member datasets and identifying data quality issues.
+* **Members list view:**
+  * Administrators must be able to view a sortable list of members for the selected section.
+  * The list must support **progressive enrichment**: a usable list appears quickly, with member detail fields populating incrementally.
+* **Member data issues view:**
+  * Administrators must be able to view derived issue categories, including:
+    * Missing/incomplete member contact information.
+    * Missing/incomplete other contacts.
+    * Missing doctor information.
+    * Emergency contact duplicates a primary contact.
+* **Security:** Member contact/medical data is sensitive and must not be persisted to localStorage.
+
 ## **4\. Data Management Strategy**
 
 ### **4.1 Master Data Source**
@@ -133,6 +161,11 @@ To support offline analysis and physical record-keeping during expeditions:
   * Because Standard Viewers (Unit Leaders) only have `section:event:read` permission, they cannot directly fetch member or patrol lists from OSM.
   * **Strategy:** An **Administrator** must fetch the Patrol and Member structure. This data is cached for a long duration and served to Standard Viewers to allow them to see which Patrols participants belong to.
 * No external database will be used for persistent storage of personal data.
+
+**Implementation alignment (Dec 2025)**:
+
+* **Members detail sensitivity:** Member contact/medical details must be treated as sensitive and must remain **in-memory only** on the client.
+* **Client caching strategy:** Server-derived datasets are moving toward TanStack React Query as the source of truth for client caching, with progressive enrichment for members.
 
 ### **4.2 Custom Data Fields**
 
@@ -153,6 +186,12 @@ The application relies on data stored in OSM "User Data" columns within the Even
   * **Respect Retry-After:** If an HTTP 429 is received, the app must strictly adhere to the Retry-After header.  
   * **Caching:** To reduce API load, extensive caching (e.g., via Vercel KV or in-memory) must be used for non-volatile data (e.g., Event lists, Member lists).
 
+**Implementation alignment (Dec 2025)**:
+
+* **Safety shield boundary:** All client requests must go via the proxy layer (`/api/proxy/...`).
+* **Avoid aggressive retries:** Client retry behavior must be disabled or tightly constrained for `401` (unauthenticated), `429` (cooldown), and `503` (halt) responses.
+* **Cancellation support:** Client fetch helpers should accept `AbortSignal` so section changes can abort in-flight work.
+
 ### **5.2 Security & Access Control**
 
 * **User Roles:** The system will distinguish between two classes of users:  
@@ -166,7 +205,7 @@ The application relies on data stored in OSM "User Data" columns within the Even
     * *Use Case:* An Expedition Leader running a specific trip who needs to see all attendees regardless of Unit.  
     * *Behavior:* The user can see **All Patrols/Members**, but only for **specific Events** (e.g., "Bronze Practice 2025").  
 * **Configuration Mechanism:**  
-  * The mapping of User \-\> Strategy \-\> \[Patrol IDs OR Event IDs\] will be stored in the internal **User Configuration List** (JSON config/Environment Variable).  
+  * The mapping of User \-\> Strategy \-\> `Patrol IDs OR Event IDs` will be stored in the internal **User Configuration List** (JSON config/Environment Variable).  
   * If a user is not listed in the configuration, they are denied access by default (Whitelist approach).
 
 ### **5.3 Testing & Mock Data Layer**

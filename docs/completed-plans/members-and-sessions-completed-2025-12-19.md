@@ -1,89 +1,153 @@
-# Members & Sessions Implementation Plan
+# Members & Sessions — Completed Phases (2025-12-19)
 
-## 1. Overview
-
-This plan covers:
-
-- Moving section selection controls from the page header into the sidebar.
-- Implementing session timeout behavior so inactive sessions redirect to login when expired.
-- For administrator users:
-  - Hydrating the client data model with **members** for selected sections, in addition to events.
-  - Adding a **Members** page with a sortable table of members.
-  - Adding a **Member data issues** view that highlights problems with member data quality.
-- Migrating server-derived client data (starting with events + members) to **TanStack React Query**.
-
-### 1.1. Dependency diagram
-
-High-level dependencies between phases:
-
-```text
-Section 2 (sidebar / section selector)
-        │
-        ▼
-Section 3 (session timeout)
-        │
-        ▼
-Section 4 (member data hydration)
-        │
-        ▼
-Section 5 (members page) ──► Section 6 (member data issues)
-        │
-        └─────────────────────────► Section 7 (navigation updates)
-
-Section 8 (React Query migration) should happen after 6/7 so it can be
-validated against real consumers.
-
-Section 9 (section selector hardening) is partially independent but
-benefits from Section 2 being in place.
-```
-
-### 1.2. Consolidated plan outline (tracking)
-
-- **Completed**:
-  - Section 2 (sidebar / section selector)
-  - Section 3 (session timeout)
-  - Section 4 (members hydration)
-  - Section 5 (members page)
-  - Section 11 (unified data loading system)
-- **Next**:
-  - Section 6 (member data issues)
-  - Section 7 (navigation updates)
-  - Section 8 (TanStack React Query migration)
-  - Section 9 (section selector hardening)
-
-### 1.3. Detailed implementation checklist conventions
-
-- Use `- [ ]` items as the authoritative progress tracker.
-- When a section is complete, keep only a short summary in this file and move details to `docs/completed-plans/`.
+This file contains plan sections that are complete and have been extracted from `docs/members-and-sessions-plan.md`.
 
 ---
 
 ## 2. Move section controls into the sidebar
 
-- **Status**: Completed.
-- **Details**: moved to `docs/completed-plans/members-and-sessions-completed-2025-12-19.md` (Section 2).
-- **Notes**:
-  - Residual post-login/dashboard flash is tracked in Section 9.
-  - Single-section selection behavior should be re-verified during Section 9 hardening.
+### 2.1. Current behavior
+
+- The page header (in `Header.tsx` / `ClientShell.tsx`) currently:
+  - Shows the selected section(s) for the logged-in OSM user.
+  - Exposes a **Change section** button linking to `/dashboard/section-picker` with a `redirect` query parameter.
+- Section state is driven by the Zustand store (`useStore`):
+  - `availableSections`
+  - `currentSection`
+  - `selectedSections`
+  - `setCurrentSection`, `setSelectedSections`
+
+### 2.2. Target behavior
+
+- The **sidebar** becomes the primary place to see and change the current section(s).
+- The header no longer needs to show section selection for desktop; mobile may still expose a shortcut.
+
+### 2.3. Implementation steps
+
+1. **Sidebar top block**
+   - In `src/components/layout/Sidebar.tsx`:
+     - Add a block at the top of the nav (above "Overview") that:
+       - Shows a summary of the selected sections:
+         - Single section: `Section: {sectionName}`.
+         - Multiple sections: `Sections: {N selected}` with a tooltip or truncated list of names.
+       - Uses `useStore` to read `currentSection`, `selectedSections`, `availableSections`.
+
+2. **Change section button**
+   - In the same block, add a **Change section** link/button:
+     - `href` = `/dashboard/section-picker?redirect=${encodeURIComponent(currentPath || '/dashboard')}`.
+     - Reuse the existing redirect behavior from the header.
+
+3. **Header cleanup**
+   - Remove the section summary and "Change section" button from `Header.tsx` for desktop.
+   - Keep a compact section summary + "Change section" action in the header **on mobile only** (`md:hidden`), so mobile users still have an easy way to switch sections when the sidebar is hidden.
+
+### 2.4. Testing
+
+- Update any existing tests around the section picker and initial dashboard load to reflect:
+  - Section controls living in the sidebar instead of the header.
+  - No flash of the main dashboard when a section is not yet selected.
+
+### 2.5. Current status
+
+- Implemented:
+  - Section summary and "Change section" control have been moved into the **top of the sidebar** using Zustand state and `usePathname` for the redirect.
+  - The header now shows section information and the change button **only on mobile**, with desktop deferring to the sidebar.
+  - The section picker initializes its selection state from the current/selected sections in the store so it reflects the existing selection when opened.
+  - `DashboardPage` includes a guard that renders a minimal loading state when the user is authenticated, has multiple available sections, and no section is selected, to reduce dashboard flashing.
+- Still outstanding / not fully working:
+  - There is still some residual flash of the main page before the section selector appears in certain flows. This needs a deeper follow-up (e.g. coordinating `StartupInitializer`, initial route rendering, and dashboard gating) and will be revisited later.
+- Aside from the flash issue, section 2 work is effectively complete and implementation can proceed to section 3 (session timeout) next.
+
+### 2.6. Single-section selection (NEW)
+
+//TODO - Is this section done? Seems to be - test it.
+
+**Rationale**: To avoid the complexity of merging potentially conflicting data structures from different sections (especially `getCustomData` which can have section-specific custom fields), the section picker should be changed to allow **only a single section** to be selected at a time.
+
+**Changes required**:
+1. **Section picker UI** (`src/app/dashboard/section-picker/page.tsx`):
+   - Replace checkboxes with radio buttons (only one can be selected).
+   - Remove "Select All" / "Clear All" buttons.
+   - Update `selectedIds` state to hold a single ID instead of a `Set`.
+   - Always set `currentSection` (never `selectedSections` array).
+
+2. **Store simplification**:
+   - The `selectedSections` array in the store becomes unused for now.
+   - All code should read from `currentSection` only.
+
+3. **Sidebar display**:
+   - Always show single section name (no "N selected" case).
+
+4. **Remembered selection**:
+   - Store a single `selectedSectionId` instead of `selectedSectionIds[]`.
 
 ---
 
 ## 3. Session timeout & redirect to login
 
-- **Status**: Completed.
-- **Details**: moved to `docs/completed-plans/members-and-sessions-completed-2025-12-19.md` (Section 3).
-- **Notes**:
-  - Low priority follow-up: when the server restarts, all sessions should be cleared.
+### 3.1. Requirements
+
+- When a user leaves the browser idle for **15 minutes** and later returns:
+  - If the underlying NextAuth/OSM session has expired, they should be redirected to login.
+- Inactive sessions should not silently continue; we should avoid confusing stale UI.
+
+### 3.2. Design
+
+- Use NextAuth as the **source of truth** for session validity.
+- Add a client-side inactivity watcher that:
+  - Tracks **last user activity** (mouse, keyboard, click, visibility change).
+  - Periodically checks whether the session is still valid.
+  - If not, redirects to the login page.
+
+### 3.3. Implementation steps
+
+1. **Create `useSessionTimeout` hook**
+   - New hook under `src/hooks/useSessionTimeout.ts` (or similar):
+     - Uses `useSession` from `next-auth/react` to get `status` and `data?.expires`.
+     - Listens for user activity events:
+       - `mousemove`, `keydown`, `click`, `focus`, `visibilitychange`.
+     - Maintains an in-memory `lastActive` timestamp.
+
+2. **Inactivity threshold**
+   - Configure a constant `INACTIVITY_MS = 15 * 60 * 1000` (15 minutes).
+   - Use `setInterval` or `setTimeout` inside the hook to:
+     - Periodically check `Date.now() - lastActive`.
+     - If above `INACTIVITY_MS`, trigger a session re-check.
+
+3. **Session re-check & redirect**
+   - On suspected inactivity:
+     - Either call `getSession()` (client) or rely on `useSession` refetch behavior.
+     - If the session is gone or `status === 'unauthenticated'`:
+       - Redirect to `/api/auth/signin?callbackUrl=<current location>`.
+
+### 3.4. Testing
+
+- Add tests (unit or integration) for `useSessionTimeout` to ensure:
+  - `lastActive` updates on user events.
+  - After 15 minutes of simulated inactivity, a session re-check is triggered and redirect logic runs when the session is missing.
+
+4. **Mount globally**
+   - Import and call `useSessionTimeout` inside `ClientShell.tsx` so it runs for all authenticated pages.
+   - Ensure it does not interfere with the OAuth callback or section-picker redirect flows.
+
+### 3.5. Current status
+
+- **Implemented**:
+  - `useSessionTimeout` hook created in `src/hooks/useSessionTimeout.ts`.
+  - Tracks user activity (mousemove, keydown, click, focus, visibilitychange).
+  - After 15 minutes of inactivity, calls `getSession()` and redirects to `/?callbackUrl=<current URL>` if session is expired.
+  - Hook is mounted globally in `ClientShell.tsx` for all authenticated users.
+  - Unit tests added in `src/hooks/__tests__/useSessionTimeout.test.tsx` covering:
+    - No redirect when session is still valid after inactivity.
+    - Redirect to login when session has expired after inactivity.
+    - No checks performed when user is unauthenticated.
+- Section 3 is **complete**.
+
+//TODO - when the server restarts, all sessions should be cleared. Low priority
 
 ---
 
 ## 4. Admin: hydrate members for selected sections
-
-- **Status**: Completed.
-- **Details**: canonical details moved to `docs/completed-plans/members-and-sessions-completed-2025-12-19.md` (Section 4).
-
-<details>
-<summary>Archived details (do not edit here)</summary>
 
 ### 4.1. Requirements
 
@@ -144,7 +208,7 @@ The OSM API requires **two calls per member** to get full data:
 5. **API call summary per member**:
    - `getMembers`: 1 call per section (returns all members in section)
    - `getIndividual`: 1 call per member (for DOB)
-   - `getCustomData`: 1 call per member (for contacts, medical, consents)
+   - `getCustomData`: 1 call per member (for contacts/medical)
    - **Total**: For N members: 1 + N + N = 2N + 1 calls per section
 
 ### 4.3. Rate limiting considerations
@@ -415,17 +479,9 @@ Add to Zustand store (`src/store/use-store.ts`):
 
 Section 4 core implementation is **complete**. Proceed to Section 5 (Members page).
 
-</details>
-
 ---
 
 ## 5. Members page (admin): sortable member list
-
-- **Status**: Completed.
-- **Details**: canonical details moved to `docs/completed-plans/members-and-sessions-completed-2025-12-19.md` (Section 5).
-
-<details>
-<summary>Archived details (do not edit here)</summary>
 
 ### 5.1. Route & access control
 
@@ -522,254 +578,9 @@ Section 4 core implementation is **complete**. Proceed to Section 5 (Members pag
 
 Section 5 is **complete**. Proceed to Section 6 (Member data issues view).
 
-</details>
-
 ---
 
-## 6. Member data-quality view (admin)
-
-### 6.0. Detailed implementation checklist
-
-- [ ] Implement issue helper functions in `src/lib/member-issues.ts`.
-- [ ] Add admin-only route `/dashboard/members/issues`.
-- [ ] Add summary cards (counts per issue type).
-- [ ] Add issue tables with clear “missing fields” display.
-- [ ] Add tests for issue helpers.
-- [ ] Add tests for the issues page grouping/rendering.
-
-### 6.1. Requirements
-
-- Highlight issues with member data, including:
-  - Missing or incomplete **member** contact information.
-  - Missing or incomplete **other contacts** information.
-  - Missing **doctor** information.
-  - Emergency contact is the same as one of the other contacts.
-- *Incomplete contact information* is defined as missing **any** of:
-  - Postal address
-  - Phone number
-  - Email address
-
-### 6.2. Derived issue model
-
-- Create pure helper functions (e.g. `src/lib/member-issues.ts`) to compute:
-  - `hasCompleteMemberContact(member)`.
-  - `hasCompleteOtherContacts(member)`.
-  - `hasDoctorInfo(member)`.
-  - `hasDuplicateEmergencyContact(member)` where emergency contact matches an "other" contact.
-- These helpers operate on the normalized `Member` + nested contacts shape from `useMembers`.
-
-### 6.3. Issues route & UI
-
-- New route, `src/app/dashboard/members/issues/page.tsx`:
-  - Admin-only guard as with other admin pages.
-  - Page header: dark strip (`bg-primary text-primary-foreground`) titled **Member data issues**.
-
-- Content sections:
-  1. **Summary cards** at the top:
-     - Counters for each issue type (e.g. `X members with incomplete member contact info`).
-  2. **Issue detail sections**:
-     - For each issue type, a table listing affected members, including:
-       - Name
-       - Sections
-       - Which fields are missing or problematic (e.g. `Missing: email, phone`).
-     - For "emergency contact same as other contact":
-       - Show both contacts side-by-side or clearly highlight duplication.
-
-### 6.4. Testing
-
-- Member issues view (`/dashboard/members/issues`):
-  - Member issue helpers (`hasCompleteMemberContact`, `hasCompleteOtherContacts`, `hasDoctorInfo`, `hasDuplicateEmergencyContact`, etc.).
-  - Correct grouping of members into each issue category.
-
-### 6.5. Future enhancements
-
-- Add issue types for missing photo consent and missing medical consent.
-- Introduce severity levels (e.g. critical vs minor) for different issue types.
-- Provide an "Export to CSV" option for issue tables so leaders can share or work offline.
-- Allow leaders to mark specific issues as acknowledged/waived (e.g. parent declined to provide email).
-
----
-
-## 7. Navigation updates
-
-### 7.0. Detailed implementation checklist
-
-- [ ] Ensure sidebar shows admin-only Members links (Members, Member data issues).
-- [ ] Move or alias attendance route to `/dashboard/events/attendance`.
-- [ ] Update any internal links/route helpers to point to the new attendance route.
-- [ ] Verify non-admin users do not see Members-related links.
-- [ ] Add/adjust tests for routing + sidebar visibility.
-
-### 7.1. Sidebar Members section (admin-only)
-
-- In `Sidebar.tsx`, under the **Members** section:
-  - Keep `Patrol data` link.
-  - Add:
-    - `Members` → `/dashboard/members` (members table page).
-    - `Member data issues` → `/dashboard/members/issues` (data-quality view).
-
-### 7.2. Attendance route adjustment
-
-- Update the attendance page route to live under the Events section:
-  - Move or alias the route to `/dashboard/events/attendance`.
-  - Ensure sidebar link and internal navigation target `/dashboard/events/attendance`.
-
-- Ensure non-admin users do **not** see these links (based on `roleSelection`).
-
-### 7.3. Testing
-
-- Routing / URLs and navigation:
-  - Ensure route helpers or navigation components reference `/dashboard/members*` and `/dashboard/events/attendance` as expected.
-  - Verify non-admin users do not see Members-related links.
-
-### 7.4. Future enhancements
-
-- Add breadcrumb navigation for members routes (e.g. `Dashboard / Members / Data issues`).
-
----
-
-## 8. TanStack React Query migration (events + members)
-
-This section consolidates the recommendations from `docs/completed-plans/members-hydration-react-query-summary-2025-12-19.md` into this plan.
-
-### 8.1. Decision
-
-- **Chosen approach**: Orchestrated pipeline (closest to current hydration model), writing incremental results into the React Query cache.
-- **UX requirement**: Keep **progressive enrichment** (Phase 1 list appears immediately; Phase 2/3 enrich rows incrementally).
-
-### 8.2. Goals
-
-- Make React Query the **single source of truth** for cached server-derived data (events + members).
-- Keep Zustand focused on **UI/selection state** (section selection, role, table sort/filter state).
-- Preserve the `/api/proxy` “safety shield” boundary (auth, rate limiting, circuit breakers, Redis caching).
-- Keep sensitive data **in-memory only** (no query persistence).
-
-### 8.3. Prerequisites
-
-- [ ] Add true request cancellation:
-  - [ ] Update `proxyFetch()` to accept an optional `AbortSignal` and pass it to `fetch(..., { signal })`.
-  - [ ] Thread that signal through exported API helpers (`getEvents`, `getMembers`, `getMemberIndividual`, `getMemberCustomData`, etc.).
-
-- [ ] Define retry rules for `APIError` so the client does not hammer the proxy:
-  - [ ] `401` unauthenticated: no retry.
-  - [ ] `429` soft lock: no retry (or a single delayed retry), surface a clear “cooling down” UI.
-  - [ ] `503` hard lock: no retry, surface a clear “system halted” UI.
-
-### 8.4. Migration sequence
-
-- [ ] Migrate **events first**:
-  - [ ] Introduce an events query key (e.g. `['events', sectionId]`).
-  - [ ] Use a conservative `staleTime` and disable `refetchOnWindowFocus` for events if it is expensive.
-  - [ ] Ensure section change naturally switches cache keys.
-
-- [ ] Migrate **members second**:
-  - [ ] Introduce a members query key (e.g. `['members', sectionId]`).
-  - [ ] Implement the 3-phase pipeline inside the query function (Phase 1 list, Phase 2 individual, Phase 3 custom data).
-  - [ ] Write incremental updates to the query cache so the UI can progressively render partial data (Option 1).
-  - [ ] Ensure long `staleTime` and disabled focus refetch for members.
-
-- [ ] Remove duplicated server-state from Zustand:
-  - [ ] Remove members/events as the authoritative data source in Zustand (avoid two sources of truth).
-  - [ ] Keep only UI state and (optionally) the unified loading banner state.
-
-### 8.5. Verification
-
-- [ ] Query cancellation aborts network requests (not just cooperative cancellation).
-- [ ] Logout clears React Query cache.
-- [ ] Section change does not leak old data into the new section.
-
----
-
-## 9. Section selector hardening / post-login flash
-
-### 9.0. Detailed implementation checklist
-
-- [ ] Ensure single-section users land directly on `/dashboard` with a valid selected section.
-- [ ] Ensure multi-section users without remembered selection go directly to `/dashboard/section-picker`.
-- [ ] Remove residual dashboard flash by gating initial dashboard render appropriately.
-- [ ] Add/adjust tests for post-login redirect + no-flash behavior.
-
-### 9.1. Requirements
-
-- After login for:
-  - Single-section users: they should land directly on `/dashboard` with a valid section selected.
-  - Multi-section users without a remembered selection: they should go straight to `/dashboard/section-picker` without a flash of the main dashboard.
-- There should be no visible flash of the main dashboard content before the section selector appears.
-
-### 9.2. Implementation steps
-
-1. **Login redirect**
-   - Update the login redirect logic to:
-     - For single-section users, redirect to `/dashboard` with a valid section selected.
-     - For multi-section users without a remembered selection, redirect to `/dashboard/section-picker`.
-
-2. **Section picker optimization**
-   - Optimize the section picker to load quickly and minimize the flash of the main dashboard content.
-
-### 9.3. Testing
-
-- Section selector hardening:
-  - Single-section users land directly on `/dashboard` with a valid section selected.
-  - Multi-section users without a remembered selection go directly to `/dashboard/section-picker`.
-  - There is no visible flash of the main dashboard content before the section selector appears.
-
----
-
-## 10. Testing & verification
-
-### 10.0. Tracking checklist
-
-- [ ] Add/update automated tests for Sections 6/7/8/9.
-- [ ] Add manual verification notes for Sections 6/7/8/9.
-- [ ] Add E2E coverage for critical admin flows and post-login no-flash flow.
-
-### 10.1. Automated
-
-- High-level reminder to:
-  - Add or update tests for each phase as described in the per-section "Testing" subsections above.
-  - Keep tests in sync with any future route or layout changes.
-
-### 10.2. Manual checks
-
-1. **Sidebar changes**
-   - Section summary and "Change section" control visible at top of sidebar.
-
-2. **Session timeout**
-   - After inactivity + session expiry, returning to the tab triggers redirect to login.
-   - Active users are not logged out prematurely.
-
-3. **Members data**
-   - As admin, members load for selected sections.
-   - Members who belong to multiple sections show all relevant sections.
-
-4. **Members page**
-   - Sorting works as expected.
-   - Icons reflect photo consent, medical info, and allergies correctly.
-
-5. **Member data issues**
-   - Members with incomplete data appear under correct issue categories.
-   - Definitions of "incomplete" match the rules in this document.
-
-6. **Section selector hardening**
-   - After login, users are redirected to the correct page without a flash of the main dashboard content.
-
-### 10.3. End-to-end testing
-
-- Add E2E tests (e.g. with Playwright) for critical admin flows:
-  - Hydrating members and loading the Members page.
-  - Viewing member data issues and verifying issue counts.
-  - Navigating via sidebar between Dashboard, Members, and Member data issues.
-  - Login → section selection → dashboard without flash.
-
----
-
-## 11. Unified Data Loading System
-
-- **Status**: Completed.
-- **Details**: canonical details moved to `docs/completed-plans/members-and-sessions-completed-2025-12-19.md` (Section 10).
-
-<details>
-<summary>Archived details (do not edit here)</summary>
+## 10. Unified Data Loading System
 
 ### 10.1. Implementation Status (Completed)
 
@@ -847,5 +658,3 @@ This section consolidates the recommendations from `docs/completed-plans/members
 - Implement server-side rendering for initial data loading
 - Add support for background refresh of stale data
 - Consider implementing a proper data fetching library like React Query or SWR --> Need to analyse this further and expand on what it would do for us.
-
-</details>

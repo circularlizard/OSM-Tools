@@ -117,12 +117,20 @@ graph TD
 
     TQ \-- Fetches \--\> API
 
-    Zustand \-- Persists to \--\> Storage\[Local Storage\]
+    Zustand \-- Persists to \--\> Storage\[Local Storage (non-sensitive prefs only)\]
 
 ### **4.1 Server State: TanStack Query (React Query)**
 
-* **Purpose:** Manages data fetched from the OSM API (Events, Members, Badges).  
-* **Behavior:** Handles caching, background refetching, and loading states.  
+* **Purpose:** Manages data fetched from the OSM API via the `/api/proxy` safety shield (Events, Members, etc.).  
+* **Behavior:** Handles caching, request deduplication, cancellation, and loading states.  
+* **Decision (Dec 2025)**: For expensive multi-call resources (notably Members), prefer an **orchestrated pipeline** approach (a single query per section that progressively enriches data and writes incremental updates into the query cache) rather than spawning hundreds of per-member queries.
+* **Guardrails (Dec 2025)**:
+  * **Cancellation:** Query functions must support `AbortSignal` so section changes abort in-flight work.
+  * **Retries:** Retry must be disabled or tightly constrained for proxy failures:
+    * `401` unauthenticated: no retry.
+    * `429` soft lock / cooldown: no retry (or at most a single delayed retry).
+    * `503` hard lock: no retry.
+  * **Sensitive data:** React Query cache must remain **in-memory only** (no persistence plugin).
 * **Derived State Calculation (Req 3.3):** The "First Aid Readiness Summary" (e.g., "20/25 Qualified") is calculated efficiently on the client side using Memoized Selectors within TanStack Query, preventing expensive re-renders.
 
 ### **4.2 Client State: Zustand**
@@ -132,7 +140,9 @@ graph TD
   * **Session Context:** Stores `sectionId` and `userRole` (Admin/Standard). The `userRole` determined during login is critical for driving UI visibility of Admin controls and influencing data sourcing strategies (e.g., whether to fetch member/patrol data directly from OSM or from the server-side cache).
   * **Column Mapping (Section 3.3):** Stores the user's manual mapping of "Walking Grp" columns for the current session.  
   * **Readiness Filters (Section 3.5):** Remembers that the user wants to see "Patrol A" and "Bronze Events" so the view doesn't reset on refresh.  
-* **Persistence:** Configured to persist to localStorage so settings survive a page reload.
+* **Persistence:** Configured to persist to localStorage for **non-sensitive** settings so preferences survive a page reload.
+
+**Important**: Server-derived datasets containing sensitive information (e.g., member contact/medical data) must not be persisted to localStorage.
 
 ### **4.3 Progressive Hydration Strategy**
 
@@ -216,7 +226,7 @@ To balance "Fail Fast" with "Graceful Degradation":
     * *Use Case:* An Expedition Leader running a specific trip who needs to see all attendees regardless of Unit.  
     * *Behavior:* The user can see **All Patrols/Members**, but only for **specific Events** (e.g., "Bronze Practice 2025").  
 * **Configuration Mechanism:**  
-  * The mapping of User \-\> Strategy \-\> [Patrol IDs OR Event IDs] will be stored in the internal **User Configuration List** (JSON config/Environment Variable).  
+  * The mapping of User \-\> Strategy \-\> `Patrol IDs OR Event IDs` will be stored in the internal **User Configuration List** (JSON config/Environment Variable).  
   * If a user is not listed in the configuration, they are denied access by default (Whitelist approach).
 
 * **Storage:** The **User Configuration List** is stored in **Vercel KV (Redis)**.  
@@ -270,7 +280,7 @@ To ensure speed for the user and protection for the API (Section 5.1), the appli
 ### **Layer 1: The "Instant" Layer (Client-Side)**
 
 * **Technology:** **TanStack Query (React Query)**  
-* **Settings:** staleTime (5 Minutes), gcTime (30 Minutes).
+* **Settings:** Dataset-specific. Expensive datasets (e.g., members) should use long `staleTime` and typically disable `refetchOnWindowFocus`.
 
 ### **Layer 2: The "Safety" Layer (Server-Side)**
 
