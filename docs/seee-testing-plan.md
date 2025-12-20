@@ -1,5 +1,15 @@
 # SEEE Testing Implementation Plan
 
+## 0. Specification Prerequisite
+
+- **Problem:** `docs/SPECIFICATION.md` currently lists requirements without stable identifiers, making it impossible to trace Gherkin scenarios back to source requirements.
+- **Action:** Refactor the specification so every requirement (feature, sub-feature, acceptance rule) carries a unique identifier (e.g., `REQ-DASH-01`) following a consistent naming scheme.
+- **Deliverables:**
+  1. Introduce numbering + IDs within each section of the specification.
+  2. Add an appendix table mapping legacy descriptions to new IDs.
+  3. Document the ID format in `/seee-rules-testing` so future authors stay consistent.
+- **Gate:** No BDD migration work starts until the updated specification has been reviewed and merged.
+
 ## 1. Objectives
 
 - Establish measurable confidence in the SEEE Dashboard by combining numerical, functional, and mutation coverage.
@@ -110,43 +120,21 @@ tests/
 3. CI job `npm run test:unit && npx stryker run` for weekly confidence sweeps.
 4. Treat surviving mutants as blockers for release until test gaps resolved.
 
-## 6. CI / Reporting Pipeline
+## 6. Tier 4 – Automation & Reporting
 
-1. **CI stages**:
+### 6.1 CI / Reporting Pipeline
+
+1. **Core stages**:
    - `test:unit`
-   - `test:e2e` (BDD)
+   - `test:e2e` (BDD, instrumented)
    - `test:merge`
    - `stryker` (cron or nightly)
-2. Upload artifacts:
+2. **Artifacts**:
    - `coverage/unit`, `coverage/e2e`, `coverage/total`
    - Stryker HTML report
-3. Governance dashboard: track trends for numerical %, functional scenario counts, mutation score.
+3. **Governance**: dashboard tracks numerical %, functional scenario counts, mutation score.
 
-## 7. Rollout Checklist
-
-- [ ] Configure coverage instrumentation in Jest + Next.js.
-- [ ] Add `playwright-bdd` config, fixtures, and shared steps.
-- [ ] Convert high-value flows (Dashboard, Members, Member Issues) to `.feature` files.
-- [ ] Remove legacy `.spec.ts` equivalents once BDD tests pass.
-- [ ] Implement coverage merge scripts and ensure CI uploads reports.
-- [ ] Add Stryker config + nightly mutation job.
-- [ ] Document Gherkin authoring standards in the contributor guide.
-- [ ] Enforce `REQ-` tags via lint rule or CI check.
-
-## 8. Open Questions
-
-- Should we gate PR merges on minimum coverage deltas (numerical + mutation)?
-- Do we need additional BDD step libraries for data setup (e.g., MSW fixtures) before rolling to non-admin roles?
-
-## 9. CI Workflows (GitHub Actions)
-
-### 9.1 Goals
-
-- Guarantee every PR/build runs the full layered test suite before publishing.
-- Surface coverage + mutation artifacts directly in GitHub for reviewers.
-- Block merges when critical checks (unit, BDD, coverage merge) fail.
-
-### 9.2 Workflow layout
+### 6.2 GitHub Actions Workflows
 
 | Workflow | Trigger | Steps | Gates |
 | --- | --- | --- | --- |
@@ -154,7 +142,7 @@ tests/
 | `ci-mutation.yml` | `schedule` (nightly) + manual | Install deps → `npm run test:unit` → `npx stryker run` | Optional (reports blockers) |
 | `ci-deploy.yml` | `workflow_dispatch`, `release` | Needs `ci-test` success → Build (`npm run build`) → Publish/Deploy | Publish gate |
 
-### 9.3 Implementation steps
+Implementation steps:
 
 1. Create `.github/workflows/ci-test.yml`
    ```yaml
@@ -181,20 +169,12 @@ tests/
              name: coverage-total
              path: coverage/total
    ```
-2. Add `.github/workflows/ci-mutation.yml` to run nightly (cron) + manual dispatch.
-3. Update branch protection to require `CI – Tests` + `CI – Mutation`.
-4. Add `.github/workflows/ci-deploy.yml` that depends on `CI – Tests` (`needs: ["CI – Tests"]`) and runs `npm run build` + deployment (e.g., Vercel CLI) only when tagged release or manual dispatch is approved.
-5. Store Stryker + merged coverage as artifacts for download.
+2. Add `.github/workflows/ci-mutation.yml` (nightly cron + manual).
+3. Require `CI – Tests` + `CI – Mutation` via branch protection.
+4. Add `.github/workflows/ci-deploy.yml` that depends on `CI – Tests` (`needs: ["CI – Tests"]`) and runs `npm run build` + deployment when releases/manual dispatch are approved.
+5. Upload merged coverage + Stryker artifacts for reviewer download.
 
-## 10. Windsurf Workflows
-
-### 10.1 Goals
-
-- Provide repeatable IDE automation for running layered tests locally.
-- Speed up failure triage (unit vs BDD vs coverage merge).
-- Share mutations/coverage commands with the team.
-
-### 10.2 Workflow specs
+### 6.3 Windsurf Workflows
 
 | Workflow | File | Purpose | Steps |
 | --- | --- | --- | --- |
@@ -202,22 +182,43 @@ tests/
 | `/mutation-scan` | `.windsurf/workflows/mutation-scan.md` | Execute Stryker focused run | unit precheck → `npx stryker run` → summarize surviving mutants |
 | `/bdd-fix` | `.windsurf/workflows/bdd-fix.md` | Triage failing feature + regenerate step stubs | select feature → run `playwright test --grep <tag>` → open logs → optional `npx playwright codegen` |
 
-### 10.3 Plan to author workflows
+Authoring plan:
 
-1. Create `.windsurf/workflows/test-stack.md` with sections:
-   - Install deps (optional)
-   - `npm run lint`
-   - `npm run test:unit`
-   - `cross-env INSTRUMENT_CODE=1 npm run test:e2e`
-   - `npm run test:merge`
-   - Tip: open `coverage/total/index.html`
-2. Create `.windsurf/workflows/mutation-scan.md`:
-   - `npm run test:unit`
-   - `npx stryker run`
-   - Note where HTML report lives (`reports/mutation`).
-3. Create `.windsurf/workflows/bdd-fix.md`:
-   - Prompt to select feature tag (env var)
-   - Run `npx playwright test --config playwright.bdd.config.ts --grep @TAG`
-   - For failures, run `npx playwright show-report`
-   - Optionally call `npx playwright codegen <url>` for repro.
-4. Publish `/seee-rules-testing` doc update referencing new workflows.
+1. Add `.windsurf/workflows/test-stack.md` (install deps, lint, unit, `INSTRUMENT_CODE=1 npm run test:e2e`, merge, open report).
+2. Add `.windsurf/workflows/mutation-scan.md` (`npm run test:unit`, `npx stryker run`, point to `reports/mutation`).
+3. Add `.windsurf/workflows/bdd-fix.md` (prompt for tag, run Playwright BDD config with `--grep`, `npx playwright show-report`, optional `codegen`).
+4. Update `/seee-rules-testing` to reference new workflows.
+
+## 7. Rollout Checklist (Tier Aligned)
+
+### 7.1 Tier 0 – Specification IDs
+
+- [ ] Refactor `docs/SPECIFICATION.md` with unique requirement IDs (gate for all downstream items).
+
+### 7.2 Tier 1 – Numerical Coverage
+
+- [ ] Configure coverage instrumentation in Jest + Next.js.
+- [ ] Implement coverage merge scripts and ensure CI uploads reports.
+
+### 7.3 Tier 2 – Functional Coverage (BDD)
+
+- [ ] Add `playwright-bdd` config, fixtures, and shared steps.
+- [ ] Convert high-value flows (Dashboard, Members, Member Issues) to `.feature` files.
+- [ ] Remove legacy `.spec.ts` equivalents once BDD tests pass.
+- [ ] Document Gherkin authoring standards in the contributor guide.
+- [ ] Enforce `REQ-` tags via lint rule or CI check.
+
+### 7.4 Tier 3 – Mutation Coverage
+
+- [ ] Add Stryker config + nightly mutation job.
+
+### 7.5 Tier 4 – Automation & Workflows
+
+- [ ] Land GitHub Actions workflows (`ci-test`, `ci-mutation`, `ci-deploy`) per §6.2.
+- [ ] Publish Windsurf workflows (`/test-stack`, `/mutation-scan`, `/bdd-fix`) per §6.3.
+
+## 8. Governance & Open Questions
+
+- Coverage gates: decide minimum acceptable deltas for numerical + mutation scores per PR.
+- Data setup: determine if additional BDD step libraries (e.g., MSW fixtures) are required before extending scenarios to non-admin roles.
+- Workflow ownership: assign maintainers for CI YAML and Windsurf workflows to keep them in sync with tooling changes.
