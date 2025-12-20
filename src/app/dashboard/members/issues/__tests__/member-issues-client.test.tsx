@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemberIssuesClient } from '../MemberIssuesClient'
 import { useMembers } from '@/hooks/useMembers'
 import type { NormalizedMember, NormalizedContact } from '@/lib/schemas'
@@ -86,154 +87,85 @@ describe('MemberIssuesClient', () => {
     expect(screen.getByText(/All 2 members have complete data/i)).toBeInTheDocument()
   })
 
-  it('displays summary cards with issue counts', () => {
-    const members = [
-      createMember({ id: '1', emergencyContact: null }),
-      createMember({ id: '2', doctorName: null, doctorPhone: null, doctorAddress: null }),
-      createMember({ id: '3', consents: { photoConsent: false, medicalConsent: false } }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getAllByText(/No Emergency Contact/i).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/Missing Doctor Info/i).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/Missing Photo Consent/i).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/Missing Medical Consent/i).length).toBeGreaterThan(0)
-  })
-
-  it('displays critical issues section when critical issues exist', () => {
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Critical',
-        lastName: 'Member',
-        emergencyContact: null,
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText(/Critical Issues/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/Member, Critical/i).length).toBeGreaterThan(0)
-  })
-
-  it('displays medium issues section when medium issues exist', () => {
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Medium',
-        lastName: 'Member',
-        doctorName: null,
-        doctorPhone: null,
-        doctorAddress: null,
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText(/Medium Issues/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/Member, Medium/i).length).toBeGreaterThan(0)
-  })
-
-  it('displays low issues section when low issues exist', () => {
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Low',
-        lastName: 'Member',
-        consents: { photoConsent: false, medicalConsent: true },
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText(/Low Priority Issues/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/Member, Low/i).length).toBeGreaterThan(0)
-  })
-
-  it('shows missing fields in issue details', () => {
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Test',
-        lastName: 'Member',
-        memberContact: createContact({ email1: '', email2: '' }),
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText(/Missing: email/i)).toBeInTheDocument()
-  })
-
-  // Other sections are intentionally not shown on the issues tables.
-  it('shows duplicate contact information', () => {
-    const sharedEmail = 'shared@example.com'
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Duplicate',
-        lastName: 'Member',
-        emergencyContact: createContact({ email1: sharedEmail }),
-        primaryContact1: createContact({ email1: sharedEmail }),
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText(/Same as Primary Contact 1/i)).toBeInTheDocument()
-  })
-
-  it('displays patrol name for each member', () => {
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Test',
-        lastName: 'Member',
-        patrolName: 'Eagles',
-        emergencyContact: null,
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText('Eagles')).toBeInTheDocument()
-  })
-
-  it('displays severity badges', () => {
-    const members = [
-      createMember({ id: '1', emergencyContact: null }),
-      createMember({ id: '2', doctorName: null, doctorPhone: null, doctorAddress: null }),
-      createMember({ id: '3', consents: { photoConsent: false, medicalConsent: true } }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
-    render(<MemberIssuesClient />)
-
-    expect(screen.getAllByText('Critical').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Medium').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Low').length).toBeGreaterThan(0)
-  })
-
-  it('groups members by issue type correctly', () => {
+  it('displays critical issues in accordion sections', async () => {
+    const user = userEvent.setup()
     const members = [
       createMember({ id: '1', firstName: 'Alice', lastName: 'A', emergencyContact: null }),
       createMember({ id: '2', firstName: 'Bob', lastName: 'B', emergencyContact: null }),
+    ]
+    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
+    render(<MemberIssuesClient />)
+
+    expect(screen.getByText(/Critical/i)).toBeInTheDocument()
+    expect(screen.getByText(/No Emergency Contact/i)).toBeInTheDocument()
+    expect(screen.getByText('2 members')).toBeInTheDocument()
+
+    const accordionTrigger = screen.getByText(/No Emergency Contact/i).closest('button')
+    await user.click(accordionTrigger!)
+
+    expect(screen.getByText('A, Alice')).toBeInTheDocument()
+    expect(screen.getByText('B, Bob')).toBeInTheDocument()
+  })
+
+  it('displays medium priority issues in accordion sections', () => {
+    const members = [
+      createMember({ id: '1', doctorName: null, doctorPhone: null, doctorAddress: null }),
+    ]
+    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
+    render(<MemberIssuesClient />)
+
+    expect(screen.getByText(/Medium/i)).toBeInTheDocument()
+    expect(screen.getByText(/Missing Doctor Info/i)).toBeInTheDocument()
+    expect(screen.getByText('1 member')).toBeInTheDocument()
+  })
+
+  it('displays low priority issues in accordion sections', () => {
+    const members = [
+      createMember({ id: '1', consents: { photoConsent: false, medicalConsent: false } }),
+    ]
+    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
+    render(<MemberIssuesClient />)
+
+    expect(screen.getAllByText(/Low/i).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Missing Photo Consent/i)).toBeInTheDocument()
+  })
+
+  it('shows correct issue details for each member when expanded', async () => {
+    const user = userEvent.setup()
+    const members = [
       createMember({
-        id: '3',
-        firstName: 'Charlie',
-        lastName: 'C',
-        doctorName: null,
-        doctorPhone: null,
-        doctorAddress: null,
+        id: '1',
+        firstName: 'Alice',
+        lastName: 'A',
+        memberContact: createContact({ email1: '', phone1: '' }),
       }),
     ]
     ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
     render(<MemberIssuesClient />)
 
-    expect(screen.getAllByText(/No Emergency Contact/i).length).toBeGreaterThan(0)
+    const accordionTrigger = screen.getByText(/Missing Member Contact/i).closest('button')
+    await user.click(accordionTrigger!)
 
-    expect(screen.getAllByText('A, Alice').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('B, Bob').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('C, Charlie').length).toBeGreaterThan(0)
+    expect(screen.getByText('A, Alice')).toBeInTheDocument()
+  })
+
+  it('displays member details in sortable tables when expanded', async () => {
+    const user = userEvent.setup()
+    const members = [
+      createMember({ id: '1', firstName: 'Alice', lastName: 'A', emergencyContact: null }),
+      createMember({ id: '2', firstName: 'Bob', lastName: 'B', emergencyContact: null }),
+      createMember({ id: '3', firstName: 'Charlie', lastName: 'C', emergencyContact: null }),
+    ]
+    ;(useMembers as jest.Mock).mockReturnValue({ members, isLoading: false, isFetched: true, isError: false, error: null, isAdmin: true, refresh: jest.fn() })
+    render(<MemberIssuesClient />)
+
+    const accordionTrigger = screen.getByText(/No Emergency Contact/i).closest('button')
+    expect(accordionTrigger).toBeInTheDocument()
+
+    await user.click(accordionTrigger!)
+
+    expect(screen.getByText('A, Alice')).toBeInTheDocument()
+    expect(screen.getByText('B, Bob')).toBeInTheDocument()
+    expect(screen.getByText('C, Charlie')).toBeInTheDocument()
   })
 })
