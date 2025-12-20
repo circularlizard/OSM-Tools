@@ -17,7 +17,7 @@ import { test, expect, Page } from '@playwright/test'
 const PROTECTED_PAGES = [
   '/dashboard',
   '/dashboard/events',
-  '/dashboard/people/attendance',
+  '/dashboard/events/attendance',
   '/dashboard/admin',
   '/dashboard/api-browser',
   '/dashboard/debug/oauth',
@@ -175,7 +175,7 @@ test.describe('React-Specific Error Detection', () => {
     })
     
     // Visit pages that commonly trigger this error
-    for (const url of ['/dashboard/events', '/dashboard/people/attendance']) {
+    for (const url of ['/dashboard/events', '/dashboard/events/attendance']) {
       await page.goto(url)
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(1000)

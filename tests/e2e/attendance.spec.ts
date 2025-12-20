@@ -34,7 +34,7 @@ test.describe('Per-Person Attendance View', () => {
   })
 
   test('page loads with title and toggle', async ({ page }) => {
-    await page.goto('/dashboard/people/attendance')
+    await page.goto('/dashboard/events/attendance')
     
     // Page title should be visible
     await expect(page.getByRole('heading', { name: /Attendance by Person/i })).toBeVisible()
@@ -45,7 +45,7 @@ test.describe('Per-Person Attendance View', () => {
   })
 
   test('toggle switches between single list and group by patrol', async ({ page }) => {
-    await page.goto('/dashboard/people/attendance')
+    await page.goto('/dashboard/events/attendance')
     
     // Default should be Single List
     const singleListRadio = page.getByRole('radio', { name: /Single List/i })
@@ -63,7 +63,7 @@ test.describe('Per-Person Attendance View', () => {
   })
 
   test('shows loading state or data', async ({ page }) => {
-    await page.goto('/dashboard/people/attendance')
+    await page.goto('/dashboard/events/attendance')
     
     // Wait for page to load
     await page.waitForLoadState('networkidle')
@@ -92,7 +92,7 @@ test.describe('Per-Person Attendance View - Mobile', () => {
   })
 
   test('mobile view shows cards instead of table', async ({ page }) => {
-    await page.goto('/dashboard/people/attendance')
+    await page.goto('/dashboard/events/attendance')
     await page.waitForLoadState('networkidle')
     
     // Page should load

@@ -57,7 +57,7 @@ export default function Sidebar() {
             <CalendarDays className="h-4 w-4" />
             <span>Events</span>
           </Link>
-          <Link className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground" href="/dashboard/people/attendance">
+          <Link className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent hover:text-accent-foreground" href="/dashboard/events/attendance">
             <UsersIcon className="h-4 w-4" />
             <span>Attendance by Person</span>
           </Link>
