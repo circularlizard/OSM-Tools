@@ -47,9 +47,10 @@ benefits from Section 2 being in place.
   - Section 6 (member data issues)
   - Section 7 (navigation updates)
   - Section 8 (TanStack React Query migration)
+  - Section 9 (section selector hardening / no-flash)
   - Section 11 (unified data loading system)
 - **Next**:
-  - Section 9 (section selector hardening)
+  - All sections complete!
 
 ### 1.3. Detailed implementation checklist conventions
 
@@ -758,10 +759,10 @@ This section consolidates the recommendations from `docs/completed-plans/members
 
 ### 9.0. Detailed implementation checklist
 
-- [ ] If there is a cached selected section, load data for it and do not show the section selector.
-- [ ] If there is no cached selected section, show the section selector immediately (no dashboard flash), store the selection, then load data.
-- [ ] When a section is already selected, switching section uses an inline dropdown (not the full-screen section picker route).
-- [ ] Add/adjust tests for initial load gating + section switching behavior.
+- [x] If there is a cached selected section, load data for it and do not show the section selector.
+- [x] If there is no cached selected section, show the section selector immediately (no dashboard flash), store the selection, then load data.
+- [x] When a section is already selected, switching section uses an inline dropdown (not the full-screen section picker route).
+- [x] Add/adjust tests for initial load gating + section switching behavior.
 
 ### 9.1. Requirements
 
