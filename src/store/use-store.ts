@@ -46,6 +46,10 @@ interface SessionState {
   availableSections: Section[]
   setAvailableSections: (sections: Section[]) => void
 
+  // Hydration state (true after persisted state is loaded from localStorage)
+  _hasHydrated: boolean
+  setHasHydrated: (hydrated: boolean) => void
+
   // Clear all session data (for logout)
   clearSession: () => void
 }
@@ -268,6 +272,9 @@ export const useStore = create<StoreState>()(
       availableSections: [],
       setAvailableSections: (sections) => set({ availableSections: sections }),
 
+      _hasHydrated: false,
+      setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
+
       clearSession: () =>
         set({
           currentSection: null,
@@ -413,6 +420,9 @@ export const useStore = create<StoreState>()(
         allowedEventIds: state.allowedEventIds,
         theme: state.theme,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )

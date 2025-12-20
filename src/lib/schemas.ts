@@ -268,7 +268,7 @@ export const IndividualDataSchema = z.object({
   sectionid: z.number(),
   active: z.boolean(),
   meetings: z.union([z.string(), z.number()]).transform(String),
-  others: z.array(z.string()), // Other sections member belongs to
+  others: z.array(z.string()).optional().default([]), // Other sections member belongs to
 })
 
 export const IndividualResponseSchema = z.object({

@@ -93,6 +93,7 @@ export default function DashboardPage() {
   const currentSection = useStore((s) => s.currentSection);
   const selectedSections = useStore((s) => s.selectedSections);
   const availableSections = useStore((s) => s.availableSections);
+  const hasHydrated = useStore((s) => s._hasHydrated);
   
   // Use React Query hook - single source of truth for events data
   const { events, isLoading: eventsLoading } = useEvents();
@@ -128,7 +129,7 @@ export default function DashboardPage() {
     return null;
   }
 
-  if (status === "loading") {
+  if (status === "loading" || !hasHydrated) {
     return (
       <div className="p-4 md:p-6 space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -141,7 +142,7 @@ export default function DashboardPage() {
     );
   }
 
-  // If no section is selected, show the section selector immediately (no flash)
+  // If no section is selected (after hydration), show the section selector immediately (no flash)
   const needsSectionSelection = !currentSection && (!selectedSections || selectedSections.length === 0);
 
   if (needsSectionSelection) {
