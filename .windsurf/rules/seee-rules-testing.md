@@ -1,5 +1,6 @@
 ---
 description: SEEE Expedition Dashboard testing and QA rules
+trigger: always_on
 ---
 
 # SEEE Expedition Dashboard Testing Rules

@@ -193,7 +193,7 @@ Authoring plan:
 
 ### 7.1 Tier 0 – Specification IDs
 
-- [ ] Refactor `docs/SPECIFICATION.md` with unique requirement IDs (gate for all downstream items).
+- [x] Refactor `docs/SPECIFICATION.md` with unique requirement IDs (gate for all downstream items).
 
 ### 7.2 Tier 1 – Numerical Coverage
 

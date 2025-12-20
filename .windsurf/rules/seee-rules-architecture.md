@@ -1,5 +1,6 @@
 ---
 description: SEEE Expedition Dashboard architecture and implementation rules
+trigger: always_on
 ---
 
 # SEEE Expedition Dashboard Architecture Rules
