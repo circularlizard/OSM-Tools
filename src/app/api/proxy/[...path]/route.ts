@@ -9,6 +9,7 @@ import {
   getCacheKey,
 } from '@/lib/redis'
 import { logProxyRequest, logCache } from '@/lib/logger'
+import { logApiRequest, logApiResponse, logApiError } from '@/lib/api-debug-logger'
 import { getServerSession } from 'next-auth/next'
 import { getAuthConfig } from '@/lib/auth'
 import apiMap from '@/mocks/api_map.json'
@@ -248,8 +249,12 @@ export async function GET(
       }
     }
 
+    // Log the API request for debugging
+    const queryParams = Object.fromEntries(request.nextUrl.searchParams)
+    logApiRequest('GET', path, queryParams)
+
     // Check cache first (read-through pattern)
-    const cacheKey = getCacheKey(path, Object.fromEntries(request.nextUrl.searchParams))
+    const cacheKey = getCacheKey(path, queryParams)
     const cachedData = await getCachedResponse(cacheKey)
 
     if (cachedData) {
@@ -263,6 +268,8 @@ export async function GET(
           duration: Date.now() - startTime,
           cached: true,
         })
+        // Log cached response for debugging
+        logApiResponse('GET', path, 200, Date.now() - startTime, true, parsed)
         return NextResponse.json(parsed, {
           status: 200,
           headers: {
@@ -331,6 +338,9 @@ export async function GET(
     await setCachedResponse(cacheKey, JSON.stringify(data), CACHE_TTL)
     logCache({ operation: 'set', key: cacheKey, ttl: CACHE_TTL })
 
+    // Log fresh response for debugging
+    logApiResponse('GET', path, 200, Date.now() - startTime, false, data)
+
     logProxyRequest({
       method: 'GET',
       path,
@@ -363,6 +373,7 @@ export async function GET(
     }
 
     logProxyRequest({ method: 'GET', path: pathFromUrl, status: 500, duration, error: errorMessage })
+    logApiError('GET', pathFromUrl, errorMessage)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: errorMessage },
       { status: 500 }

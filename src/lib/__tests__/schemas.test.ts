@@ -50,11 +50,14 @@ describe('Zod Schemas - Two-Tier Validation', () => {
       expect(result.success).toBe(false)
     })
 
-    it('should fail when UUID is invalid', () => {
+    it('should gracefully handle invalid UUID by defaulting to null', () => {
       const invalidMember = { ...validMember, photo_guid: 'not-a-uuid' }
       
       const result = MemberSchema.safeParse(invalidMember)
-      expect(result.success).toBe(false)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.photo_guid).toBeNull()
+      }
     })
 
     it('parseStrict should throw on invalid data', () => {

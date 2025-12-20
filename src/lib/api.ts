@@ -109,8 +109,31 @@ export async function getMembers(params: {
     section: params.section || 'explorers',
   })
 
-  const data = await response.json()
-  return parseStrict(MembersListSchema, data, 'Members')
+  const raw = (await response.json()) as unknown
+
+  const normalized = (() => {
+    if (Array.isArray(raw)) return raw
+    if (raw && typeof raw === 'object') {
+      const obj = raw as Record<string, unknown>
+      const candidates: Array<unknown> = [obj.items, obj.data, obj.members, obj.results]
+      const firstArray = candidates.find(Array.isArray)
+      if (firstArray && Array.isArray(firstArray)) return firstArray
+
+      // Some OSM endpoints return an object keyed by scoutid (or similar), where
+      // the values are the member records. Convert to an array.
+      const values = Object.values(obj)
+      const looksLikeMemberRecord = (v: unknown): v is Record<string, unknown> => {
+        if (!v || typeof v !== 'object') return false
+        const rec = v as Record<string, unknown>
+        return 'scoutid' in rec && ('firstname' in rec || 'first_name' in rec) && ('lastname' in rec || 'last_name' in rec)
+      }
+      const memberValues = values.filter(looksLikeMemberRecord)
+      if (memberValues.length > 0) return memberValues
+    }
+    return raw
+  })()
+
+  return parseStrict(MembersListSchema, normalized, 'Members')
 }
 
 /**
