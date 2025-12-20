@@ -3,15 +3,21 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Shield, CalendarDays, Users as UsersIcon, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStore } from "@/store/use-store";
 
 export default function Sidebar() {
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
   const isAdmin = (session as { roleSelection?: string } | null)?.roleSelection === "admin";
   const currentSection = useStore((s) => s.currentSection);
   const selectedSections = useStore((s) => s.selectedSections);
   const availableSections = useStore((s) => s.availableSections);
+  const setCurrentSection = useStore((s) => s.setCurrentSection);
+  const setSelectedSections = useStore((s) => s.setSelectedSections);
+  const clearQueue = useStore((s) => s.clearQueue);
   const pathname = usePathname();
 
   const hasMultiSelection = selectedSections.length > 0;
@@ -19,9 +25,33 @@ export default function Sidebar() {
     ? selectedSections.map((s) => s.sectionName).join(", ")
     : currentSection?.sectionName ?? "No section selected";
 
-  // Only show Change Section when user actually has more than one available section
-  const showChangeSectionButton = availableSections.length > 1;
-  const changeSectionHref = `/dashboard/section-picker?redirect=${encodeURIComponent(pathname || "/dashboard")}`;
+  // Show dropdown when user has more than one available section
+  const showSectionDropdown = availableSections.length > 1;
+
+  const handleSectionChange = (sectionId: string) => {
+    const selected = availableSections.find(s => s.sectionId === sectionId);
+    if (!selected) return;
+
+    setCurrentSection({
+      sectionId: selected.sectionId,
+      sectionName: selected.sectionName,
+      sectionType: selected.sectionType,
+      termId: selected.termId,
+    });
+    setSelectedSections([]);
+    clearQueue();
+
+    // Clear cached data for old section
+    queryClient.removeQueries({ queryKey: ['events'] });
+    queryClient.removeQueries({ queryKey: ['event-summary'] });
+    queryClient.removeQueries({ queryKey: ['attendance'] });
+    queryClient.removeQueries({ queryKey: ['per-person-attendance'] });
+    queryClient.removeQueries({ queryKey: ['members'] });
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('[Sidebar] Section changed, cleared cached queries');
+    }
+  };
 
   return (
     <aside className="hidden md:block w-60 border-r bg-muted min-h-screen p-4">
@@ -31,16 +61,23 @@ export default function Sidebar() {
           <p className="px-2 text-xs font-semibold text-muted-foreground uppercase mb-1">
             Section
           </p>
-          <div className="px-2 text-sm text-muted-foreground truncate">
-            {sectionLabel}
-          </div>
-          {showChangeSectionButton && (
-            <Link
-              href={changeSectionHref}
-              className="mt-1 inline-flex items-center px-2 py-1 rounded-md text-xs font-medium text-primary hover:bg-accent hover:text-accent-foreground"
-            >
-              Change section
-            </Link>
+          {showSectionDropdown && currentSection ? (
+            <Select value={currentSection.sectionId} onValueChange={handleSectionChange}>
+              <SelectTrigger className="w-full mt-1">
+                <SelectValue placeholder="Select section" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableSections.map((section) => (
+                  <SelectItem key={section.sectionId} value={section.sectionId}>
+                    {section.sectionName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="px-2 text-sm text-muted-foreground truncate">
+              {sectionLabel}
+            </div>
           )}
         </div>
 
