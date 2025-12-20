@@ -44,11 +44,11 @@ benefits from Section 2 being in place.
   - Section 3 (session timeout)
   - Section 4 (members hydration)
   - Section 5 (members page)
+  - Section 6 (member data issues)
+  - Section 8 (TanStack React Query migration)
   - Section 11 (unified data loading system)
 - **Next**:
-  - Section 6 (member data issues)
   - Section 7 (navigation updates)
-  - Section 8 (TanStack React Query migration)
   - Section 9 (section selector hardening)
 
 ### 1.3. Detailed implementation checklist conventions
