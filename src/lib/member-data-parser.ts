@@ -33,9 +33,25 @@ const GROUP_IDENTIFIERS = {
 /**
  * Extract a column value by varname from a group's columns
  */
+function normalizeValue(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed === '' || trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'n/a') {
+    return ''
+  }
+  return trimmed
+}
+
 function getColumnValue(columns: CustomDataColumn[], varname: string): string {
   const column = columns.find((c) => c.varname === varname)
-  return column?.value ?? ''
+  return normalizeValue(column?.value ?? '')
+}
+
+function getFirstColumnValue(columns: CustomDataColumn[], varnames: string[]): string {
+  for (const varname of varnames) {
+    const value = getColumnValue(columns, varname)
+    if (value) return value
+  }
+  return ''
 }
 
 /**
@@ -44,18 +60,18 @@ function getColumnValue(columns: CustomDataColumn[], varname: string): string {
 function extractContact(group: CustomDataGroup): NormalizedContact {
   const cols = group.columns
   return {
-    firstName: getColumnValue(cols, 'firstname') || getColumnValue(cols, 'first_name'),
-    lastName: getColumnValue(cols, 'lastname') || getColumnValue(cols, 'last_name'),
-    address1: getColumnValue(cols, 'address1'),
-    address2: getColumnValue(cols, 'address2'),
-    address3: getColumnValue(cols, 'address3'),
-    address4: getColumnValue(cols, 'address4'),
-    postcode: getColumnValue(cols, 'postcode'),
-    phone1: getColumnValue(cols, 'phone1'),
-    phone2: getColumnValue(cols, 'phone2'),
-    email1: getColumnValue(cols, 'email1'),
-    email2: getColumnValue(cols, 'email2'),
-    relationship: getColumnValue(cols, 'relationship'),
+    firstName: getFirstColumnValue(cols, ['firstname', 'first_name', 'forename']),
+    lastName: getFirstColumnValue(cols, ['lastname', 'last_name', 'surname']),
+    address1: getFirstColumnValue(cols, ['address1', 'address_1', 'address']),
+    address2: getFirstColumnValue(cols, ['address2', 'address_2']),
+    address3: getFirstColumnValue(cols, ['address3', 'address_3', 'town', 'city']),
+    address4: getFirstColumnValue(cols, ['address4', 'address_4', 'county', 'region']),
+    postcode: getFirstColumnValue(cols, ['postcode', 'post_code', 'zip', 'zipcode']),
+    phone1: getFirstColumnValue(cols, ['phone1', 'phone', 'telephone', 'mobile', 'mobile1']),
+    phone2: getFirstColumnValue(cols, ['phone2', 'telephone2', 'mobile2']),
+    email1: getFirstColumnValue(cols, ['email1', 'email', 'email_address']),
+    email2: getFirstColumnValue(cols, ['email2', 'email_alt', 'email_address2']),
+    relationship: getFirstColumnValue(cols, ['relationship', 'relation', 'cf_relationship']),
   }
 }
 
@@ -68,12 +84,14 @@ function extractConsents(group: CustomDataGroup): NormalizedConsents {
   // Photo consent - look for various possible varnames
   const photoValue = getColumnValue(cols, 'photo_consent') || 
                      getColumnValue(cols, 'consent_photo') ||
-                     getColumnValue(cols, 'photography')
+                     getColumnValue(cols, 'photography') ||
+                     getColumnValue(cols, 'photographs_all')
   
   // Medical consent - look for various possible varnames
   const medicalValue = getColumnValue(cols, 'medical_consent') ||
                        getColumnValue(cols, 'consent_medical') ||
-                       getColumnValue(cols, 'medical')
+                       getColumnValue(cols, 'medical') ||
+                       getColumnValue(cols, 'sensitive')
   
   return {
     photoConsent: photoValue.toLowerCase() === 'yes' || photoValue === '1',
@@ -117,58 +135,126 @@ export function parseCustomDataGroups(groups: CustomDataGroup[]): ParsedCustomDa
   }
 
   for (const group of groups) {
-    switch (group.identifier) {
-      case GROUP_IDENTIFIERS.MEMBER_CONTACT:
-        result.memberContact = extractContact(group)
-        // Also extract medical/dietary/allergy notes from member contact group
-        result.medicalNotes = getColumnValue(group.columns, 'medical') || 
-                             getColumnValue(group.columns, 'medical_notes')
-        result.dietaryNotes = getColumnValue(group.columns, 'dietary') ||
-                             getColumnValue(group.columns, 'dietary_notes')
-        result.allergyNotes = getColumnValue(group.columns, 'allergies') ||
-                             getColumnValue(group.columns, 'allergy_notes')
-        break
+    const identifier = group.identifier.toLowerCase()
+    const name = group.name.toLowerCase()
 
-      case GROUP_IDENTIFIERS.PRIMARY_CONTACT_1:
-        result.primaryContact1 = extractContact(group)
-        break
+    const isMemberContact =
+      identifier === GROUP_IDENTIFIERS.MEMBER_CONTACT ||
+      identifier.includes('contact_primary_member') ||
+      name === 'member'
 
-      case GROUP_IDENTIFIERS.PRIMARY_CONTACT_2:
-        result.primaryContact2 = extractContact(group)
-        break
+    const isPrimary1 =
+      identifier === GROUP_IDENTIFIERS.PRIMARY_CONTACT_1 ||
+      identifier.includes('contact_primary_1') ||
+      name.includes('primary contact 1')
 
-      case GROUP_IDENTIFIERS.EMERGENCY:
-        result.emergencyContact = extractContact(group)
-        break
+    const isPrimary2 =
+      identifier === GROUP_IDENTIFIERS.PRIMARY_CONTACT_2 ||
+      identifier.includes('contact_primary_2') ||
+      name.includes('primary contact 2')
 
-      case GROUP_IDENTIFIERS.DOCTOR:
-        result.doctorName = getColumnValue(group.columns, 'surgery') ||
-                           getColumnValue(group.columns, 'doctor_name') ||
-                           getColumnValue(group.columns, 'name')
-        result.doctorPhone = getColumnValue(group.columns, 'phone') ||
-                            getColumnValue(group.columns, 'phone1')
-        result.doctorAddress = getColumnValue(group.columns, 'address') ||
-                              getColumnValue(group.columns, 'address1')
-        break
+    const isEmergency =
+      identifier === GROUP_IDENTIFIERS.EMERGENCY ||
+      identifier.includes('emergency') ||
+      name.includes('emergency')
 
-      case GROUP_IDENTIFIERS.STANDARD_FIELDS:
-        // Standard fields may also contain medical info
-        if (!result.medicalNotes) {
-          result.medicalNotes = getColumnValue(group.columns, 'medical') ||
-                               getColumnValue(group.columns, 'medical_details')
-        }
-        if (!result.dietaryNotes) {
-          result.dietaryNotes = getColumnValue(group.columns, 'dietary') ||
-                               getColumnValue(group.columns, 'dietary_requirements')
-        }
-        if (!result.allergyNotes) {
-          result.allergyNotes = getColumnValue(group.columns, 'allergies')
-        }
-        break
+    const isDoctor =
+      identifier === GROUP_IDENTIFIERS.DOCTOR ||
+      identifier.includes('doctor') ||
+      identifier.includes('medical') ||
+      name.includes('doctor') ||
+      name.includes('medical') ||
+      name.includes('practice')
 
-      case GROUP_IDENTIFIERS.CONSENTS:
-        result.consents = extractConsents(group)
-        break
+    const isConsents =
+      identifier === GROUP_IDENTIFIERS.CONSENTS ||
+      identifier.includes('consent') ||
+      name.includes('consent')
+
+    const isStandardFields =
+      identifier === GROUP_IDENTIFIERS.STANDARD_FIELDS ||
+      identifier.includes('standard')
+
+    if (isMemberContact) {
+      result.memberContact = extractContact(group)
+      // Also extract medical/dietary/allergy notes from member contact group
+      result.medicalNotes = getFirstColumnValue(group.columns, [
+        'medical',
+        'medical_notes',
+        'medical_details',
+        'cf_medical_notes',
+        'cf_medical',
+      ])
+      result.dietaryNotes = getFirstColumnValue(group.columns, [
+        'dietary',
+        'dietary_notes',
+        'dietary_requirements',
+        'cf_dietary_notes',
+        'cf_dietary_requirements',
+      ])
+      result.allergyNotes = getFirstColumnValue(group.columns, [
+        'allergies',
+        'allergy_notes',
+        'cf_allergy_notes',
+      ])
+      continue
+    }
+
+    if (isPrimary1) {
+      result.primaryContact1 = extractContact(group)
+      continue
+    }
+
+    if (isPrimary2) {
+      result.primaryContact2 = extractContact(group)
+      continue
+    }
+
+    if (isEmergency) {
+      result.emergencyContact = extractContact(group)
+      continue
+    }
+
+    if (isDoctor) {
+      result.doctorName = getFirstColumnValue(group.columns, ['surgery', 'practice', 'gp_surgery', 'doctor_name', 'name']) || result.doctorName
+      result.doctorPhone = getFirstColumnValue(group.columns, ['phone', 'phone1', 'telephone', 'tel']) || result.doctorPhone
+      result.doctorAddress = getFirstColumnValue(group.columns, ['address', 'address1', 'address_1']) || result.doctorAddress
+      continue
+    }
+
+    if (isStandardFields) {
+      // Standard fields may also contain medical info
+      if (!result.medicalNotes) {
+        result.medicalNotes = getFirstColumnValue(group.columns, [
+          'medical',
+          'medical_details',
+          'medical_notes',
+          'cf_medical_notes',
+          'cf_medical',
+        ])
+      }
+      if (!result.dietaryNotes) {
+        result.dietaryNotes = getFirstColumnValue(group.columns, [
+          'dietary',
+          'dietary_requirements',
+          'dietary_notes',
+          'cf_dietary_notes',
+          'cf_dietary_requirements',
+        ])
+      }
+      if (!result.allergyNotes) {
+        result.allergyNotes = getFirstColumnValue(group.columns, [
+          'allergies',
+          'allergy_notes',
+          'cf_allergy_notes',
+        ])
+      }
+      continue
+    }
+
+    if (isConsents) {
+      result.consents = extractConsents(group)
+      continue
     }
   }
 

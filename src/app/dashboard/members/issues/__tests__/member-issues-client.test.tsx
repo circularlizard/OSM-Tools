@@ -166,6 +166,7 @@ describe('MemberIssuesClient', () => {
     expect(screen.getByText(/Missing: email/i)).toBeInTheDocument()
   })
 
+  // Other sections are intentionally not shown on the issues tables.
   it('shows duplicate contact information', () => {
     const sharedEmail = 'shared@example.com'
     const members = [
@@ -197,38 +198,6 @@ describe('MemberIssuesClient', () => {
     render(<MemberIssuesClient />)
 
     expect(screen.getByText('Eagles')).toBeInTheDocument()
-  })
-
-  it('displays other sections for members', () => {
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Multi',
-        lastName: 'Section',
-        otherSections: ['Beavers', 'Cubs'],
-        emergencyContact: null,
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue(members)
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText(/Beavers, Cubs/i)).toBeInTheDocument()
-  })
-
-  it('shows em dash when member has no other sections', () => {
-    const members = [
-      createMember({
-        id: '1',
-        firstName: 'Single',
-        lastName: 'Section',
-        otherSections: [],
-        emergencyContact: null,
-      }),
-    ]
-    ;(useMembers as jest.Mock).mockReturnValue(members)
-    render(<MemberIssuesClient />)
-
-    expect(screen.getByText('—')).toBeInTheDocument()
   })
 
   it('displays severity badges', () => {

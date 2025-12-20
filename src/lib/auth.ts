@@ -1,8 +1,17 @@
 import type { AuthOptions, DefaultUser } from 'next-auth'
-import type { JWT } from 'next-auth/jwt'
+import type { JWT as BaseJWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getMockUser } from '@/mocks/mockSession'
-import { setOAuthData, type OAuthData } from './redis'
+import { setOAuthData, type OAuthData, getSessionVersion } from './redis'
+
+/**
+ * Extended JWT type with our custom fields
+ */
+interface JWT extends BaseJWT {
+  roleSelection?: 'admin' | 'standard'
+  scopes?: string[]
+  sessionVersion?: number
+}
 
 /**
  * Extended user type with OSM-specific fields
@@ -244,10 +253,31 @@ export function getAuthConfig(): AuthOptions {
         const roleSelection = extUser.roleSelection || 'standard'
         const scopes = getScopesForRole(roleSelection)
         
+        // Get current session version from Redis
+        const currentVersion = await getSessionVersion()
+        
         token.roleSelection = roleSelection
         token.scopes = scopes
+        token.sessionVersion = currentVersion
         
         console.log(`[JWT] Provider: ${account.provider}, Role: "${roleSelection}", Scopes: ${scopes.join(', ')}`)
+      }
+      
+      // Validate session version on every request
+      if (typeof token.sessionVersion === 'number') {
+        const currentVersion = await getSessionVersion()
+        if (token.sessionVersion < currentVersion) {
+          // Session is from before the last restart, invalidate it
+          console.log(`[JWT] Session version mismatch: ${token.sessionVersion} < ${currentVersion}, invalidating session`)
+          return {
+            ...token,
+            error: 'SessionExpired',
+            accessToken: undefined,
+            refreshToken: undefined,
+            accessTokenExpires: 0,
+            user: undefined,
+          }
+        }
       }
       // Mock authentication: skip token rotation
       if (MOCK_AUTH_ENABLED) {
@@ -263,6 +293,7 @@ export function getAuthConfig(): AuthOptions {
           } catch (error) {
             console.error('[Mock Auth] Failed to store OAuth data in Redis:', error)
           }
+          const currentVersion = await getSessionVersion()
           
           // Initial sign-in: set mock tokens
           return {
@@ -274,6 +305,7 @@ export function getAuthConfig(): AuthOptions {
             sectionIds: (extUser.sections || []).map((s: OsmSection) => s.section_id),
             scopes: extUser.scopes || [],
             roleSelection: extUser.roleSelection || 'standard',
+            sessionVersion: currentVersion,
           }
         }
         // Subsequent requests: ensure accessToken is always present
@@ -290,6 +322,7 @@ export function getAuthConfig(): AuthOptions {
         const extUser = user as ExtendedUser
         const roleSelection = extUser.roleSelection || 'standard'
         const scopes = getScopesForRole(roleSelection)
+        const currentVersion = await getSessionVersion()
         
         return {
           accessToken: account.access_token,
@@ -300,6 +333,7 @@ export function getAuthConfig(): AuthOptions {
           sectionIds: extUser.sectionIds || [],
           scopes,
           roleSelection,
+          sessionVersion: typeof token.sessionVersion === 'number' ? token.sessionVersion : currentVersion,
         }
       }
 

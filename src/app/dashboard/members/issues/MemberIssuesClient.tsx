@@ -98,9 +98,6 @@ function IssueTable({
             <tr className="border-b bg-muted/50">
               <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Patrol</th>
-              <th className="px-4 py-3 text-left text-sm font-medium hidden md:table-cell">
-                Other Sections
-              </th>
               <th className="px-4 py-3 text-left text-sm font-medium">Issue Details</th>
             </tr>
           </thead>
@@ -123,11 +120,6 @@ function IssueTable({
                     {member.lastName}, {member.firstName}
                   </td>
                   <td className="px-4 py-3 text-sm">{member.patrolName}</td>
-                  <td className="px-4 py-3 text-sm hidden md:table-cell">
-                    {member.otherSections.length > 0
-                      ? member.otherSections.join(', ')
-                      : '—'}
-                  </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{issueDetails}</td>
                 </tr>
               )

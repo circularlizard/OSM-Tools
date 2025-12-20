@@ -143,7 +143,7 @@ export function logValidationError(params: {
  * Log Redis connection events
  */
 export function logRedis(params: {
-  event: 'connected' | 'error' | 'disconnected' | 'oauth_data_stored' | 'oauth_data_retrieved' | 'patrol_cache_stored' | 'patrol_cache_retrieved' | 'patrol_cache_meta_updated' | 'patrol_caches_cleared'
+  event: 'connected' | 'error' | 'disconnected' | 'oauth_data_stored' | 'oauth_data_retrieved' | 'patrol_cache_stored' | 'patrol_cache_retrieved' | 'patrol_cache_meta_updated' | 'patrol_caches_cleared' | 'session_version_incremented'
   error?: unknown
   userId?: string
   ttl?: number
@@ -153,6 +153,7 @@ export function logRedis(params: {
   lastUpdated?: string
   updatedBy?: string
   keyCount?: number
+  version?: number
 }) {
   if (params.event === 'error') {
     logger.error(
@@ -164,7 +165,24 @@ export function logRedis(params: {
       },
       'Redis connection error'
     )
-  } else if (params.event === 'oauth_data_stored' || params.event === 'oauth_data_retrieved') {
+    return
+  }
+
+  // Special handling for session version increments
+  if (params.event === 'session_version_incremented' && params.version !== undefined) {
+    logger.info(
+      {
+        redis: {
+          event: params.event,
+          version: params.version,
+        },
+      },
+      `Session version incremented to ${params.version}`
+    )
+    return
+  }
+
+  if (params.event === 'oauth_data_stored' || params.event === 'oauth_data_retrieved') {
     logger.debug(
       {
         redis: {

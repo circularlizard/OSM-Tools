@@ -265,6 +265,29 @@ export async function isRedisAvailable(): Promise<boolean> {
 }
 
 // ============================================================================
+// SESSION MANAGEMENT
+// ============================================================================
+
+/**
+ * Get current session version
+ */
+export async function getSessionVersion(): Promise<number> {
+  const client = getRedisClient()
+  const version = await client.get(SESSION_VERSION_KEY)
+  return version ? parseInt(version, 10) : 1
+}
+
+/**
+ * Increment session version to invalidate all existing sessions
+ */
+export async function incrementSessionVersion(): Promise<number> {
+  const client = getRedisClient()
+  const newVersion = await client.incr(SESSION_VERSION_KEY)
+  logRedis({ event: 'session_version_incremented', version: newVersion })
+  return newVersion
+}
+
+// ============================================================================
 // PATROL REFERENCE CACHE
 // ============================================================================
 
@@ -279,6 +302,12 @@ export function getPatrolCacheKey(sectionId: string): string {
  * Patrol cache metadata key (stores last updated timestamp)
  */
 export const PATROL_CACHE_META_KEY = 'patrols:meta'
+
+/**
+ * Session version key in Redis
+ * Incrementing this will invalidate all existing sessions
+ */
+export const SESSION_VERSION_KEY = 'app:session:version'
 
 /**
  * Cached patrol data structure
