@@ -50,7 +50,7 @@ benefits from Section 2 being in place.
   - Section 9 (section selector hardening / no-flash)
   - Section 11 (unified data loading system)
 - **Next**:
-  - All sections complete!
+  - Section 12 (member issues page UX improvements)
 
 ### 1.3. Detailed implementation checklist conventions
 
@@ -936,3 +936,64 @@ This section consolidates the recommendations from `docs/completed-plans/members
 - Consider implementing a proper data fetching library like React Query or SWR --> Need to analyse this further and expand on what it would do for us.
 
 </details>
+
+---
+
+## 12. Member Issues Page UX Improvements
+
+### 12.0. Detailed implementation checklist
+
+- [ ] Replace card-based layout with collapsible sections
+- [ ] Section headers show summary (count, criticality, color coding)
+- [ ] Expanded sections show sortable member tables
+- [ ] Tables sortable by all columns (default: name)
+- [ ] Update tests for new component structure
+
+### 12.1. Requirements
+
+**Current State:**
+- Member issues displayed as cards with summary information
+- Each card shows issue type, count, criticality level, and color coding
+- Clicking a card shows member details in a separate view
+
+**New State:**
+- Replace cards with collapsible accordion sections
+- Section headers display the same summary information as current cards:
+  - Issue type name
+  - Member count
+  - Criticality indicator (color + icon)
+  - Brief description
+- When expanded, show a sortable table of affected members
+- Tables should be sortable by all columns
+- Default sort: member name (ascending)
+
+### 12.2. Implementation steps
+
+1. **Install/verify accordion component**
+   - Use shadcn/ui Accordion component for collapsible sections
+   - Ensure proper accessibility (ARIA attributes)
+
+2. **Restructure MemberIssuesClient component**
+   - Replace Card components with Accordion
+   - Move summary info to AccordionTrigger
+   - Move member tables to AccordionContent
+
+3. **Add table sorting**
+   - Implement sortable table headers
+   - Support sorting by: name, patrol, age, missing data fields
+   - Maintain sort state per section
+   - Visual indicators for sort direction
+
+4. **Preserve styling and colors**
+   - Maintain current color coding for criticality levels
+   - Keep visual hierarchy clear
+   - Ensure mobile responsiveness
+
+### 12.3. Testing
+
+- Member issues page loads with all sections collapsed
+- Clicking section header expands/collapses that section
+- Tables display correct member data
+- Sorting works for all columns
+- Color coding and criticality indicators display correctly
+- Mobile layout remains functional

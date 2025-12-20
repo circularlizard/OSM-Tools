@@ -158,6 +158,12 @@ To support offline analysis and physical record-keeping during expeditions:
     * Missing/incomplete other contacts.
     * Missing doctor information.
     * Emergency contact duplicates a primary contact.
+  * **UX (Dec 2025):**
+    * Issues displayed as collapsible accordion sections
+    * Section headers show: issue type, member count, criticality indicator (color + icon), brief description
+    * Expanded sections show sortable tables of affected members
+    * Tables sortable by all columns (default: member name ascending)
+    * Color coding maintained for criticality levels
 * **Security:** Member contact/medical data is sensitive and must not be persisted to localStorage.
 
 **Routes (canonical, admin only):**
