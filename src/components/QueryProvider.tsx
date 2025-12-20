@@ -2,6 +2,32 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactNode, useState } from 'react'
+import { APIError } from '@/lib/api'
+
+/**
+ * Determines if a failed query should be retried based on error type.
+ * 
+ * Retry rules for APIError:
+ * - 401 (UNAUTHENTICATED): No retry - user needs to re-authenticate
+ * - 429 (RATE_LIMITED): No retry - system is cooling down
+ * - 503 (SYSTEM_HALTED): No retry - system is halted
+ * - Other errors: Retry up to 3 times with exponential backoff
+ */
+function shouldRetryQuery(failureCount: number, error: Error): boolean {
+  // Don't retry if we've already tried 3 times
+  if (failureCount >= 3) return false
+
+  // Check for APIError with specific status codes that should not retry
+  if (error instanceof APIError) {
+    const noRetryStatuses = [401, 429, 503]
+    if (noRetryStatuses.includes(error.status)) {
+      return false
+    }
+  }
+
+  // Retry other errors
+  return true
+}
 
 /**
  * React Query Provider Component
@@ -10,6 +36,7 @@ import { ReactNode, useState } from 'react'
  * - staleTime: 5 minutes (data considered fresh for 5 mins)
  * - gcTime: 10 minutes (unused data kept in cache for 10 mins)
  * - refetchOnWindowFocus: false (don't refetch when user returns to tab)
+ * - Custom retry logic that respects API error codes
  * 
  * Usage: Wrap your app or layout with this provider
  */
@@ -27,8 +54,8 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             gcTime: 10 * 60 * 1000,
             // Don't refetch on window focus (conserve API quota)
             refetchOnWindowFocus: false,
-            // Retry failed requests up to 3 times
-            retry: 3,
+            // Custom retry logic based on error type
+            retry: shouldRetryQuery,
             // Exponential backoff: 1s, 2s, 4s
             retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
           },
