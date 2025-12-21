@@ -36,7 +36,7 @@ jobs:
         run: npm run lint
 
       - name: Run TypeScript check
-        run: npx tsc --noEmit
+        run: npm run tscheck
 
       - name: Run unit tests with coverage
         run: npm run test:unit

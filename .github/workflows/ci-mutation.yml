@@ -51,38 +51,16 @@ jobs:
           path: reports/mutation
           retention-days: 30
 
-      - name: Check mutation score
+      - name: Gate on mutation score (>= 80%)
         run: |
-          if [ -f reports/mutation/mutation-score.json ]; then
-            SCORE=$(jq -r '.mutationScore' reports/mutation/mutation-score.json)
-            echo "Mutation score: $SCORE%"
-            if (( $(echo "$SCORE < 80" | bc -l) )); then
-              echo "::warning::Mutation score ($SCORE%) is below 80% threshold"
-            fi
+          if [ ! -f reports/mutation/mutation-score.json ]; then
+            echo "❌ Mutation score file not found: reports/mutation/mutation-score.json"
+            exit 1
           fi
 
-      - name: Comment PR with mutation results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            if (fs.existsSync('reports/mutation/mutation-score.json')) {
-              const report = JSON.parse(fs.readFileSync('reports/mutation/mutation-score.json', 'utf8'));
-              const body = `## Mutation Testing Results
-              
-              - **Mutation Score:** ${report.mutationScore}%
-              - **Killed:** ${report.killed}
-              - **Survived:** ${report.survived}
-              - **Timeout:** ${report.timeout}
-              - **No Coverage:** ${report.noCoverage}
-              
-              [View full report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-              
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: body
-              });
-            }
+          SCORE=$(jq -r '.mutationScore' reports/mutation/mutation-score.json)
+          echo "Mutation score: $SCORE%"
+          if (( $(echo "$SCORE < 80" | bc -l) )); then
+            echo "❌ Mutation score ($SCORE%) is below 80% threshold"
+            exit 1
+          fi
