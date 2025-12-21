@@ -11,8 +11,10 @@ Feature: Member Data Issues
   Scenario: Member issues page loads
     When I navigate to "/dashboard/members/issues"
     Then the member issues page should load
+    And the member issues view should render appropriately for this viewport
 
   @REQ-ADMIN-05
   Scenario: Issue summary renders (either no issues or issue categories)
     When I navigate to "/dashboard/members/issues"
     Then the member issues summary should render
+    And the member issues view should render appropriately for this viewport
