@@ -12,10 +12,10 @@ export function useEventDetail(eventId: number) {
 
   return useQuery<EventDetailData>({
     queryKey: ['event-detail', eventId, currentSection?.termId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const [details, summary] = await Promise.all([
-        getEventDetails(eventId),
-        getEventSummary(eventId),
+        getEventDetails(eventId, signal),
+        getEventSummary(eventId, signal),
       ])
 
       return { details, summary }

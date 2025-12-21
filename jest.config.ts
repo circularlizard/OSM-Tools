@@ -14,7 +14,7 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testPathIgnorePatterns: ['<rootDir>/tests/e2e/'],
+  testPathIgnorePatterns: ['<rootDir>/tests/e2e/', '<rootDir>/.features-gen/', '<rootDir>/playwright-report/'],
   collectCoverage: true,
   coverageDirectory: '<rootDir>/coverage/unit',
   coverageReporters: ['json', 'html', 'text'],

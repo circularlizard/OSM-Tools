@@ -56,10 +56,19 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             gcTime: 10 * 60 * 1000,
             // Don't refetch on window focus (conserve API quota)
             refetchOnWindowFocus: false,
+            // Don't refetch on reconnect (avoid burst refetches after network drops)
+            refetchOnReconnect: false,
             // Custom retry logic based on error type
             retry: shouldRetryQuery,
-            // Exponential backoff: 1s, 2s, 4s
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+            // Retry delay:
+            // - Respect APIError.retryAfter when present (seconds)
+            // - Otherwise exponential backoff: 1s, 2s, 4s...
+            retryDelay: (attemptIndex, error) => {
+              if (error instanceof APIError && typeof error.retryAfter === 'number') {
+                return Math.min(Math.max(1000, error.retryAfter * 1000), 30000)
+              }
+              return Math.min(1000 * 2 ** attemptIndex, 30000)
+            },
           },
         },
       })

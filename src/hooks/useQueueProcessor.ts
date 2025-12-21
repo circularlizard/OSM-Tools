@@ -47,7 +47,7 @@ export function useQueueProcessor(options?: {
     try {
       await queryClient.prefetchQuery({
         queryKey: ['event-summary', id],
-        queryFn: () => getEventSummary(id),
+        queryFn: ({ signal }) => getEventSummary(id, signal),
         staleTime: 5 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
       })

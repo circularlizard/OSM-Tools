@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ApiRequestConfig } from '@/types/api-browser';
 
 interface UseApiRequestResult {
@@ -17,6 +17,13 @@ export function useApiRequest(): UseApiRequestResult {
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [meta, setMeta] = useState<UseApiRequestResult['meta']>(null);
+  const abortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
 
   const execute = async (config: ApiRequestConfig) => {
     setIsLoading(true);
@@ -50,11 +57,16 @@ export function useApiRequest(): UseApiRequestResult {
 
       console.log('[API Browser] Executing request:', url);
 
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+
       const response = await fetch(url, {
         method: config.endpoint.method,
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -71,6 +83,10 @@ export function useApiRequest(): UseApiRequestResult {
       setData(responseData);
     } catch (err) {
       console.error('[API Browser] Request failed:', err);
+
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return
+      }
       setError(
         err instanceof Error
           ? err
