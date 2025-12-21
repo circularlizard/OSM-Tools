@@ -18,7 +18,7 @@
     "coverage/**"
   ],
   "commandRunner": {
-    "command": "npx jest --config jest.config.cjs"
+    "command": "npx jest --config jest.config.ts"
   },
   "tempDirName": ".stryker-tmp",
   "htmlReporter": {
