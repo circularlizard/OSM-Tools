@@ -66,10 +66,11 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'https://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && process.env.INSTRUMENT_CODE !== '1',
     ignoreHTTPSErrors: true,
     timeout: 120 * 1000,
     env: {
+      INSTRUMENT_CODE: process.env.INSTRUMENT_CODE ?? '0',
       // Enable mock authentication for E2E tests
       MOCK_AUTH_ENABLED: 'true',
       NEXT_PUBLIC_MOCK_AUTH_ENABLED: 'true',

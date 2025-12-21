@@ -20,7 +20,7 @@
     "test:bdd:ui": "playwright test -c playwright.bdd.config.ts --ui",
     "test:bdd:coverage": "npm run test:unit && npm run test:bdd && npm run test:merge",
     "pretest:merge": "mkdir -p coverage/merged",
-    "test:merge": "nyc merge coverage coverage/merged/coverage.json",
+    "test:merge": "nyc merge coverage/unit coverage/merged/unit.json && nyc merge coverage/e2e coverage/merged/e2e.json && nyc merge coverage/merged coverage/merged/coverage.json",
     "posttest:merge": "nyc report --reporter=html --reporter=text --temp-dir=coverage/merged --report-dir=coverage/total",
     "audit:coverage": "npm run test:unit && npm run test:e2e && npm run test:merge",
     "validate:safety": "./scripts/validate-safety-layer.sh",
@@ -57,6 +57,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
     "@cucumber/cucumber": "^12.4.0",
     "@eslint/eslintrc": "^3.3.3",
     "@playwright/test": "^1.57.0",
@@ -69,6 +70,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.22",
+    "babel-loader": "^10.0.0",
+    "babel-plugin-istanbul": "^7.0.1",
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "^15.0.0",
@@ -79,7 +82,6 @@
     "pino-pretty": "^13.1.3",
     "playwright-bdd": "^8.4.2",
     "postcss": "^8",
-    "swc-plugin-coverage-instrument": "^0.0.32",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "undici": "^6.19.8"

@@ -38,17 +38,12 @@
 
 ### 3.2 Instrumented E2E tests (Playwright)
 
-1. Install dependencies: `npm i -D playwright-bdd swc-plugin-coverage-instrument cross-env nyc`.
-2. Update `next.config.mjs`:
-   ```ts
-   experimental: {
-     swcPlugins: process.env.INSTRUMENT_CODE
-       ? [['swc-plugin-coverage-instrument', {}]]
-       : [],
-   },
-   ```
-3. Create `tests/e2e/fixtures.ts` extending Playwright’s `test` to capture `window.__coverage__` (per strategy doc).
-4. Run instrumented suite via `cross-env INSTRUMENT_CODE=1 playwright test -c playwright.bdd.config.ts`.
+1. Install dependencies: `npm i -D playwright-bdd cross-env nyc babel-loader @babel/core babel-plugin-istanbul`.
+2. Update `next.config.mjs` to instrument application code when `INSTRUMENT_CODE=1`.
+   - Use a Babel Istanbul post-loader in `webpack` scoped to `src/` (Next 15 SWC plugin compatibility varies).
+3. Ensure Playwright starts the dev server with `INSTRUMENT_CODE=1` (via `playwright.config.ts` `webServer.env`).
+4. Create `tests/e2e/fixtures.ts` extending Playwright’s `test` to capture `window.__coverage__`.
+5. Run instrumented suite via `cross-env INSTRUMENT_CODE=1 playwright test`.
 
 ### 3.3 Coverage merge
 
@@ -58,7 +53,7 @@ Scripts to add:
   "test:unit": "jest",
   "test:e2e": "cross-env INSTRUMENT_CODE=1 playwright test",
   "pretest:merge": "mkdir -p coverage/merged",
-  "test:merge": "nyc merge coverage coverage/merged/coverage.json",
+  "test:merge": "nyc merge coverage/unit coverage/merged/unit.json && nyc merge coverage/e2e coverage/merged/e2e.json && nyc merge coverage/merged coverage/merged/coverage.json",
   "posttest:merge": "nyc report --reporter=html --reporter=text --temp-dir=coverage/merged --report-dir=coverage/total",
   "audit:coverage": "npm run test:unit && npm run test:e2e && npm run test:merge"
 }
