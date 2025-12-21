@@ -20,11 +20,21 @@ Stabilize the SEEE Expedition Dashboard before investing in multi-application wo
 2. Add integration tests covering timeout flow (unit + Playwright BDD scenarios).
 
 ### 2.2 Rate Limiting & Proxy Safety
-1. Instrument proxy to log `X-RateLimit-*`, `Retry-After`, `X-Blocked` headers.
-2. Expose metrics hooks (e.g., `useRateLimitTelemetry`) for UI warnings.
-3. Ensure all fetch helpers accept `AbortSignal`; cancel on section/app switch.
-4. Harden retry policy (no automatic retries on 401/429/503).
-5. Extend tests (unit + integration) for soft lock, hard lock, cache corruption.
+**Status:** ✅ Complete
+
+1. Instrument proxy to log/expose `X-RateLimit-*`, `Retry-After`, `X-Blocked` headers.
+2. Expose telemetry via `/api/telemetry/rate-limit` and client polling hook for UI warnings.
+3. Ensure fetch helpers accept `AbortSignal` and propagate cancellation.
+4. Harden retry policy (no automatic retries on `401`/`429`/`503`, respect `retryAfter` when present).
+5. Extend tests (unit + integration) for soft lock, hard lock, cache corruption recovery, and `Retry-After` propagation.
+
+**Deliverables implemented (code):**
+1. Proxy safety headers are consistent across cache HIT/MISS and lock/error responses (`/api/proxy/[...path]`).
+2. Telemetry endpoint: `GET /api/telemetry/rate-limit`.
+3. Client polling hook: `src/hooks/useRateLimitTelemetry.ts`.
+4. UI warning banner: `src/components/layout/RateLimitTelemetryBanner.tsx` rendered in `ClientShell`.
+5. AbortSignal propagation improved for event detail and queue prefetch.
+6. TanStack Query retry policy hardened in `src/components/QueryProvider.tsx`.
 
 ### 2.3 UI & Responsiveness Polish
 1. Apply shared spacing/typography tokens (tables, cards, headers).
