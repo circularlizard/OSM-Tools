@@ -199,6 +199,8 @@ Authoring plan:
 
 - [x] Add `playwright-bdd` config, fixtures, and shared steps.
 - [x] Document Gherkin authoring standards in the contributor guide.
+- [x] Convert first high-value flow to `.feature` (Auth/Login).
+- [x] Make BDD runner green in CI-style run (`npm run test:bdd`).
 - [ ] Convert high-value flows (Dashboard, Members, Member Issues) to `.feature` files.
 - [ ] Remove legacy `.spec.ts` equivalents once BDD tests pass.
 - [ ] Enforce `REQ-` tags via lint rule or CI check.

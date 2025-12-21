@@ -24,6 +24,8 @@ Feature: Authentication and Login Flow
     When I click "Standard Viewer"
     And I click the button "Sign in with OSM"
     Then I should be on "/dashboard"
+    When I navigate to "/dashboard/events"
+    Then I should be on "/dashboard/events"
 
   @REQ-AUTH-12
   Scenario: User returns to intended page after login
@@ -31,4 +33,6 @@ Feature: Authentication and Login Flow
     Then I should be on "/"
     When I click "Administrator"
     And I click the button "Sign in with OSM"
+    Then I should be on "/dashboard"
+    When I navigate to "/dashboard/events"
     Then I should be on "/dashboard/events"
