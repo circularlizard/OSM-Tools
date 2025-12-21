@@ -14,3 +14,4 @@ Feature: Attendance by Person
     And I should see "Single List"
     And I should see "By Patrol"
     And I should see "By Patrol & Event"
+    And the attendance-by-person view should render appropriately for this viewport
