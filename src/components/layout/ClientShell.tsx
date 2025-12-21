@@ -9,15 +9,17 @@ import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useMembers } from "@/hooks/useMembers";
 import { useEvents } from "@/hooks/useEvents";
 import { useStore } from "@/store/use-store";
+import { useLogout } from "@/components/QueryProvider";
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   const pathname = usePathname();
   const currentSection = useStore((s) => s.currentSection);
   const selectedSections = useStore((s) => s.selectedSections);
+  const logout = useLogout();
   
   // Global inactivity timeout for authenticated users
-  useSessionTimeout();
+  useSessionTimeout({ onTimeout: logout });
   
   // Members data via React Query (single source of truth)
   // This hook triggers data loading with 3-phase progressive enrichment

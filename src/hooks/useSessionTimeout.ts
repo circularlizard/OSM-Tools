@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useSession, getSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 const INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes
@@ -9,6 +9,10 @@ const INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes
 interface TimeoutRefs {
   lastActive: number;
   timeoutId: ReturnType<typeof setTimeout> | null;
+}
+
+interface UseSessionTimeoutOptions {
+  onTimeout?: () => void | Promise<void>;
 }
 
 /**
@@ -19,10 +23,21 @@ interface TimeoutRefs {
  * - After 15 minutes of inactivity, re-checks the session
  * - Redirects to login if the session has expired
  */
-export function useSessionTimeout() {
+export function useSessionTimeout(options: UseSessionTimeoutOptions = {}) {
   const { status } = useSession();
   const router = useRouter();
   const refs = useRef<TimeoutRefs>({ lastActive: Date.now(), timeoutId: null });
+
+  return useSessionTimeoutWithOptions({ status, router, refs, onTimeout: options.onTimeout });
+}
+
+export function useSessionTimeoutWithOptions(options: {
+  status: ReturnType<typeof useSession>["status"];
+  router: ReturnType<typeof useRouter>;
+  refs: React.MutableRefObject<TimeoutRefs>;
+  onTimeout?: () => void | Promise<void>;
+}) {
+  const { status, router, refs, onTimeout } = options;
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -52,22 +67,17 @@ export function useSessionTimeout() {
         return;
       }
 
-      try {
-        const session = await getSession();
-        if (!session) {
-          // Session has expired; redirect to login with callback to current location.
-          if (typeof window !== "undefined") {
-            const callbackUrl = window.location.pathname + window.location.search;
-            router.push(`/?callbackUrl=${encodeURIComponent(callbackUrl)}`);
-          }
-          return;
-        }
-        // Session is still valid; schedule next inactivity check.
-        refs.current.lastActive = Date.now();
-        refs.current.timeoutId = setTimeout(checkInactivity, INACTIVITY_MS);
-      } catch {
-        // On error, fail softly by scheduling another check.
-        refs.current.timeoutId = setTimeout(checkInactivity, INACTIVITY_MS);
+      // Hard timeout: after 15 minutes of inactivity, force a real logout.
+      // This avoids relying on session-expiry timing and ensures a predictable UX.
+      if (onTimeout) {
+        await onTimeout();
+        return;
+      }
+
+      // Fallback behaviour: redirect to login with callback to current location.
+      if (typeof window !== "undefined") {
+        const callbackUrl = window.location.pathname + window.location.search;
+        router.push(`/?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       }
     };
 
@@ -96,5 +106,5 @@ export function useSessionTimeout() {
         refs.current.timeoutId = null;
       }
     };
-  }, [status, router]);
+  }, [onTimeout, refs, router, status]);
 }
