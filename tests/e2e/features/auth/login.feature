@@ -1,0 +1,34 @@
+@REQ-AUTH-01 @REQ-AUTH-02 @REQ-AUTH-03
+Feature: Authentication and Login Flow
+  As a user of the SEEE Dashboard
+  I need to authenticate using OSM OAuth
+  So that I can access the dashboard with appropriate permissions
+
+  Background:
+    Given I am on the login page
+
+  @REQ-AUTH-02
+  Scenario: Unauthenticated user is redirected to login
+    When I navigate to "/dashboard"
+    Then I should be on "/"
+    And I should see "Sign in with OSM"
+
+  @REQ-AUTH-03
+  Scenario: User selects Administrator role and logs in
+    When I click "Administrator"
+    And I click the button "Sign in with OSM"
+    Then I should be on "/dashboard"
+
+  @REQ-AUTH-03
+  Scenario: User selects Standard Viewer role and logs in
+    When I click "Standard Viewer"
+    And I click the button "Sign in with OSM"
+    Then I should be on "/dashboard"
+
+  @REQ-AUTH-12
+  Scenario: User returns to intended page after login
+    When I navigate to "/dashboard/events"
+    Then I should be on "/"
+    When I click "Administrator"
+    And I click the button "Sign in with OSM"
+    Then I should be on "/dashboard/events"
