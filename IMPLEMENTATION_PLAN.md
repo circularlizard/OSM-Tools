@@ -128,6 +128,57 @@ All agents must adhere to this structure. Do not create new top-level directorie
 
 ---
 
+## **Phase 3.3: Multi-App Platform Transition (New)**
+
+The goal of this phase is to evolve the current single-shell dashboard into the multi-application platform documented in `docs/future/platform-strategy-analysis.md` §6 and the updated spec/architecture. The work is staged to minimize disruption while keeping OSM integration read-only and proxy-driven.
+
+### 3.3.1 Platform Shell & Routing
+- [ ] Introduce `currentApp` handling in the Zustand session store (mirrors `currentSection`, `userRole`).
+- [ ] Restructure `/dashboard` route groups into app-specific segments:
+  - `/dashboard/(planning)` – SEEE Event Planning (admin)
+  - `/dashboard/(expedition)` – SEEE Expedition Viewer
+  - `/dashboard/(platform-admin)` – Platform Admin Console
+  - `/dashboard/(multi)` – Multi-Section Viewer (future placeholder)
+- [ ] Update shared layout to read `{ currentApp, userRole }` for sidebar/menu composition.
+- [ ] Add feature-flag scaffold so routes/components can render only when the correct app is active.
+
+### 3.3.2 Auth & Application Selection
+- [ ] Extend the existing role-selection modal to capture the target application (SEEE Event Planning, SEEE Expedition Viewer, Platform Admin; Multi-Section hidden until GA).
+- [ ] Map `(role, app)` selections to the correct NextAuth provider (`osm-admin`, `osm-standard`, future `osm-multisection`).
+- [ ] Persist `{ currentApp, currentSection }` in session (server + client) immediately after login to avoid hydration mismatch.
+- [ ] Update middleware to enforce app-level guards (e.g., route metadata listing `requiredApp` and `requiredRole`).
+
+### 3.3.3 State & Data Layer Updates
+- [ ] Namescape TanStack Query keys by application to avoid cache bleed (`['planning','events']`, `['expedition','summaries']`, etc.).
+- [ ] Ensure SEEE-only apps always inject the configured SEEE section ID before calling domain hooks (no section selector UI).
+- [ ] Wire platform metadata keys in Redis (`platform:seeeSectionId`, `platform:allowedOperators`, developer toggles) into the startup initializer so client/server share defaults.
+- [ ] Re-run hydration queues automatically whenever a SEEE app mounts; consolidate cache invalidation logic so Expedition Viewer benefits from admin-triggered refreshes.
+
+### 3.3.4 Platform Admin Console MVP
+- [ ] Scaffold `/dashboard/(platform-admin)` with protected navigation and primitives reused from existing dashboard shell.
+- [ ] Implement panels for:
+  - Patrol/member cache status with manual refresh buttons (queues jobs via existing hydration pipeline).
+  - SEEE section ID viewer/editor (writes to Redis, falls back to config default).
+  - Developer tools drawer (MSW toggle, rate-limit simulator, proxy inspector).
+  - Log viewer stub (reads from pino log store or mock data initially).
+- [ ] Emit audit entries for every action (user, timestamp, payload summary) and surface recent entries inside the console.
+
+### 3.3.5 Multi-Section Viewer Preparation
+- [ ] Create placeholder `/dashboard/(multi)` routes that reuse Expedition Viewer components but expose the section selector.
+- [ ] Document TODO: define `osm-multisection` provider and generalized hydrators once Phase 3 logistics/readiness work lands.
+- [ ] Ensure existing access-control selectors gracefully no-op when OSM scopes already limit data (i.e., no redundant patrol/event slicing).
+- [ ] Add MSW fixtures covering multi-section flows to keep E2E coverage ready.
+
+### 3.3.6 Testing & Rollout
+- [ ] Update Playwright tests to cover `(role, app)` combinations (admin planning, admin expedition, standard expedition, platform-admin blocked when not allowlisted).
+- [ ] Add unit tests for Zustand session store selectors that depend on `currentApp`.
+- [ ] Expand `/test-stack` workflow to ensure new route groups don’t regress existing dashboards.
+- [ ] Document migration steps in README (e.g., how to set `platform:allowedOperators`, default section ID).
+
+Dependencies: complete platform hardening items (section picker fix, hydration stability) before switching the routing structure. Coordinate with Phase 3.2/3.4 work so event-related features still function while the shell splits.
+
+---
+
 ## **Phase 2.8.0: Role Selection & Dynamic OAuth Scopes ✅ COMPLETED**
 
 **Goal:** Implement pre-OAuth role selection UI that determines which scopes are requested during OAuth flow.
