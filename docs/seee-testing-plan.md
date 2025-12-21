@@ -202,10 +202,10 @@ Authoring plan:
 
 ### 7.3 Tier 2 – Functional Coverage (BDD)
 
-- [ ] Add `playwright-bdd` config, fixtures, and shared steps.
+- [x] Add `playwright-bdd` config, fixtures, and shared steps.
+- [x] Document Gherkin authoring standards in the contributor guide.
 - [ ] Convert high-value flows (Dashboard, Members, Member Issues) to `.feature` files.
 - [ ] Remove legacy `.spec.ts` equivalents once BDD tests pass.
-- [ ] Document Gherkin authoring standards in the contributor guide.
 - [ ] Enforce `REQ-` tags via lint rule or CI check.
 
 ### 7.4 Tier 3 – Mutation Coverage
