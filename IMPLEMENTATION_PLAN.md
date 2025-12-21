@@ -258,7 +258,7 @@ Due to NextAuth v4 limitations (static provider configuration), we implemented a
   
 * [x] **2.8.1.3 E2E Verification:**  
   * [x] Admin route guard validated (admin passes, standard blocked)
-  * [k] Move remaining visibility E2Es to Phase 3 (see 3.6) after UI exists
+  * [x] Move remaining visibility E2Es to Phase 3 (see 3.6) after UI exists
 
 ---
 

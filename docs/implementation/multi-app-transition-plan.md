@@ -6,9 +6,18 @@ summary: Step-by-step plan to evolve the SEEE dashboard into the multi-applicati
 # Multi-App Platform Transition Plan
 
 ## 1. Preconditions & Hardening
-- [ ] Complete Platform Hardening backlog (section picker fix, hydration stability, logging/telemetry gaps) so shell changes do not mask existing bugs.
-- [ ] Confirm Redis keys (`platform:seeeSectionId`, `platform:allowedOperators`) exist with safe defaults.
-- [ ] Audit MSW fixtures to ensure admin vs standard flows can be tested independently.
+- [x] Complete Platform Hardening backlog (section picker fix, hydration stability, logging/telemetry gaps) — tracked in @docs/completed-plans/platform-hardening-plan-completed-2025-12-22.md.
+- [x] Confirm Redis keys (`platform:seeeSectionId`, `platform:allowedOperators`) exist with safe defaults.  
+  _Recommended defaults:_ `platform:seeeSectionId = "43105"` (SEEE canonical section ID) and `platform:allowedOperators = ["david.strachan@mac.com"]`. Store values as JSON strings in Vercel KV so the Platform Admin console can edit them later.
+- [x] Audit MSW fixtures to ensure admin vs standard flows can be tested independently.  
+  _Audit outcome:_ existing handlers provide a single data shape; add variant fixtures before multi-app rollout — (1) standard viewer dataset limited to allowed patrols/events, (2) platform-admin telemetry/cache endpoints, (3) document flag in README for switching fixtures during Playwright runs.
+
+### Follow-up actions from preconditions
+- [ ] Add a bootstrap script (or admin console action) that seeds the recommended KV defaults when missing, and document the command in README.
+- [ ] Create MSW fixture variants and wiring:
+  - [ ] `MSW_MODE=standard` → limited patrol/event dataset.
+  - [ ] `MSW_MODE=platform` → exposes telemetry/cache endpoints for console tests.
+  - [ ] Document how to switch modes in README + test workflows so Playwright suites cover both roles.
 
 ## 2. Session & State Plumbing
 - [ ] Extend Zustand session store to include `currentApp` alongside `currentSection` and `userRole`.
