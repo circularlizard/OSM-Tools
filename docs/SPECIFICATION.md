@@ -70,32 +70,17 @@ For each event, the dashboard must display logistical details.
 * **Dynamic Column Mapping (REQ-LOGISTICS-01):** Since custom columns in OSM vary per event, the system must allow users to map available OSM columns (Walking Group, Tent Group, etc.) whenever automatic detection fails.
 * **Graceful Degradation (REQ-LOGISTICS-02):** When required columns are missing/unmapped, the app must continue to show participant lists/invitation status and simply hide/gray-out unavailable logistics fields.
 * **Displayed Fields (REQ-LOGISTICS-03):** For every participant show Expedition Group, Tent Group, Group Gear Provider (free text), and Additional Info (free text).
-* **First Aid Summary (REQ-LOGISTICS-04):** Provide a high-level First Aid qualification summary per event (e.g., count/percentage qualified) using the data defined in Section 3.4.
+* **First Aid Summary (REQ-LOGISTICS-04):** **Deferred** – see Section 7 (Future Scope) for the postponed First Aid reporting requirement.
 
 ### 
 
-### **3.4 Readiness & Training View**
+### **3.4 Readiness & Training View (Deferred)**
 
-To ensure compliance before an expedition, the dashboard must verify completion of the 7 required Explorer training modules and First Aid.
+All training and First Aid requirements (REQ-TRAINING-01 → REQ-TRAINING-03) are deferred to the Future Scope outlined in Section 7.
 
-* **Data Source Decision (REQ-TRAINING-01):** The system must support either Flexi-record or Badge-based data sources once the strategic decision is made. Until then, the UI must remain agnostic and ready for either approach.
-  * Option A – Flexi-Record (context only): manual single record per member.  
-  * Option B – Badge Records (context only): pulls from OSM Badge system.  
-* **Module Status Display (REQ-TRAINING-02):** The UI must display a Yes/No/Date status for each of the 7 Explorer training modules per member.
-* **First Aid Status (REQ-TRAINING-03):** The UI must display the member’s current First Aid qualification status alongside the modules.
+### **3.5 Member Participation & Readiness Summary View (Deferred)**
 
-### **3.5 Member Participation & Readiness Summary View**
-
-* **Scope (REQ-SUMMARY-01):** Provide an at-a-glance view aggregating participation data and training readiness across all active/future events and members.
-* **Data Matrix (REQ-SUMMARY-02):** Render members as rows and events/training statuses as columns, showing invitation status plus training completion.
-* **Training Columns (REQ-SUMMARY-03):** Include the 7 training modules + First Aid columns using data defined in Section 3.4.
-* **Grouping – Primary (REQ-SUMMARY-04):** Allow grouping by Patrol so Unit Leaders can view their Unit contiguously.
-* **Grouping – Secondary (REQ-SUMMARY-05):** Allow optional grouping by Invitation Status or key Training Status (e.g., show all members lacking First Aid).
-* **Filtering – Events (REQ-SUMMARY-06):** Provide filters to include/exclude specific events (e.g., show only Bronze Qualifying events).
-* **Filtering – Patrols (REQ-SUMMARY-07):** Provide filters to include/exclude Patrols.
-* **Filtering – Readiness (REQ-SUMMARY-08):** Provide filters based on training readiness (e.g., only members missing modules).
-* **Sorting (REQ-SUMMARY-09):** Support sorting by Member Name, Patrol, and training states.
-* **Access Control (REQ-SUMMARY-10):** Respect access rules from Section 5.2 to ensure users only see permitted members/events.
+The cross-event readiness matrix (REQ-SUMMARY-01 → REQ-SUMMARY-10) is deferred alongside the training features. See Section 7 for the retained specification.
 
 ### **3.6 Reporting & Export**
 
@@ -204,7 +189,38 @@ I have added a new section to the document for the UI's non-functional requireme
 * **Theming System (REQ-NFR-02):** Provide a theming mechanism to adjust palette/look without major code changes, while shipping with a default high-quality theme.
 * **Responsiveness (REQ-NFR-03):** Ensure fully responsive layouts across desktop, tablet, and mobile breakpoints.
 
-## 7. Requirement ID Appendix
+## **7. Future Scope: Training & First Aid Requirements**
+
+The following requirements remain in scope for the broader SEEE platform but are intentionally deferred from the current Expedition Dashboard delivery.
+
+### **7.1 Readiness & Training View**
+
+To ensure compliance before an expedition, the dashboard must verify completion of the 7 required Explorer training modules and First Aid.
+
+* **Data Source Decision (REQ-TRAINING-01):** The system must support either Flexi-record or Badge-based data sources once the strategic decision is made. Until then, the UI must remain agnostic and ready for either approach.
+  * Option A – Flexi-Record (context only): manual single record per member.  
+  * Option B – Badge Records (context only): pulls from OSM Badge system.  
+* **Module Status Display (REQ-TRAINING-02):** The UI must display a Yes/No/Date status for each of the 7 Explorer training modules per member.
+* **First Aid Status (REQ-TRAINING-03):** The UI must display the member’s current First Aid qualification status alongside the modules.
+
+### **7.2 Member Participation & Readiness Summary View**
+
+* **Scope (REQ-SUMMARY-01):** Provide an at-a-glance view aggregating participation data and training readiness across all active/future events and members.
+* **Data Matrix (REQ-SUMMARY-02):** Render members as rows and events/training statuses as columns, showing invitation status plus training completion.
+* **Training Columns (REQ-SUMMARY-03):** Include the 7 training modules + First Aid columns using data defined in Section 7.1.
+* **Grouping – Primary (REQ-SUMMARY-04):** Allow grouping by Patrol so Unit Leaders can view their Unit contiguously.
+* **Grouping – Secondary (REQ-SUMMARY-05):** Allow optional grouping by Invitation Status or key Training Status (e.g., show all members lacking First Aid).
+* **Filtering – Events (REQ-SUMMARY-06):** Provide filters to include/exclude specific events (e.g., show only Bronze Qualifying events).
+* **Filtering – Patrols (REQ-SUMMARY-07):** Provide filters to include/exclude Patrols.
+* **Filtering – Readiness (REQ-SUMMARY-08):** Provide filters based on training readiness (e.g., only members missing modules).
+* **Sorting (REQ-SUMMARY-09):** Support sorting by Member Name, Patrol, and training states.
+* **Access Control (REQ-SUMMARY-10):** Respect access rules from Section 5.2 to ensure users only see permitted members/events.
+
+### **7.3 Logistics: First Aid Summary**
+
+* **First Aid Summary (REQ-LOGISTICS-04):** Provide a high-level First Aid qualification summary per event (e.g., count/percentage qualified) leveraging the training data described above.
+
+## 8. Requirement ID Appendix
 
 | Domain Prefix | Description |
 | --- | --- |
