@@ -207,12 +207,14 @@ Authoring plan:
 
 ### 7.4 Tier 3 – Mutation Coverage
 
-- [ ] Add Stryker config + nightly mutation job.
+- [ ] Add Stryker config and document manual trigger (`npm run test:mutation` or similar) for on-demand runs.
 
 ### 7.5 Tier 4 – Automation & Workflows
 
 - [ ] Land GitHub Actions workflows (`ci-test`, `ci-mutation`, `ci-deploy`) per §6.2.
 - [ ] Publish Windsurf workflows (`/test-stack`, `/mutation-scan`, `/bdd-fix`) per §6.3.
+- [ ] Add housekeeping workflow: file completed plans (docs/completed-plans), update SPEC / ARCHITECTURE / README, and document the process.
+- [ ] Create Windsurf workflow to run the housekeeping checklist on demand.
 
 ## 8. Governance & Open Questions
 
