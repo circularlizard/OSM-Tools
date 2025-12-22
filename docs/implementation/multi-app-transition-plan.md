@@ -33,6 +33,7 @@ summary: Step-by-step plan to evolve the SEEE dashboard into the multi-applicati
 - [ ] Add route metadata (e.g., `export const requiredApp = 'planning'`) consumed by middleware/guards.
 
 ## 4. Auth & Application Selection
+//TODO: Consider how that role selection modal should be enhanced to capture desired app
 - [ ] Enhance the role selection modal to capture desired app; default to Expedition Viewer for standard users until other apps GA.
 - [ ] Map `(role, app)` to NextAuth providers:
   - Planning & Platform Admin → `osm-admin`
