@@ -37,6 +37,23 @@ summary: Step-by-step plan to evolve the SEEE dashboard into the multi-applicati
 - [ ] Update shared dashboard layout to render app-aware navigation: unique sidebar links per app, shared header components.
 - [ ] Add route metadata (e.g., `export const requiredApp = 'planning'`) consumed by middleware/guards.
 
+### Route mapping tracker
+We will migrate one feature slice at a time so that each app surface lives entirely within its route group. This table captures the current/target locations; mark entries as complete once the code is moved and imports updated.
+
+| Status | Source path | Target route group | Notes |
+| --- | --- | --- | --- |
+| ✅ | `/dashboard/page.tsx` | `/dashboard/(expedition)/page.tsx` | Expedition landing exports `requiredApp = 'expedition'`. |
+| ✅ | `/dashboard/events/**` | `/dashboard/(expedition)/events/**` | Includes detail + attendance routes. |
+| ✅ | `/dashboard/api-browser/**` | `/dashboard/(platform-admin)/api-browser/**` | Platform consoles own API explorer. |
+| ✅ | `/dashboard/debug/**` | `/dashboard/(platform-admin)/debug/**` | Queue + OAuth debug panels move under Platform Admin. |
+| ✅ | `/dashboard/members/**` | `/dashboard/(multi)/members/**` | Multi viewer exposes shared member roster. |
+| ✅ | `/dashboard/admin/**` | `/dashboard/(platform-admin)/admin/**` | Patrol data + admin utilities. |
+| ⬜️ | `/dashboard/people/**` | `/dashboard/(planning)/people/**` | To be confirmed; follow planning IA. |
+| ✅ | `/dashboard/section-picker/**` | `/dashboard/(multi)/section-picker/**` | Shared picker lives in Multi shell; other apps link to it. |
+| ⬜️ | `/dashboard/platform/**` (new) | `/dashboard/(platform-admin)/**` | Platform console scaffolding. |
+
+**Shared capability guidance:** when a feature (e.g., members) must appear in multiple apps, the canonical data view lives in the “owner” app (Planning for admin consoles). Other apps consume the same underlying components/hooks from `src/components` or `src/features` but expose simplified shells or deep links rather than duplicating routes. If true cross-app navigation is required, create light wrapper routes that import the shared component while still exporting their own `requiredApp` metadata so middleware can enforce context consistently.
+
 ## 4. Auth & Application Selection
 //TODO: Consider how that role selection modal should be enhanced to capture desired app
 - [ ] Enhance the role selection modal to capture desired app; default to Expedition Viewer for standard users until other apps GA.

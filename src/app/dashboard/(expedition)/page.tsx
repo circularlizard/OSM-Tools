@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectionSelector } from "@/components/SectionSelector";
 import { useStore } from "@/store/use-store";
+import type { AppKey } from "@/types/app";
+export const requiredApp: AppKey = 'expedition';
 import { useEvents } from "@/hooks/useEvents";
 import { CalendarDays, MapPin, Users, CheckCircle2, XCircle, Clock } from "lucide-react";
 import type { Event } from "@/lib/schemas";
