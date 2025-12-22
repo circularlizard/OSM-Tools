@@ -119,6 +119,21 @@ export const RateLimitTelemetrySchema = z.object({
 
 export type RateLimitTelemetry = z.infer<typeof RateLimitTelemetrySchema>
 
+export const PlatformCacheStatusSchema = z.object({
+  patrols: z.object({
+    lastUpdated: z.string().nullable(),
+    sectionsCached: z.number().int().nullable(),
+    patrolCount: z.number().int().nullable().optional(),
+    updatedBy: z.string().nullable().optional(),
+  }),
+  members: z.object({
+    lastUpdated: z.string().nullable(),
+    total: z.number().int().nullable(),
+  }),
+})
+
+export type PlatformCacheStatus = z.infer<typeof PlatformCacheStatusSchema>
+
 // ============================================================================
 // TIER 1: STRICT SCHEMAS (Critical Data - Must Be Valid)
 // ============================================================================

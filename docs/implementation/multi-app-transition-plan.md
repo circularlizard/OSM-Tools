@@ -13,11 +13,14 @@ summary: Step-by-step plan to evolve the SEEE dashboard into the multi-applicati
   _Audit outcome:_ existing handlers provide a single data shape; add variant fixtures before multi-app rollout — (1) standard viewer dataset limited to allowed patrols/events, (2) platform-admin telemetry/cache endpoints, (3) document flag in README for switching fixtures during Playwright runs.
 
 ### Follow-up actions from preconditions
-- [ ] Add a bootstrap script (or admin console action) that seeds the recommended KV defaults when missing, and document the command in README.
-- [ ] Create MSW fixture variants and wiring:
-  - [ ] `MSW_MODE=standard` → limited patrol/event dataset.
-  - [ ] `MSW_MODE=platform` → exposes telemetry/cache endpoints for console tests.
-  - [ ] Document how to switch modes in README + test workflows so Playwright suites cover both roles.
+- [x] Add a bootstrap script (or admin console action) that seeds the recommended KV defaults when missing, and document the command in README.  
+  _Done:_ `scripts/seed-platform-defaults.mjs` seeds `platform:seeeSectionId` + `platform:allowedOperators`; usage documented in README "Quick Start" + Redis sections.
+- [x] Create MSW fixture variants and wiring:
+  - [x] `MSW_MODE=admin` → multi-section data (events + members + patrol/flexi/startup).
+  - [x] `MSW_MODE=standard` → event-only dataset (members/patrol/flexi/startup redacted).
+  - [x] `MSW_MODE=admin,platform` → enables telemetry/cache fixtures on top of admin data.
+  - [x] Document how to switch modes in README + test workflows so Playwright suites cover both roles.
+  _Notes:_ README now includes MSW mode table + combined-mode examples; handlers gate data per `MSW_MODE`.
 
 ## 2. Session & State Plumbing
 - [ ] Extend Zustand session store to include `currentApp` alongside `currentSection` and `userRole`.

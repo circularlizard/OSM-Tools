@@ -26,10 +26,13 @@ cd certs
 mkcert localhost 127.0.0.1 ::1
 cd ..
 
-# Start local Redis (REQUIRED for auth cache)
+# Start local Redis (REQUIRED for auth cache + platform defaults)
 # Redis stores OAuth resource data to keep JWTs small.
 # Without Redis running, you'll see 500 errors from /api/auth/oauth-data
 docker compose up -d redis
+
+# Seed platform defaults (section ID + platform operators) if needed
+KV_URL=redis://localhost:6379 node scripts/seed-platform-defaults.mjs
 
 # Start development server with HTTPS
 npm run dev
@@ -112,6 +115,15 @@ docker exec -it seee-redis-local redis-cli ping
 If Redis is not running, Startup initialization and the API Browser will fail with:
 `[StartupInitializer] Failed to fetch OAuth data: 500 "Internal Server Error"`.
 Start Redis with `docker compose up -d redis` and reload the page.
+
+To verify the platform defaults exist (and optionally override them), run:
+
+```bash
+redis-cli GET platform:seeeSectionId
+redis-cli GET platform:allowedOperators
+```
+
+Re-run `scripts/seed-platform-defaults.mjs --force` to update the seeded values.
 
 ## 📁 Project Structure
 
@@ -261,6 +273,34 @@ Control MSW via environment variable:
 NEXT_PUBLIC_USE_MSW=true   # Enable mock data
 NEXT_PUBLIC_USE_MSW=false  # Use real API calls
 ```
+
+#### MSW Fixture Modes (`MSW_MODE`)
+
+`MSW_MODE` selects which persona/app dataset is returned while MSW is active. Set it alongside `NEXT_PUBLIC_USE_MSW=true`.
+
+| Mode | When to use it | Data shape |
+| --- | --- | --- |
+| `admin` (default) | Multi-section admin persona (events + members + patrol/flexi data). | Full dataset from `src/mocks/data/`, mirrors production admin access. |
+| `standard` | Expedition viewer persona focused on event visibility only. | Returns event APIs unchanged but redacts member/patrol/flexi/startup payloads. |
+| `platform` | Platform Admin Console smoke tests. Combine with `admin` (comma-separated). | Adds `/api/telemetry/rate-limit` + `/api/platform/cache-status` fixtures on top of admin data. |
+
+Example commands:
+
+```bash
+# Expedition viewer (standard) in dev server
+MSW_MODE=standard NEXT_PUBLIC_USE_MSW=true npm run dev
+
+# Admin + Platform console in dev server
+MSW_MODE=admin,platform NEXT_PUBLIC_USE_MSW=true npm run dev
+
+# Playwright BDD with standard fixtures
+cross-env NEXT_PUBLIC_USE_MSW=true MSW_MODE=standard npm run test:bdd
+
+# Playwright covering admin + platform-only specs
+cross-env NEXT_PUBLIC_USE_MSW=true MSW_MODE=admin,platform npm run test:bdd -- --grep "@platform"
+```
+
+When `NEXT_PUBLIC_USE_MSW=false`, the value of `MSW_MODE` is ignored.
 
 ### Data Sanitization
 

@@ -8,7 +8,8 @@ jest.mock('@/lib/api', () => ({
 }))
 
 jest.mock('@/store/use-store', () => ({
-  useStore: (selector: (s: any) => any) => selector({ currentSection: { termId: 't1' } }),
+  useStore: <T,>(selector: (s: { currentSection: { termId: string } }) => T) =>
+    selector({ currentSection: { termId: 't1' } }),
 }))
 
 import { getEventDetails, getEventSummary } from '@/lib/api'

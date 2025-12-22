@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Users } from 'lucide-react'
 import { getAuthConfig } from '@/lib/auth'
 import { PatrolManagement } from './PatrolManagement'
+import { PlatformCacheStatusPanel } from './PlatformCacheStatusPanel'
 
 export default async function AdminPage() {
   const authOptions = await getAuthConfig()
@@ -42,7 +43,7 @@ export default async function AdminPage() {
           </p>
         </div>
       </div>
-      
+      <PlatformCacheStatusPanel />
       <PatrolManagement />
     </div>
   )

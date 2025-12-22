@@ -18,6 +18,34 @@ import patrolsData from './data/patrols.json'
 import startupConfigData from './data/startup_config.json'
 import startupDataData from './data/startup_data.json'
 
+const rawModes =
+  (process.env.MSW_MODE ?? 'admin')
+    .split(',')
+    .map((mode) => mode.trim().toLowerCase())
+    .filter(Boolean) || ['admin']
+
+const modeSet = new Set(rawModes)
+if (!modeSet.has('admin') && !modeSet.has('standard')) {
+  modeSet.add('admin')
+}
+
+const hasMode = (mode: string) => modeSet.has(mode)
+const isAdminMode = hasMode('admin')
+const isStandardMode = hasMode('standard') && !isAdminMode
+const includePlatformFixtures = hasMode('platform')
+
+type AnyRecord = Record<string, unknown>
+const STANDARD_BLOCKED_SEGMENTS = ['/members', '/patrols', '/flexi', '/badge', '/startup']
+const MEMBER_COLLECTION_KEYS = [
+  'members',
+  'membersByPatrol',
+  'members_by_patrol',
+  'memberDetails',
+  'member_details',
+  'memberRecords',
+  'member_records',
+]
+
 // Map mock data filenames to imported data
 const mockDataRegistry: Record<string, unknown> = {
   'attendance.json': attendanceData,
@@ -64,9 +92,9 @@ function getBaseUrl(fullUrl: string): string {
  * returning the corresponding sanitized mock data.
  */
 function generateHandlers() {
-  const handlers = (apiMap as ApiMapEntry[]).map((entry) => {
+  const baseHandlers = (apiMap as ApiMapEntry[]).map((entry) => {
     const { full_url, method, mock_data_file, is_static_resource } = entry
-    
+
     // Get the mock data for this endpoint
     const mockData = mockDataRegistry[mock_data_file]
     
@@ -101,8 +129,10 @@ function generateHandlers() {
           return mockData
         })()
 
+        const shapedData = applyModeTransforms(entry, normalizedMockData)
+
         // Simulate API rate limit headers
-        return HttpResponse.json(normalizedMockData as Record<string, unknown>, {
+        return HttpResponse.json(shapedData as Record<string, unknown>, {
           headers: {
             'X-RateLimit-Limit': '1000',
             'X-RateLimit-Remaining': '950',
@@ -129,7 +159,118 @@ function generateHandlers() {
     return http.get(baseUrl, () => HttpResponse.json(mockData as Record<string, unknown>))
   })
   
-  return handlers
+  const extraHandlers: ReturnType<typeof http.get>[] = []
+
+  if (includePlatformFixtures) {
+    extraHandlers.push(
+      http.get('https://localhost:3000/api/telemetry/rate-limit', () => {
+        return HttpResponse.json({
+          remaining: 950,
+          limit: 1000,
+          reset: Date.now() + 3600000,
+          mode: 'platform',
+        })
+      }),
+      http.get('https://localhost:3000/api/platform/cache-status', () => {
+        return HttpResponse.json({
+          patrols: {
+            lastUpdated: new Date().toISOString(),
+            sectionsCached: 1,
+          },
+          members: {
+            lastUpdated: new Date().toISOString(),
+            total: 120,
+          },
+        })
+      })
+    )
+  }
+
+  return [...baseHandlers, ...extraHandlers]
 }
 
 export const handlers = generateHandlers()
+
+function cloneData<T>(value: T): T {
+  return value ? (JSON.parse(JSON.stringify(value)) as T) : value
+}
+
+function applyModeTransforms(entry: ApiMapEntry, data: unknown) {
+  if (!data || isAdminMode) {
+    return data
+  }
+
+  if (isStandardMode) {
+    return applyStandardFilters(entry, data)
+  }
+
+  return data
+}
+
+function applyStandardFilters(entry: ApiMapEntry, data: unknown) {
+  if (!data) {
+    return data
+  }
+
+  const cloned = cloneData(data)
+  const isEventPath = entry.path.startsWith('/ext/events/') || entry.path.startsWith('/v3/events/')
+  const isBlockedPath = STANDARD_BLOCKED_SEGMENTS.some((segment) => entry.path.includes(segment))
+
+  if (!isEventPath && isBlockedPath) {
+    return sanitizeBlockedPayload(cloned)
+  }
+
+  stripMemberCollections(cloned)
+  return cloned
+}
+
+function sanitizeBlockedPayload(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return []
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as AnyRecord
+    Object.keys(record).forEach((key) => {
+      record[key] = sanitizeBlockedPayload(record[key])
+    })
+    return record
+  }
+
+  return value
+}
+
+function stripMemberCollections(value: unknown): void {
+  if (!value || typeof value !== 'object') {
+    return
+  }
+
+  const record = value as AnyRecord
+  Object.keys(record).forEach((key) => {
+    const child = record[key]
+
+    if (MEMBER_COLLECTION_KEYS.includes(key)) {
+      if (Array.isArray(child)) {
+        record[key] = []
+        return
+      }
+      if (child && typeof child === 'object') {
+        stripMemberCollections(child)
+        return
+      }
+    }
+
+    if (Array.isArray(child)) {
+      child.forEach((item) => {
+        if (item && typeof item === 'object') {
+          stripMemberCollections(item)
+        }
+      })
+      return
+    }
+
+    if (child && typeof child === 'object') {
+      stripMemberCollections(child)
+    }
+  })
+}
