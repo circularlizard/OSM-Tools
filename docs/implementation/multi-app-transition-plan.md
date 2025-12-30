@@ -82,13 +82,15 @@ We will migrate one feature slice at a time so that each app surface lives entir
   _Done:_ SEEE section ID (43105) is automatically injected for SEEE apps. Platform metadata API endpoints will be implemented in Stage 6 (Platform Admin Console) for viewing/editing configuration.
 
 ## 6. Platform Admin Console MVP
-- [ ] Scaffold `/dashboard/(platform-admin)` routes with protected navigation.
-- [ ] Implement panels:
-  - Patrol/member cache board with refresh controls
-  - SEEE section ID viewer/editor (writes to Redis)
-  - Developer tools drawer (MSW toggle, rate-limit simulator, proxy inspector)
-  - Log viewer stub (pulls recent proxy logs)
-- [ ] Emit audit events (user, timestamp, payload) for every console action; display recent entries in-console.
+- [x] Scaffold `/dashboard/(platform-admin)` routes with protected navigation.
+  _Done:_ Routes already existed; enhanced admin page (`/dashboard/admin`) with comprehensive console UI.
+- [x] Implement panels:
+  - **Patrol/member cache board** (`PlatformCacheStatusPanel.tsx`) - displays cache status from Redis
+  - **SEEE section ID viewer/editor** (`SEEESectionConfig.tsx`) - editable config that writes to Redis `platform:seeeSectionId`
+  - **Developer tools drawer** (`DeveloperTools.tsx`) - collapsible panel with MSW toggle, rate-limit simulator stubs, proxy inspector link
+  - **Log viewer stub** (`AuditLog.tsx`) - displays recent audit events from Redis
+- [x] Emit audit events (user, timestamp, payload) for every console action; display recent entries in-console.
+  _Done:_ Platform config API (`/api/admin/platform-config`) logs all changes to Redis `platform:audit` list (last 100 events). Audit log component fetches and displays events via `/api/admin/audit-log` endpoint.
 
 ## 7. Expedition & Planning Shell Refinements
 - [ ] Move existing admin-only tooling (member issues, patrol refresh) under the planning route group.

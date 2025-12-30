@@ -1,9 +1,12 @@
 import { getServerSession } from 'next-auth/next'
 import Link from 'next/link'
-import { Users } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { getAuthConfig } from '@/lib/auth'
 import { PatrolManagement } from './PatrolManagement'
 import { PlatformCacheStatusPanel } from './PlatformCacheStatusPanel'
+import { SEEESectionConfig } from './SEEESectionConfig'
+import { DeveloperTools } from './DeveloperTools'
+import { AuditLog } from './AuditLog'
 import type { AppKey } from '@/types/app'
 
 export const requiredApp: AppKey = 'platform-admin'
@@ -19,7 +22,7 @@ export default async function AdminPage() {
       <div className="p-6">
         <h1 className="text-xl font-semibold">Forbidden</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          You do not have permission to access Admin.
+          You do not have permission to access Platform Admin Console.
         </p>
         <div className="mt-4">
           <Link href="/dashboard" className="underline">
@@ -38,16 +41,20 @@ export default async function AdminPage() {
             className="text-2xl md:text-3xl font-bold flex items-center gap-2"
             data-testid="admin-title"
           >
-            <Users className="h-6 w-6" aria-hidden />
-            <span>Patrol data</span>
+            <Settings className="h-6 w-6" aria-hidden />
+            <span>Platform Admin Console</span>
           </h1>
           <p className="mt-1 text-sm md:text-base opacity-90">
-            Manage cached patrol reference data used across the dashboard
+            Manage platform configuration, caches, and developer tools
           </p>
         </div>
       </div>
+      
       <PlatformCacheStatusPanel />
+      <SEEESectionConfig />
       <PatrolManagement />
+      <DeveloperTools />
+      <AuditLog />
     </div>
   )
 }
