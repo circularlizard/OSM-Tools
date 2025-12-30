@@ -92,6 +92,7 @@ Given('I am logged in as an admin', async ({ page }) => {
   }
 
   await page.waitForURL(/\/dashboard/, { timeout: 10000 })
+  await page.waitForLoadState('networkidle')
   await ensureSectionSelected(page)
 })
 
@@ -120,6 +121,7 @@ Given('I am logged in as a standard viewer', async ({ page }) => {
   }
 
   await page.waitForURL(/\/dashboard/, { timeout: 10000 })
+  await page.waitForLoadState('networkidle')
   await ensureSectionSelected(page)
 })
 
