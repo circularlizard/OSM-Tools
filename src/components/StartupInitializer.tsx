@@ -152,6 +152,29 @@ export default function StartupInitializer() {
         // Build a set of valid section IDs for validation
         const sectionIds = new Set(storeSections.map((s: { sectionId: string }) => s.sectionId))
         
+        // For SEEE-specific apps (planning, expedition, platform-admin), automatically select SEEE section
+        // This hides the section selector for these apps since they're SEEE-only
+        const seeeApps: AppKey[] = ['planning', 'expedition', 'platform-admin']
+        const currentApp = appToSet || sessionApp
+        const isSEEEApp = currentApp && seeeApps.includes(currentApp)
+        
+        if (isSEEEApp) {
+          // Try to find SEEE section (ID 43105) in available sections
+          const seeeSection = storeSections.find((s: { sectionId: string }) => s.sectionId === '43105')
+          if (seeeSection) {
+            setCurrentSection({
+              sectionId: seeeSection.sectionId,
+              sectionName: seeeSection.sectionName,
+              sectionType: seeeSection.sectionType,
+              termId: seeeSection.termId,
+            })
+            if (process.env.NODE_ENV !== 'production') {
+              console.debug('[StartupInitializer] Auto-selected SEEE section for app:', currentApp)
+            }
+            return // Skip section picker for SEEE apps
+          }
+        }
+        
         // Auto-select when exactly one section is available
         if (storeSections.length === 1) {
           setCurrentSection({

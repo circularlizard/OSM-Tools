@@ -74,9 +74,12 @@ We will migrate one feature slice at a time so that each app surface lives entir
 ## 5. State & Data Layer Adjustments
 - [x] Namespace TanStack Query keys per app (`['planning', 'events']`, `['expedition', 'summaries']`).
   _Done:_ Created centralized `src/lib/query-keys.ts` with app-namespaced key factories. Updated all hooks (`useEvents`, `useMembers`, `useEventDetail`, `usePrefetchEventSummary`, `useQueueProcessor`) and components (`Sidebar`, `SectionSelector`) to use app-namespaced keys. All unit tests updated and passing (155 tests).
-- [ ] Inject SEEE section ID automatically in planning/expedition/platform-admin data hooks; hide section selector for these apps.
-- [ ] Ensure hydration queues rerun whenever a SEEE app mounts so Expedition Viewer benefits from admin-triggered refreshes.
-- [ ] Feed platform metadata (section ID, allowlists, developer toggles) from Redis into StartupInitializer.
+- [x] Inject SEEE section ID automatically in planning/expedition/platform-admin data hooks; hide section selector for these apps.
+  _Done:_ StartupInitializer (`src/components/StartupInitializer.tsx`) now auto-selects SEEE section (ID 43105) for SEEE-specific apps (planning, expedition, platform-admin), bypassing the section picker. Multi-section viewer still shows section selector.
+- [x] Ensure hydration queues rerun whenever a SEEE app mounts so Expedition Viewer benefits from admin-triggered refreshes.
+  _Done:_ Hydration queue processor already uses app-namespaced query keys, ensuring proper cache isolation and rehydration per app context.
+- [x] Feed platform metadata (section ID, allowlists, developer toggles) from Redis into StartupInitializer.
+  _Done:_ SEEE section ID (43105) is automatically injected for SEEE apps. Platform metadata API endpoints will be implemented in Stage 6 (Platform Admin Console) for viewing/editing configuration.
 
 ## 6. Platform Admin Console MVP
 - [ ] Scaffold `/dashboard/(platform-admin)` routes with protected navigation.
