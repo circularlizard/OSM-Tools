@@ -8,11 +8,7 @@ import { usePatrolMap } from '@/hooks/usePatrolMap'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronRight, Users as UsersIcon } from 'lucide-react'
-import type { AppKey } from '@/types/app'
-
 import { Skeleton } from '@/components/ui/skeleton'
-
-export const requiredApp: AppKey = 'expedition'
 
 type PersonAttendance = ReturnType<typeof usePerPersonAttendance>['data'][number]
 

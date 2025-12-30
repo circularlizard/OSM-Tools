@@ -3,9 +3,6 @@ import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
 import { getAuthConfig } from '@/lib/auth'
 import { MemberIssuesClient } from './MemberIssuesClient'
-import type { AppKey } from '@/types/app'
-
-export const requiredApp: AppKey = 'planning'
 
 export default async function MemberIssuesPage() {
   const authOptions = await getAuthConfig()

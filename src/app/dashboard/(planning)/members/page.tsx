@@ -3,9 +3,6 @@ import Link from 'next/link'
 import { Users } from 'lucide-react'
 import { getAuthConfig } from '@/lib/auth'
 import { MembersClient } from './MembersClient'
-import type { AppKey } from '@/types/app'
-
-export const requiredApp: AppKey = 'planning'
 
 export default async function MembersPage() {
   const authOptions = await getAuthConfig()

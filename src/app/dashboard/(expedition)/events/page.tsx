@@ -7,9 +7,6 @@ import { AlertCircle, CalendarDays } from 'lucide-react'
 import type { Event } from '@/lib/schemas'
 import { getFilteredEvents } from '@/store/use-store'
 import { useEvents } from '@/hooks/useEvents'
-import type { AppKey } from '@/types/app'
-export const requiredApp: AppKey = 'expedition'
-
 /**
  * Events List Page
  * Displays all events for the selected section using React Query as the single source of truth

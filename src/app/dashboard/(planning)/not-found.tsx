@@ -13,7 +13,7 @@ export default function PlanningNotFound() {
           </div>
           <CardTitle className="text-2xl">Page Not Found</CardTitle>
           <CardDescription>
-            The page you're looking for doesn't exist in the Event Planning app.
+            The page you&apos;re looking for doesn&apos;t exist in the Event Planning app.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

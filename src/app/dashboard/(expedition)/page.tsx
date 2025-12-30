@@ -12,10 +12,6 @@ import { useStore } from "@/store/use-store";
 import { useEvents } from "@/hooks/useEvents";
 import { CalendarDays, MapPin, Users, CheckCircle2, XCircle, Clock } from "lucide-react";
 import type { Event } from "@/lib/schemas";
-import type { AppKey } from "@/types/app";
-
-export const requiredApp: AppKey = 'expedition';
-
 /** Format date range for display */
 function formatDateRange(startDate: string, endDate: string): string {
   const start = new Date(startDate)

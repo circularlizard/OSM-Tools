@@ -13,7 +13,7 @@ export default function ExpeditionNotFound() {
           </div>
           <CardTitle className="text-2xl">Page Not Found</CardTitle>
           <CardDescription>
-            The page you're looking for doesn't exist in the Expedition Viewer app.
+            The page you&apos;re looking for doesn&apos;t exist in the Expedition Viewer app.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

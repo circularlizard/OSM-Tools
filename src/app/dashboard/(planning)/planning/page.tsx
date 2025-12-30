@@ -1,7 +1,4 @@
-import type { AppKey } from '@/types/app'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-export const requiredApp: AppKey = 'planning'
 
 export default function PlanningHomePage() {
   return (

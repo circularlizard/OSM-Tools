@@ -6,10 +6,6 @@ import { Button } from '@/components/ui/button'
 import { useStore } from '@/store/use-store'
 import { useEvents } from '@/hooks/useEvents'
 import type { Event } from '@/lib/schemas'
-import type { AppKey } from '@/types/app'
-
-export const requiredApp: AppKey = 'platform-admin'
-
 export default function QueueDebugPage() {
   const qc = useQueryClient()
   const queueItems = useStore((s) => s.queueItems)

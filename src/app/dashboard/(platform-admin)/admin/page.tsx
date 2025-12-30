@@ -7,9 +7,6 @@ import { PlatformCacheStatusPanel } from './PlatformCacheStatusPanel'
 import { SEEESectionConfig } from './SEEESectionConfig'
 import { DeveloperTools } from './DeveloperTools'
 import { AuditLog } from './AuditLog'
-import type { AppKey } from '@/types/app'
-
-export const requiredApp: AppKey = 'platform-admin'
 
 export default async function AdminPage() {
   const authOptions = await getAuthConfig()
