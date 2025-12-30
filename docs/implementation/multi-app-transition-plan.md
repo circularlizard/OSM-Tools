@@ -115,10 +115,34 @@ We will migrate one feature slice at a time so that each app surface lives entir
   _Done:_ Updated login page (`src/app/page.tsx`) to include 'multi' in available apps for both admin and standard roles. Added description: "View data across multiple sections".
 
 ## 9. Testing & Tooling
-- [ ] Expand unit tests for Zustand session store + selectors that depend on `currentApp`.
-- [ ] Update Playwright BDD scenarios to cover all `(role, app)` combinations and ensure unauthorized app access is blocked.
-- [ ] Update `/test-stack` workflow to include new route groups and console flows.
-- [ ] Document local testing instructions (e.g., how to set `platform:allowedOperators`, switch apps) in README.
+- [x] Expand unit tests for Zustand session store + selectors that depend on `currentApp`.
+  _Done:_ Added 82 new unit tests (144 → 226 total):
+  - `app-route-guards.test.ts`: 40 tests, 100% coverage (path-to-app mapping, authorization, role checks, multi-app scenarios)
+  - `auth-app-selection.test.ts`: 19 tests, 100% coverage (OAuth flow, role defaults, session persistence, URL handling)
+  - `use-store-app.test.ts`: 23 tests, 83.85% coverage (currentApp state, app switching, role/app combinations, edge cases)
+  
+- [x] Update Playwright BDD scenarios to cover all `(role, app)` combinations and ensure unauthorized app access is blocked.
+  _Done:_ Created `tests/e2e/features/multi-app-routing.feature` with comprehensive scenarios:
+  - Admin access to all apps (planning, platform-admin, expedition, multi)
+  - Standard user access restrictions (expedition, multi only)
+  - App selection persistence through OAuth flow
+  - Default app assignment by role
+  - Cross-app navigation blocking
+  - Role/app combination matrix (6 scenarios)
+  - Multi-section viewer section switching
+  - Platform admin route protection
+  - App-specific 404 pages
+  
+- [x] Update `/test-stack` workflow to include new route groups and console flows.
+  _Done:_ Verified existing workflow already covers all route groups through full test suite (lint → tsc → unit → BDD E2E → coverage merge).
+  
+- [x] Document local testing instructions (e.g., how to set `platform:allowedOperators`, switch apps) in README.
+  _Done:_ Added comprehensive testing section to README.md:
+  - Full test stack instructions (manual + workflow)
+  - Platform configuration setup (Redis keys)
+  - Testing different role/app combinations (4 scenarios)
+  - App selection flow explanation
+  - Access control testing guidelines
 
 ## 10. Rollout & Documentation
 - [ ] Provide migration guidance for contributors (doc + Loom/video) showing how to work within the new route groups.

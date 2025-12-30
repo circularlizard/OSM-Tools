@@ -88,6 +88,81 @@ For E2E checks (optional):
 npm run test:e2e
 ```
 
+### Local Testing Instructions
+
+#### Running the Full Test Stack
+
+Use the `/test-stack` Windsurf workflow or run manually:
+
+```bash
+# 1. Start Redis (required for auth and platform config)
+docker-compose up -d redis
+
+# 2. Run linter
+npm run lint
+
+# 3. TypeScript check
+npx tsc --noEmit
+
+# 4. Unit tests with coverage
+npm run test:unit
+
+# 5. BDD E2E tests with instrumentation
+cross-env INSTRUMENT_CODE=1 npm run test:bdd
+
+# 6. Merge coverage reports
+npm run test:merge
+
+# 7. View merged coverage
+open coverage/total/index.html
+```
+
+#### Testing Multi-App Functionality
+
+The application now supports four apps: **expedition**, **planning**, **platform-admin**, and **multi** (multi-section viewer).
+
+**Setting Platform Configuration:**
+
+```bash
+# Set the canonical SEEE section ID (required for SEEE-specific apps)
+KV_URL=redis://localhost:6379 node scripts/seed-platform-defaults.mjs
+
+# Or manually via Redis CLI:
+redis-cli SET platform:seeeSectionId "43105"
+redis-cli SADD platform:allowedOperators "admin@example.com"
+```
+
+**Testing Different Role/App Combinations:**
+
+1. **Admin + Planning** (default for admin):
+   - Login as admin, select "planning" app
+   - Access: `/dashboard/planning`, `/dashboard/members`, `/dashboard/admin`
+
+2. **Admin + Platform Admin**:
+   - Login as admin, select "platform-admin" app
+   - Access: `/dashboard/admin`, `/dashboard/api-browser`, `/dashboard/debug/*`
+
+3. **Standard + Expedition** (default for standard):
+   - Login as standard, select "expedition" app
+   - Access: `/dashboard`, `/dashboard/events`, `/dashboard/events/attendance`
+
+4. **Standard/Admin + Multi-Section Viewer**:
+   - Login with either role, select "multi" app
+   - Access: `/dashboard/members`, `/dashboard/section-picker`
+   - Section selector remains visible (unlike SEEE-specific apps)
+
+**App Selection Flow:**
+- App selection happens at login and persists in the session
+- Each app has dedicated route groups: `(expedition)`, `(planning)`, `(platform-admin)`, `(multi)`
+- Cross-app navigation is blocked by `ClientShell` and middleware
+- App-specific 404 pages guide users back to valid routes
+
+**Testing Access Control:**
+- Standard users **cannot** access: `/dashboard/admin`, `/dashboard/api-browser`, `/dashboard/members`
+- Admin users **can** access all routes
+- Route guards enforce app and role requirements
+- Unauthorized access redirects to appropriate default paths
+
 ### OAuth Callback URLs
 
 The application uses **two separate OAuth providers** to request different scopes based on user role:
