@@ -21,6 +21,8 @@ jest.mock('@/lib/auth', () => ({
 jest.mock('@/lib/redis', () => ({
   isHardLocked: jest.fn(async () => false),
   isSoftLocked: jest.fn(async () => false),
+  getHardLockTtlSeconds: jest.fn(async () => null),
+  getSoftLockTtlSeconds: jest.fn(async () => null),
   getQuota: jest.fn(async () => ({ remaining: 100, limit: 1000, reset: 12345 })),
 }))
 
@@ -49,6 +51,8 @@ describe('GET /api/telemetry/rate-limit', () => {
     expect(body).toEqual({
       hardLocked: false,
       softLocked: false,
+      hardLockTtlSeconds: null,
+      softLockTtlSeconds: null,
       quota: { remaining: 100, limit: 1000, reset: 12345 },
       queue: { queued: 1, running: 2, executing: 3, done: 4 },
     })

@@ -105,6 +105,13 @@ export async function isSoftLocked(): Promise<boolean> {
   return value === '1'
 }
 
+export async function getSoftLockTtlSeconds(): Promise<number | null> {
+  const client = getRedisClient()
+  const ttl = await client.ttl(CIRCUIT_BREAKER_KEYS.SOFT_LOCK)
+  if (ttl === -2 || ttl === -1) return null
+  return ttl
+}
+
 /**
  * Set circuit breaker hard lock (global halt)
  * @param ttl Time to live in seconds (default: 300s = 5 minutes)
@@ -122,6 +129,13 @@ export async function isHardLocked(): Promise<boolean> {
   const client = getRedisClient()
   const value = await client.get(CIRCUIT_BREAKER_KEYS.HARD_LOCK)
   return value === '1'
+}
+
+export async function getHardLockTtlSeconds(): Promise<number | null> {
+  const client = getRedisClient()
+  const ttl = await client.ttl(CIRCUIT_BREAKER_KEYS.HARD_LOCK)
+  if (ttl === -2 || ttl === -1) return null
+  return ttl
 }
 
 /**

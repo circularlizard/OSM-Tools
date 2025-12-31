@@ -113,6 +113,8 @@ export const RateLimitQueueSchema = z
 export const RateLimitTelemetrySchema = z.object({
   hardLocked: z.boolean(),
   softLocked: z.boolean(),
+  hardLockTtlSeconds: z.number().int().nullable(),
+  softLockTtlSeconds: z.number().int().nullable(),
   quota: RateLimitQuotaSchema,
   queue: RateLimitQueueSchema,
 })

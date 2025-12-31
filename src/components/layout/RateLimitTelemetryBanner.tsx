@@ -3,6 +3,19 @@
 import { useMemo } from 'react'
 import { useRateLimitTelemetry } from '@/hooks/useRateLimitTelemetry'
 
+function formatTtl(ttlSeconds: number | null | undefined): string | null {
+  if (ttlSeconds === null || ttlSeconds === undefined) return null
+  if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) return null
+
+  const total = Math.floor(ttlSeconds)
+  const minutes = Math.floor(total / 60)
+  const seconds = total % 60
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`
+  }
+  return `${seconds}s`
+}
+
 export function RateLimitTelemetryBanner() {
   const { data, isError } = useRateLimitTelemetry()
 
@@ -10,18 +23,20 @@ export function RateLimitTelemetryBanner() {
     if (!data) return null
 
     if (data.hardLocked) {
+      const ttl = formatTtl(data.hardLockTtlSeconds)
       return {
         variant: 'error' as const,
         title: 'API Blocked',
-        message: 'Requests are temporarily halted due to upstream blocking.',
+        message: `Requests are temporarily halted due to upstream blocking.${ttl ? ` (${ttl} remaining)` : ''}`,
       }
     }
 
     if (data.softLocked) {
+      const ttl = formatTtl(data.softLockTtlSeconds)
       return {
         variant: 'warn' as const,
         title: 'Cooling Down',
-        message: 'Requests are paused briefly to protect the upstream API.',
+        message: `Requests are paused briefly to protect the upstream API.${ttl ? ` (${ttl} remaining)` : ''}`,
       }
     }
 

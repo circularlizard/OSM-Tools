@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { getAuthConfig } from '@/lib/auth'
-import { isHardLocked, isSoftLocked, getQuota } from '@/lib/redis'
+import { isHardLocked, isSoftLocked, getQuota, getHardLockTtlSeconds, getSoftLockTtlSeconds } from '@/lib/redis'
 import { getRateLimiterStats } from '@/lib/bottleneck'
 
 export async function GET() {
@@ -11,9 +11,11 @@ export async function GET() {
   }
 
   try {
-    const [hardLocked, softLocked, quota, limiterStats] = await Promise.all([
+    const [hardLocked, softLocked, hardLockTtlSeconds, softLockTtlSeconds, quota, limiterStats] = await Promise.all([
       isHardLocked(),
       isSoftLocked(),
+      getHardLockTtlSeconds().catch(() => null),
+      getSoftLockTtlSeconds().catch(() => null),
       getQuota().catch(() => null),
       getRateLimiterStats().catch(() => null),
     ])
@@ -30,6 +32,8 @@ export async function GET() {
     return NextResponse.json({
       hardLocked,
       softLocked,
+      hardLockTtlSeconds,
+      softLockTtlSeconds,
       quota,
       queue,
     })
