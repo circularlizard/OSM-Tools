@@ -8,7 +8,6 @@ import { DataLoadingBanner } from "./DataLoadingBanner";
 import { RateLimitTelemetryBanner } from "./RateLimitTelemetryBanner";
 import PermissionDenied from "@/components/PermissionDenied";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
-import { useMembers } from "@/hooks/useMembers";
 import { useEvents } from "@/hooks/useEvents";
 import { useStore } from "@/store/use-store";
 import { useLogout } from "@/components/QueryProvider";
@@ -31,10 +30,6 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   // Global inactivity timeout for authenticated users
   useSessionTimeout({ onTimeout: logout });
   
-  // Members data via React Query (single source of truth)
-  // This hook triggers data loading with 3-phase progressive enrichment
-  const { members, isLoading: membersLoading, isFetched: membersFetched, isAdmin } = useMembers();
-  
   // Events data via React Query (single source of truth)
   // This hook triggers data loading and updates the data loading tracker
   const { events, isLoading: eventsLoading, isFetched: eventsFetched } = useEvents();
@@ -42,13 +37,6 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   // Debug logging in development
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
-      if (isAdmin) {
-        console.log('[ClientShell] Members (React Query):', {
-          loading: membersLoading,
-          fetched: membersFetched,
-          count: members.length,
-        });
-      }
       console.log('[ClientShell] Events (React Query):', {
         loading: eventsLoading,
         fetched: eventsFetched,
@@ -56,10 +44,6 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       });
     }
   }, [
-    membersLoading,
-    membersFetched,
-    members.length,
-    isAdmin,
     eventsLoading,
     eventsFetched,
     events.length,
