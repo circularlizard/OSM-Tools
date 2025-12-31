@@ -2,12 +2,7 @@
 
 This plan outlines the prioritized steps to align the platform with the functional review findings and the new 3-app architecture.
 
-## Priority 1: API Resilience & Rate Limiting (Critical Stability)
-- [ ] **Backoff Logic (REQ-ARCH-04):** Fix the bottleneck implementation to properly pause the queue and back off when a 429 (Too Many Requests) is encountered.
-- [ ] **Telemetry UI (REQ-ARCH-19):** Add a visible indicator (e.g., in the header or a toast) showing current API rate limit status and active backoff timers.
-- [ ] **Hydration Optimization:** Review the SEEE hydration flow (~500 calls) to see if it can be batched or prioritized to reduce 429 frequency.
-
-## Priority 2: Login & UX Simplification
+## Priority 1: Login & UX Simplification
 - [ ] **Simplify App Selection (REQ-AUTH-13):** Replace the current role/app selection with a high-quality "3 Card" layout on the landing page.
     - Card 1: **Expedition Viewer** - Requires `section:event:read` scope only.
     - Card 2: **Expedition Planner** - Requires full admin scopes.
@@ -17,11 +12,16 @@ This plan outlines the prioritized steps to align the platform with the function
     - Expedition Viewer: Request `section:event:read` only.
     - Expedition Planner & Data Quality Viewer: Request full admin scopes.
     - Platform Admin: Request full admin scopes plus platform verification.
-- [ ] **Add Permission Validation (REQ-AUTH-16):** After OAuth completion, each app must validate the `permissions` object from OSM:
+- [ ] **Add Permission Validation (REQ-AUTH-16):** After OAuth completion, each app must validate the `globals.roles.permissions` object from OSM startup data:
     - Check required permissions exist and have values > 0.
     - Display helpful error message with logout button if validation fails.
     - Prevent any data hydration if permissions insufficient.
 - [ ] **Fix Login Flash:** Ensure the dashboard shell doesn't render until the app context and section are fully hydrated.
+
+## Priority 2: API Resilience & Rate Limiting (Critical Stability)
+- [ ] **Backoff Logic (REQ-ARCH-04):** Fix the bottleneck implementation to properly pause the queue and back off when a 429 (Too Many Requests) is encountered.
+- [ ] **Telemetry UI (REQ-ARCH-19):** Add a visible indicator (e.g., in the header or a toast) showing current API rate limit status and active backoff timers.
+- [ ] **Hydration Optimization:** Review the SEEE hydration flow (~500 calls) to see if it can be batched or prioritized to reduce 429 frequency.
 
 ## Priority 3: E2E Test Updates for New Login Flow
 - [ ] **Update Mock Auth Flow:** Adapt the mock authentication to work with the new 3-card selection and permission validation.
