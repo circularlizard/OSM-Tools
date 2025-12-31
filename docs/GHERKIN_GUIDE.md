@@ -248,15 +248,27 @@ Scenario: Unauthenticated user is redirected to login
 ## Running BDD Tests
 
 ```bash
-# Run all BDD tests
-npm run test:bdd
+## Running BDD Suites
 
-# Run specific feature
-npm run test:bdd -- --grep @REQ-AUTH-01
-
-# Run with coverage
-npm run test:bdd:coverage
+```bash
+npm run test:bdd      # full suite
+npm run test:bdd -- --grep @multi-app   # subset via tag
 ```
+
+## Step Catalogue & Coverage
+
+To keep feature files, shared steps, and implementations in sync we maintain an auto-generated catalogue:
+
+1. Run the checker to validate coverage and (optionally) regenerate the catalogue:
+   ```bash
+   node scripts/check-bdd-steps.mjs --catalogFile=docs/testing/bdd-step-catalogue.md
+   ```
+   - Exits non‑zero if any step is missing an implementation, listing the exact feature locations.
+   - Writes/updates `docs/testing/bdd-step-catalogue.md`, which maps every step phrase to its step-definition file and feature usage.
+2. Review `docs/testing/bdd-step-catalogue.md` before/after feature changes to ensure new steps are implemented.
+3. When adding new step definitions place them in `tests/e2e/steps/shared.steps.ts` (or a feature-specific file) so the checker can detect them on the next run.
+
+Include this checker in your local workflow (e.g., after editing `.feature` files or before committing) to guarantee that Gherkin scenarios always have matching Playwright implementations.
 
 ## Best Practices
 
