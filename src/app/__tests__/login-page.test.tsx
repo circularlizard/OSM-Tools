@@ -38,6 +38,7 @@ describe('Login Page', () => {
     render(<Home />)
     expect(screen.getByText('Development Mode')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Expedition Viewer' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Mock persona (optional)')).toBeInTheDocument()
   })
 
   test('calls signIn with providers', () => {

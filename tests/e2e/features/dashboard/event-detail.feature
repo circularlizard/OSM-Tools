@@ -5,7 +5,7 @@ Feature: Event Detail Responsive Layout
   So that I can review attendees on any device
 
   Background:
-    Given I am logged in as an admin
+    Given I am logged in as a standard viewer
 
   @REQ-NFR-02
   Scenario: Event detail participants render appropriately for this viewport

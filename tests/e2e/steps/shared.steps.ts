@@ -9,7 +9,7 @@ export async function ensureSectionSelected(page: Page) {
 
   const pickerHeading = page.getByRole('heading', { name: /Select Your Section/i })
   const continueButton = page.getByRole('button', { name: /^Continue$/i })
-  const preferredSection = page.getByRole('button', { name: /Explorer Unit Alpha/i })
+  const preferredSection = page.getByRole('button', { name: /SE Explorer Expeditions/i })
 
   // The section picker can render on /dashboard after hydration, or on /dashboard/section-picker.
   // Wait briefly for it to appear before deciding it's not present.
@@ -40,7 +40,9 @@ export async function ensureSectionSelected(page: Page) {
   if (await preferredSection.isVisible().catch(() => false)) {
     await preferredSection.click()
   } else {
-    const anyOption = page.getByRole('button').filter({ hasText: /Unit/i }).first()
+    // Section options are rendered as <button> rows containing a div.font-medium with the section name.
+    // Avoid relying on specific naming like "Unit".
+    const anyOption = page.locator('button:has(div.font-medium)').first()
     if (await anyOption.isVisible().catch(() => false)) {
       await anyOption.click()
     }
@@ -57,6 +59,25 @@ export async function ensureSectionSelected(page: Page) {
   }
 }
 
+async function selectMockPersonaIfPresent(page: Page, persona: string) {
+  const dropdown = page.locator('#mockPersona')
+  if (!(await dropdown.isVisible().catch(() => false))) return
+  await dropdown.selectOption(persona)
+}
+
+async function loginToAppUsingMockPanel(page: Page, appLabel: string) {
+  const mockButton = page.getByRole('button', { name: new RegExp(`^${appLabel}$`, 'i') })
+  if (await mockButton.isVisible().catch(() => false)) {
+    await mockButton.click()
+    return
+  }
+
+  throw new Error(
+    `Mock login button for app "${appLabel}" was not visible. ` +
+      `Ensure mock auth is enabled (NEXT_PUBLIC_MOCK_AUTH_ENABLED=true) and that the dev server started by Playwright is being used.`
+  )
+}
+
 /**
  * Shared Step Definitions
  * 
@@ -70,26 +91,32 @@ export async function ensureSectionSelected(page: Page) {
 Given('I am logged in as an admin', async ({ page }) => {
   await page.goto('/')
   await page.waitForLoadState('networkidle')
-  
-  // Select Administrator role
-  await page.click('label:has-text("Administrator")')
-  
-  // Wait for app options to appear (they're filtered by role)
-  await page.waitForTimeout(500)
-  
-  // Select default app for admin (Event Planning)
-  const planningApp = page.getByRole('radio', { name: /Event Planning/i })
-  if (await planningApp.isVisible().catch(() => false)) {
-    await planningApp.click()
+
+  // Prefer Development Mode mock login when available in E2E
+  const mockPlanning = page.getByRole('button', { name: /^Expedition Planner$/i })
+  if (await mockPlanning.isVisible().catch(() => false)) {
+    await mockPlanning.click()
+  } else {
+    // Fallback: click the card heading to trigger OAuth flow
+    await page.getByRole('heading', { name: /^Expedition Planner$/i }).click()
   }
 
-  // Prefer mock login when available in E2E
-  const mockLoginButton = page.getByRole('button', { name: /Dev: Mock Login/i })
-  if (await mockLoginButton.isVisible().catch(() => false)) {
-    await mockLoginButton.click()
-  } else {
-    await page.locator('role=button[name="Sign in with OSM"]').click()
-  }
+  await page.waitForURL(/\/dashboard/, { timeout: 10000 })
+  await page.waitForLoadState('networkidle')
+  await ensureSectionSelected(page)
+})
+
+Given('I select mock persona {string}', async ({ page }, persona: string) => {
+  await page.goto('/')
+  await page.waitForLoadState('networkidle')
+  await selectMockPersonaIfPresent(page, persona)
+})
+
+Given('I am logged in with mock persona {string} for app {string}', async ({ page }, persona: string, appLabel: string) => {
+  await page.goto('/')
+  await page.waitForLoadState('networkidle')
+  await selectMockPersonaIfPresent(page, persona)
+  await loginToAppUsingMockPanel(page, appLabel)
 
   await page.waitForURL(/\/dashboard/, { timeout: 10000 })
   await page.waitForLoadState('networkidle')
@@ -99,25 +126,14 @@ Given('I am logged in as an admin', async ({ page }) => {
 Given('I am logged in as a standard viewer', async ({ page }) => {
   await page.goto('/')
   await page.waitForLoadState('networkidle')
-  
-  // Select Standard Viewer role
-  await page.click('label:has-text("Standard Viewer")')
-  
-  // Wait for app options to appear (they're filtered by role)
-  await page.waitForTimeout(500)
-  
-  // Select default app for standard viewer (Expedition Viewer)
-  const expeditionApp = page.getByRole('radio', { name: /Expedition Viewer/i })
-  if (await expeditionApp.isVisible().catch(() => false)) {
-    await expeditionApp.click()
-  }
 
-  // Prefer mock login when available in E2E
-  const mockLoginButton = page.getByRole('button', { name: /Dev: Mock Login/i })
-  if (await mockLoginButton.isVisible().catch(() => false)) {
-    await mockLoginButton.click()
+  // Prefer Development Mode mock login when available in E2E
+  const mockExpedition = page.getByRole('button', { name: /^Expedition Viewer$/i })
+  if (await mockExpedition.isVisible().catch(() => false)) {
+    await mockExpedition.click()
   } else {
-    await page.locator('role=button[name="Sign in with OSM"]').click()
+    // Fallback: click the card heading to trigger OAuth flow
+    await page.getByRole('heading', { name: /^Expedition Viewer$/i }).click()
   }
 
   await page.waitForURL(/\/dashboard/, { timeout: 10000 })
@@ -149,6 +165,20 @@ When('I navigate to {string}', async ({ page }, path: string) => {
 
 When('I wait {int} ms', async ({ page }, ms: number) => {
   await page.waitForTimeout(ms)
+})
+
+When('I wait for inactivity timeout', async ({ page }) => {
+  // The BDD config sets NEXT_PUBLIC_INACTIVITY_TIMEOUT_MS=30000 (30s).
+  // Wait slightly longer than the timeout to ensure the logout triggers.
+  // We poll for redirect to login page rather than waiting the full duration.
+  const deadline = Date.now() + 35_000
+  while (Date.now() < deadline) {
+    const url = page.url()
+    if (url.includes('localhost:3000/') && !url.includes('/dashboard')) {
+      return
+    }
+    await page.waitForTimeout(1000)
+  }
 })
 
 When('I click {string}', async ({ page }, text: string) => {
@@ -228,22 +258,29 @@ Then('I should see {string}', async ({ page }, text: string) => {
     page.getByRole('cell', { name: text, exact: true }),
   ]
 
-  for (const loc of roleLocators) {
-    if (await loc.isVisible().catch(() => false)) {
-      return
+  const deadline = Date.now() + 10_000
+  while (Date.now() < deadline) {
+    for (const loc of roleLocators) {
+      if (await loc.isVisible().catch(() => false)) {
+        return
+      }
     }
+
+    const textLoc = page.getByText(text)
+    const count = await textLoc.count()
+    for (let i = 0; i < count; i += 1) {
+      if (await textLoc.nth(i).isVisible().catch(() => false)) {
+        return
+      }
+    }
+
+    await page.waitForTimeout(250)
   }
 
-  const textLoc = page.getByText(text)
-  const count = await textLoc.count()
-  for (let i = 0; i < count; i += 1) {
-    if (await textLoc.nth(i).isVisible().catch(() => false)) {
-      return
-    }
-  }
-
+  const finalTextLoc = page.getByText(text)
+  const finalCount = await finalTextLoc.count()
   throw new Error(
-    `No visible element found for text "${text}" (matched ${count} nodes, all hidden or not present).`
+    `No visible element found for text "${text}" (matched ${finalCount} nodes, all hidden or not present). Current URL: ${page.url()}`
   )
 })
 

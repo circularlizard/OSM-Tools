@@ -41,22 +41,13 @@ This plan outlines the prioritized steps to align the platform with the function
     - Removed global `useMembers()` hydration from `ClientShell` to avoid triggering the multi-phase per-member enrichment pipeline when browsing non-member pages.
 
 ## Priority 3: E2E Test Updates for New Login Flow
-- [ ] **Update Mock Auth Flow:** Adapt the mock authentication to work with the new 3-card selection and permission validation.
-    - Ensure the selected card properly sets the `appSelection` in the mock auth flow.
-    - Mock the `permissions` object in startup data to test both success and failure scenarios.
-    - Fix the redirect loop that prevents E2E tests from completing login.
-    - Actions: Add console logging to `src/app/page.tsx`, `src/lib/auth.ts`, `middleware.ts`, and `StartupInitializer.tsx` to trace the `appSelection` flow.
-- [ ] **Add Permission Validation Tests:** Create test scenarios for:
-    - User with sufficient SEEE permissions accessing SEEE-specific apps successfully.
-    - User with sufficient permissions on any section accessing multi-section apps successfully.
-    - User with insufficient SEEE permissions denied access to SEEE-specific apps.
-    - User with insufficient permissions on all sections denied access to multi-section apps.
-    - Platform admin verification (both success and failure).
-- [ ] **Re-enable BDD Tests:** Once the new login flow and auth are working, update and run the full multi-app test suite.
-    - Remove `@skip` from `multi-app-routing.feature`.
-    - Update test scenarios to match the new 3-card UI and permission validation.
-    - Run `npm run test:bdd -- --grep multi-app` and fix any remaining issues.
-    - Verify full test stack passes: `npm run lint && npx tsc --noEmit && npm run test:unit && npm run test:bdd`.
+- [X] **Update Mock Auth Flow:** Adapted mock auth to the 3-card selection with persona picker and ensured `appSelection` is preserved through the redirect callback in `src/lib/auth.ts`. Startup data mocks now cover SEEE success/failure permutations.
+- [X] **Add Permission Validation Tests:** `multi-app-routing.feature` now exercises:
+    - SEEE access approvals/denials for Expedition Viewer & Planner.
+    - Multi-section approval/denial for OSM Data Quality.
+    - Platform admin guard rails (redirect to `/forbidden`).
+    - All scenarios reference the new personas (`noSeeeElevatedOther`, `seeeEventsOnlyRestrictedOther`, `seeeFullOnly`, `seeeFullElevatedOther`).
+- [X] **Re-enable BDD Tests:** Feature file updated (no more `@skip`), step defs now require mock login buttons, and `playwright.bdd.config.ts` starts a fresh HTTPS dev server with mock env vars + longer inactivity timeout. `npm run test:bdd -- --grep multi-app --reporter=line --workers=1` passes headlessly.
 
 ## Priority 4: Expedition Viewer (Standard) Refinement
 - [ ] **Home Page Refactor (REQ-EVENTS-06):** Change the default landing view to "Attendance by Person," grouped by Patrol cards.

@@ -200,6 +200,14 @@ export default function StartupInitializer() {
 
               // Decide permission validation outcome.
               if (isSEEEApp) {
+                const hasSeeeSectionAccess = storeSections.some((s: { sectionId: string }) => s.sectionId === SEEE_SECTION_ID)
+                if (!hasSeeeSectionAccess) {
+                  const missing = validateAppPermissions(currentApp, null)
+                  console.warn('[StartupInitializer] SEEE section not present in accessible sections for app:', currentApp, missing)
+                  setMissingPermissions(missing)
+                  setPermissionValidated(false)
+                  return
+                }
                 const seeePerms = permissionsBySectionId.get(SEEE_SECTION_ID)
                 const missing = validateAppPermissions(currentApp, seeePerms)
                 if (missing.length > 0) {

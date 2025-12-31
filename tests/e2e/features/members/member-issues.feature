@@ -5,7 +5,7 @@ Feature: Member Data Issues
   So that I can identify and address missing or inconsistent records
 
   Background:
-    Given I am logged in as an admin
+    Given I am logged in with mock persona "seeeFullElevatedOther" for app "OSM Data Quality"
 
   @REQ-ADMIN-04
   Scenario: Member issues page loads

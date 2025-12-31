@@ -29,6 +29,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const mockEnabled = process.env.NEXT_PUBLIC_MOCK_AUTH_ENABLED === "true" || process.env.MOCK_AUTH_ENABLED === "true";
   const [selectedApp, setSelectedApp] = useState<AppKey | null>(null);
+  const [mockPersona, setMockPersona] = useState<string>('')
   
   // Get callback URL from query params or default to dashboard
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
@@ -80,9 +81,10 @@ function LoginContent() {
       }
       return getDefaultPathForApp(app)
     })()
+    const username = mockPersona || roleSelection
     signIn('credentials', {
       callbackUrl: `${resolvedCallbackUrl}?appSelection=${app}`,
-      username: roleSelection,
+      username,
       roleSelection,
       appSelection: app,
     });
@@ -154,6 +156,23 @@ function LoginContent() {
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="text-xs text-yellow-700">Mock login available for testing:</p>
+            <div className="space-y-1">
+              <label htmlFor="mockPersona" className="text-xs text-yellow-800">
+                Mock persona (optional)
+              </label>
+              <select
+                id="mockPersona"
+                value={mockPersona}
+                onChange={(e) => setMockPersona(e.target.value)}
+                className="w-full rounded-md border border-yellow-200 bg-white px-2 py-1 text-xs"
+              >
+                <option value="">Auto (admin/standard)</option>
+                <option value="noSeeeElevatedOther">No SEEE / Elevated Other</option>
+                <option value="seeeEventsOnlyRestrictedOther">SEEE Events Only / Restricted Other</option>
+                <option value="seeeFullOnly">SEEE Full Only</option>
+                <option value="seeeFullElevatedOther">SEEE Full / Elevated Other</option>
+              </select>
+            </div>
             <div className="flex flex-wrap gap-2">
               {PRIMARY_APPS.map((app) => (
                 <Button

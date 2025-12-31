@@ -70,7 +70,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'https://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && process.env.INSTRUMENT_CODE !== '1',
     ignoreHTTPSErrors: true,
     timeout: 120 * 1000,
     env: {
@@ -80,7 +80,7 @@ export default defineConfig({
       // Enable MSW for mock API responses
       NEXT_PUBLIC_USE_MSW: 'true',
       // Speed up inactivity timeout in E2E (production default is 15 minutes)
-      NEXT_PUBLIC_INACTIVITY_TIMEOUT_MS: '5000',
+      NEXT_PUBLIC_INACTIVITY_TIMEOUT_MS: '30000',
     },
   },
 })

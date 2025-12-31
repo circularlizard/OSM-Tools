@@ -5,7 +5,7 @@ Feature: Attendance by Person
   So that I can quickly see who is attending which events
 
   Background:
-    Given I am logged in as an admin
+    Given I am logged in as a standard viewer
 
   @REQ-EVENTS-05
   Scenario: Attendance by person page loads and shows grouping controls

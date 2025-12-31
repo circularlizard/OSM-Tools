@@ -35,6 +35,7 @@ import listOfQMListsData from '@/mocks/data/listOfQMLists.json'
 import qmListData from '@/mocks/data/QMList.json'
 import startupConfigData from '@/mocks/data/startup_config.json'
 import startupDataData from '@/mocks/data/startup_data.json'
+import startupDataSeeeEventsOnlyRestrictedOtherData from '@/mocks/data/startup_data_seee_events_only_restricted_other.json'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
 
 // Map mock data filenames to imported data
@@ -58,6 +59,14 @@ const mockDataRegistry: Record<string, unknown> = {
   'QMList.json': qmListData,
   'startup_config.json': startupConfigData,
   'startup_data.json': startupDataData,
+  'startup_data_seee_events_only_restricted_other.json': startupDataSeeeEventsOnlyRestrictedOtherData,
+}
+
+function pickStartupDataForMockUser(userId: string | undefined): unknown {
+  if (userId === 'mock-seee-events-only-001') {
+    return startupDataSeeeEventsOnlyRestrictedOtherData
+  }
+  return startupDataData
 }
 
 interface ApiMapEntry {
@@ -370,7 +379,13 @@ export async function GET(
     
     // MSW Mode: Return mock data directly (server-side)
     if (USE_MSW) {
-      const mockData = findMockData(path, request.nextUrl.searchParams)
+      const action = request.nextUrl.searchParams.get('action')
+      const normalizedPath = `/${path.replace(/^\/+/, '').replace(/\/+$/, '')}`
+      const isStartupData = normalizedPath === '/ext/generic/startup' && action === 'getData'
+
+      const mockData = isStartupData
+        ? pickStartupDataForMockUser(session.user?.id)
+        : findMockData(path, request.nextUrl.searchParams)
       if (mockData) {
         logProxyRequest({
           method: 'GET',

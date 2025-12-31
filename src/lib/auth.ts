@@ -240,16 +240,25 @@ export function getAuthConfig(): AuthOptions {
       // Extract appSelection from callback URL if present
       const callbackUrl = new URL(url.startsWith('http') ? url : `${baseUrl}${url}`)
       const appSelection = callbackUrl.searchParams.get('appSelection')
+      const base = new URL(baseUrl)
       
       if (appSelection) {
-        // Preserve appSelection in the final redirect URL
-        const finalUrl = url.startsWith(baseUrl) ? url : baseUrl
-        const finalUrlObj = new URL(finalUrl.startsWith('http') ? finalUrl : `${baseUrl}${finalUrl}`)
-        finalUrlObj.searchParams.set('appSelection', appSelection)
-        return finalUrlObj.toString()
+        const resolved = new URL(url.startsWith('http') ? url : `${baseUrl}${url}`)
+        // Prevent open redirects by enforcing same host redirects only.
+        // Use host (hostname + port) rather than origin to avoid http/https mismatches
+        // when running behind the custom HTTPS dev server.
+        if (resolved.host !== base.host) {
+          return baseUrl
+        }
+        resolved.searchParams.set('appSelection', appSelection)
+        return resolved.toString()
       }
-      
-      return url.startsWith(baseUrl) ? url : baseUrl
+
+      const resolved = new URL(url.startsWith('http') ? url : `${baseUrl}${url}`)
+      if (resolved.host !== base.host) {
+        return baseUrl
+      }
+      return resolved.toString()
     },
 
     /**

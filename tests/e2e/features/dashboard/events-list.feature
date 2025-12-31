@@ -5,7 +5,7 @@ Feature: Events List
   So that I can review attendance and event details
 
   Background:
-    Given I am logged in as an admin
+    Given I am logged in as a standard viewer
 
   @REQ-EVENTS-02
   Scenario: Events page loads and renders list content

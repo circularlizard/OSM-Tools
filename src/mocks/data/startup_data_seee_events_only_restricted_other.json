@@ -1,0 +1,47 @@
+{
+  "globals": {
+    "userid": 674661,
+    "roles": [
+      {
+        "groupname": "Pentland District",
+        "groupid": "8871",
+        "group_country": "uk",
+        "sectionid": "37458",
+        "sectionname": "Bore Stane ESU",
+        "section": "explorers",
+        "isDefault": "1",
+        "permissions": {
+          "badge": 0,
+          "member": 0,
+          "user": 0,
+          "register": 0,
+          "programme": 0,
+          "events": 10,
+          "finance": 0,
+          "flexi": 0,
+          "quartermaster": 0
+        }
+      },
+      {
+        "groupname": "South East Scotland Region",
+        "groupid": "14863",
+        "group_country": "uk",
+        "sectionid": "43105",
+        "sectionname": "SE Explorer Expeditions",
+        "section": "explorers",
+        "isDefault": "0",
+        "permissions": {
+          "badge": 0,
+          "member": 0,
+          "user": 0,
+          "register": 0,
+          "programme": 0,
+          "events": 10,
+          "finance": 0,
+          "flexi": 0,
+          "quartermaster": 0
+        }
+      }
+    ]
+  }
+}
