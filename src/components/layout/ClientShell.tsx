@@ -6,6 +6,7 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import { DataLoadingBanner } from "./DataLoadingBanner";
 import { RateLimitTelemetryBanner } from "./RateLimitTelemetryBanner";
+import PermissionDenied from "@/components/PermissionDenied";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useMembers } from "@/hooks/useMembers";
 import { useEvents } from "@/hooks/useEvents";
@@ -21,6 +22,8 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const selectedSections = useStore((s) => s.selectedSections);
   const currentApp = useStore((s) => s.currentApp);
   const userRole = useStore((s) => s.userRole);
+  const permissionValidated = useStore((s) => s.permissionValidated);
+  const missingPermissions = useStore((s) => s.missingPermissions);
   const logout = useLogout();
   
   // Global inactivity timeout for authenticated users
@@ -121,6 +124,11 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         </div>
       </main>
     );
+  }
+
+  // Show permission denied screen if validation failed (REQ-AUTH-16)
+  if (currentApp && !permissionValidated && missingPermissions.length > 0) {
+    return <PermissionDenied app={currentApp} missingPermissions={missingPermissions} />;
   }
   return (
     <div className="min-h-screen flex flex-col">

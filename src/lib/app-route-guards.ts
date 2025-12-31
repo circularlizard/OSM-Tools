@@ -71,6 +71,7 @@ const DEFAULT_APP_PATH: Record<AppKey, string> = {
   multi: "/dashboard/members",
   "platform-admin": "/dashboard/admin",
   planning: "/dashboard/planning",
+  "data-quality": "/dashboard/members/issues",
 };
 
 export function getRequiredAppForPath(pathname: string): AppKey | null {

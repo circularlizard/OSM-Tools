@@ -55,7 +55,7 @@ interface OsmSection {
 }
 
 /**
- * Role-based scope calculator
+ * Role-based scope calculator (legacy - now derived from app)
  * Determines OAuth scopes based on selected user role
  */
 function getScopesForRole(role: 'admin' | 'standard'): string[] {

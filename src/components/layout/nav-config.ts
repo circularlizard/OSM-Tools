@@ -133,6 +133,7 @@ const NAV_MAP: Record<AppKey, NavSection[]> = {
   multi: multiNav,
   "platform-admin": platformNav,
   planning: planningNav,
+  "data-quality": multiNav, // Data quality uses same nav as multi-section viewer
 };
 
 export function getNavSections(app: AppKey | null): NavSection[] {

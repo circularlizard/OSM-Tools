@@ -3,15 +3,21 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Info } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eye, Map, ClipboardCheck, Settings } from "lucide-react";
 import Image from "next/image";
-import { APP_LABELS, DEFAULT_APP_FOR_ROLE, type AppKey } from "@/types/app";
+import { APP_LABELS, APP_DESCRIPTIONS, APP_REQUIRES_ADMIN, PRIMARY_APPS, type AppKey } from "@/types/app";
 
-type UserRoleSelection = "admin" | "standard";
+/**
+ * App card configuration for the 3-card layout
+ */
+const APP_ICONS: Record<AppKey, React.ReactNode> = {
+  expedition: <Eye className="h-8 w-8" />,
+  planning: <Map className="h-8 w-8" />,
+  'data-quality': <ClipboardCheck className="h-8 w-8" />,
+  'platform-admin': <Settings className="h-6 w-6" />,
+  multi: <Eye className="h-6 w-6" />,
+};
 
 /**
  * Login page content - separated to allow Suspense boundary for useSearchParams
@@ -21,14 +27,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mockEnabled = process.env.NEXT_PUBLIC_MOCK_AUTH_ENABLED === "true" || process.env.MOCK_AUTH_ENABLED === "true";
-  const [selectedRole, setSelectedRole] = useState<UserRoleSelection>("standard");
-  const [selectedApp, setSelectedApp] = useState<AppKey>(DEFAULT_APP_FOR_ROLE.standard);
-  const [infoOpen, setInfoOpen] = useState(false);
-  
-  // Update default app when role changes
-  useEffect(() => {
-    setSelectedApp(DEFAULT_APP_FOR_ROLE[selectedRole]);
-  }, [selectedRole]);
+  const [selectedApp, setSelectedApp] = useState<AppKey | null>(null);
   
   // Get callback URL from query params or default to dashboard
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
@@ -43,136 +42,117 @@ function LoginContent() {
     return null;
   }
 
-  const handleSignIn = () => {
-    // Call the appropriate OAuth provider based on role selection
-    // osm-admin requests 4 scopes, osm-standard requests 1 scope
-    const provider = selectedRole === 'admin' ? 'osm-admin' : 'osm-standard';
-    console.log('[Login] Signing in with provider:', provider, 'app:', selectedApp);
+  const handleAppSelect = (app: AppKey) => {
+    setSelectedApp(app);
     
-    // Pass app selection through OAuth state
+    // Determine OAuth provider based on app requirements
+    const provider = APP_REQUIRES_ADMIN[app] ? 'osm-admin' : 'osm-standard';
+    console.log('[Login] Signing in with provider:', provider, 'app:', app);
+    
     signIn(provider, { 
-      callbackUrl: `${callbackUrl}?appSelection=${selectedApp}`,
+      callbackUrl: `${callbackUrl}?appSelection=${app}`,
     });
   };
   
-  // Get available apps based on role
-  const availableApps: AppKey[] = selectedRole === 'admin' 
-    ? ['planning', 'platform-admin', 'multi'] 
-    : ['expedition', 'multi'];
+  const handleMockLogin = (app: AppKey) => {
+    const roleSelection = APP_REQUIRES_ADMIN[app] ? 'admin' : 'standard';
+    signIn('credentials', {
+      callbackUrl: `${callbackUrl}?appSelection=${app}`,
+      username: roleSelection,
+      roleSelection,
+      appSelection: app,
+    });
+  };
 
   return (
-    <Card className="w-full max-w-md shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-xl">OSM Dashboard</CardTitle>
+    <div className="w-full max-w-4xl space-y-8">
+      {/* Header */}
+      <div className="text-center text-white">
+        <h1 className="text-4xl font-bold mb-2">SEEE Expedition Dashboard</h1>
+        <p className="text-lg text-white/80">Select an application to continue</p>
+      </div>
+      
+      {/* 3-Card App Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {PRIMARY_APPS.map((app) => (
+          <Card 
+            key={app}
+            className={`cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+              selectedApp === app ? 'ring-2 ring-primary' : ''
+            }`}
+            onClick={() => handleAppSelect(app)}
+          >
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto mb-3 p-3 rounded-full bg-primary/10 text-primary">
+                {APP_ICONS[app]}
+              </div>
+              <CardTitle className="text-lg">{APP_LABELS[app]}</CardTitle>
+              <CardDescription className="text-sm">
+                {APP_DESCRIPTIONS[app]}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-xs text-center text-muted-foreground">
+                {APP_REQUIRES_ADMIN[app] ? (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    Requires admin access
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    Standard access
+                  </span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      {/* Platform Admin Link */}
+      <div className="text-center">
+        <button
+          onClick={() => handleAppSelect('platform-admin')}
+          className="text-sm text-white/60 hover:text-white underline-offset-4 hover:underline transition-colors"
+        >
+          Platform Administration
+        </button>
+      </div>
+      
+      {/* Mock Login for Development */}
+      {mockEnabled && (
+        <Card className="max-w-md mx-auto bg-yellow-50 border-yellow-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-yellow-800">Development Mode</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Sign in to continue. Select your access level below.
-            </p>
-            
-            {/* Role Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Access Level</Label>
-              <RadioGroup value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRoleSelection)}>
-                <div className="flex items-start space-x-3 space-y-0">
-                  <RadioGroupItem value="standard" id="standard" />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor="standard" className="font-medium cursor-pointer">
-                      Standard Viewer
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      View events and attendance only
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3 space-y-0">
-                  <RadioGroupItem value="admin" id="admin" />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor="admin" className="font-medium cursor-pointer">
-                      Administrator
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Full access to all sections and members
-                    </p>
-                  </div>
-                </div>
-              </RadioGroup>
-              
-              {/* Collapsible Info Section */}
-              <Collapsible open={infoOpen} onOpenChange={setInfoOpen}>
-                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <Info className="h-4 w-4" />
-                  <span>What permissions will be requested?</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${infoOpen ? 'rotate-180' : ''}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2 space-y-2 text-xs text-muted-foreground border-l-2 border-muted pl-4">
-                  {selectedRole === "admin" ? (
-                    <>
-                      <p className="font-medium">Administrator permissions:</p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Read events and attendance</li>
-                        <li>Read member information</li>
-                        <li>Read programme records</li>
-                        <li>Read flexi records</li>
-                      </ul>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-medium">Standard Viewer permissions:</p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Read events and attendance only</li>
-                      </ul>
-                    </>
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-            
-            {/* App Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Application</Label>
-              <RadioGroup value={selectedApp} onValueChange={(value) => setSelectedApp(value as AppKey)}>
-                {availableApps.map((app) => (
-                  <div key={app} className="flex items-start space-x-3 space-y-0">
-                    <RadioGroupItem value={app} id={app} />
-                    <div className="space-y-1 leading-none">
-                      <Label htmlFor={app} className="font-medium cursor-pointer">
-                        {APP_LABELS[app]}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {app === 'planning' && 'Plan and manage expedition events'}
-                        {app === 'expedition' && 'View events and attendance'}
-                        {app === 'platform-admin' && 'System administration and configuration'}
-                        {app === 'multi' && 'View data across multiple sections'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="flex flex-col gap-3 pt-2">
-              <Button onClick={handleSignIn} size="lg">
-                Sign in with OSM
-              </Button>
-              {mockEnabled && (
+          <CardContent className="space-y-2">
+            <p className="text-xs text-yellow-700">Mock login available for testing:</p>
+            <div className="flex flex-wrap gap-2">
+              {PRIMARY_APPS.map((app) => (
                 <Button
-                  variant="secondary"
-                  onClick={() =>
-                    signIn('credentials', {
-                      callbackUrl: `${callbackUrl}?appSelection=${selectedApp}`,
-                      username: selectedRole,
-                      roleSelection: selectedRole,
-                      appSelection: selectedApp,
-                    })
-                  }
+                  key={app}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleMockLogin(app)}
+                  className="text-xs"
                 >
-                  Dev: Mock Login
+                  {APP_LABELS[app]}
                 </Button>
-              )}
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleMockLogin('platform-admin')}
+                className="text-xs"
+              >
+                Platform Admin
+              </Button>
             </div>
           </CardContent>
-    </Card>
+        </Card>
+      )}
+    </div>
   );
 }
 
@@ -184,8 +164,8 @@ export default function Home() {
     <div className="relative min-h-screen">
       {/* Hero background image */}
       <Image src="/hero.jpg" alt="Expedition hero" fill priority className="object-cover" />
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
         <Suspense fallback={
           <Card className="w-full max-w-md shadow-2xl">
             <CardHeader>

@@ -39,7 +39,7 @@ interface SessionState {
   selectedSections: Section[]
   setSelectedSections: (sections: Section[]) => void
 
-  // Current app context (planning, expedition, platform-admin, multi)
+  // Current app context (planning, expedition, platform-admin, multi, data-quality)
   currentApp: AppKey | null
   setCurrentApp: (app: AppKey | null) => void
 
@@ -50,6 +50,12 @@ interface SessionState {
   // Available sections for the user
   availableSections: Section[]
   setAvailableSections: (sections: Section[]) => void
+
+  // Permission validation state (REQ-AUTH-16)
+  permissionValidated: boolean
+  setPermissionValidated: (validated: boolean) => void
+  missingPermissions: string[]
+  setMissingPermissions: (permissions: string[]) => void
 
   // Hydration state (true after persisted state is loaded from localStorage)
   _hasHydrated: boolean
@@ -280,6 +286,11 @@ export const useStore = create<StoreState>()(
       availableSections: [],
       setAvailableSections: (sections) => set({ availableSections: sections }),
 
+      permissionValidated: false,
+      setPermissionValidated: (validated) => set({ permissionValidated: validated }),
+      missingPermissions: [],
+      setMissingPermissions: (permissions) => set({ missingPermissions: permissions }),
+
       _hasHydrated: false,
       setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
 
@@ -290,6 +301,8 @@ export const useStore = create<StoreState>()(
           currentApp: null,
           userRole: null,
           availableSections: [],
+          permissionValidated: false,
+          missingPermissions: [],
         }),
 
       // Configuration State

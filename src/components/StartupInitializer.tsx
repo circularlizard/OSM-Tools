@@ -4,7 +4,9 @@ import { useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useStore } from '@/store/use-store'
+import { validateAppPermissions } from '@/lib/permissions'
 import type { OAuthData } from '@/lib/redis'
+import type { OsmPermissions } from '@/lib/permissions'
 import type { AppKey } from '@/types/app'
 
 const REMEMBER_KEY = 'seee.sectionSelection.v1'
@@ -20,6 +22,15 @@ type OAuthSection = OAuthData['sections'][number] & {
   upgrades?: { events?: boolean; programme?: boolean }
   terms?: Array<{ term_id?: string | number }>
   section_type?: string
+}
+
+/** Role from startup data with permissions */
+interface StartupRole {
+  sectionid: string
+  sectionname: string
+  section?: string
+  permissions?: OsmPermissions
+  [key: string]: unknown
 }
 
 /**
@@ -45,6 +56,8 @@ export default function StartupInitializer() {
   const setAccessControlStrategy = useStore((s) => s.setAccessControlStrategy)
   const setAllowedPatrolIds = useStore((s) => s.setAllowedPatrolIds)
   const setAllowedEventIds = useStore((s) => s.setAllowedEventIds)
+  const setPermissionValidated = useStore((s) => s.setPermissionValidated)
+  const setMissingPermissions = useStore((s) => s.setMissingPermissions)
   const hasInitialized = useRef(false)
 
   useEffect(() => {
@@ -157,6 +170,55 @@ export default function StartupInitializer() {
         const seeeApps: AppKey[] = ['planning', 'expedition', 'platform-admin']
         const currentApp = appToSet || sessionApp
         const isSEEEApp = currentApp && seeeApps.includes(currentApp)
+        
+        // Validate permissions for the selected app (REQ-AUTH-16)
+        // Fetch startup data to get permissions from globals.roles
+        if (currentApp) {
+          try {
+            const startupResponse = await fetch('/api/proxy/ext/generic/startup/?action=getData')
+            if (startupResponse.ok) {
+              const startupData = await startupResponse.json()
+              const roles = startupData?.globals?.roles as StartupRole[] | undefined
+              
+              // Find the first role with permissions (or SEEE section for SEEE apps)
+              let permissionsToCheck: OsmPermissions | null = null
+              if (roles && roles.length > 0) {
+                if (isSEEEApp) {
+                  // For SEEE apps, check permissions for SEEE section specifically
+                  const seeeRole = roles.find(r => r.sectionid === '43105')
+                  permissionsToCheck = seeeRole?.permissions || roles[0]?.permissions || null
+                } else {
+                  // For multi-section apps, use first available role's permissions
+                  permissionsToCheck = roles[0]?.permissions || null
+                }
+              }
+              
+              const missing = validateAppPermissions(currentApp, permissionsToCheck)
+              if (missing.length > 0) {
+                console.warn('[StartupInitializer] Missing permissions for app:', currentApp, missing)
+                setMissingPermissions(missing)
+                setPermissionValidated(false)
+                // Don't proceed with hydration - permission denied screen will be shown
+                return
+              }
+              
+              setPermissionValidated(true)
+              setMissingPermissions([])
+              if (process.env.NODE_ENV !== 'production') {
+                console.debug('[StartupInitializer] Permission validation passed for app:', currentApp)
+              }
+            }
+          } catch (error) {
+            console.error('[StartupInitializer] Failed to fetch startup data for permission validation:', error)
+            // Continue without permission validation on error - fail open for now
+            setPermissionValidated(true)
+            setMissingPermissions([])
+          }
+        } else {
+          // No app selected yet - skip permission validation
+          setPermissionValidated(true)
+          setMissingPermissions([])
+        }
         
         if (isSEEEApp) {
           // Try to find SEEE section (ID 43105) in available sections
@@ -272,6 +334,8 @@ export default function StartupInitializer() {
     setAccessControlStrategy,
     setAllowedPatrolIds,
     setAllowedEventIds,
+    setPermissionValidated,
+    setMissingPermissions,
   ])
 
   return null
