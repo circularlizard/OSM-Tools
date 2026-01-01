@@ -1,13 +1,10 @@
 "use client";
-
-import Link from "next/link";
 import { AlertCircle, CalendarDays } from "lucide-react";
 import type { Event } from "@/lib/schemas";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EventsListSkeleton } from "@/components/domain/EventsListSkeleton";
 import { EventCard } from "@/components/domain/EventCard";
-import { EventsTable } from "@/components/domain/EventsTable";
 
 interface ExpeditionEventsViewProps {
   events: Event[];
@@ -59,16 +56,11 @@ export function ExpeditionEventsView({
       {events.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground">No events found.</Card>
       ) : (
-        <>
-          <div className="md:hidden grid gap-4">
-            {events.map((event) => (
-              <EventCard key={event.eventid} event={event} />
-            ))}
-          </div>
-          <div className="hidden md:block">
-            <EventsTable events={events} />
-          </div>
-        </>
+        <div className="grid gap-4 md:gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {events.map((event) => (
+            <EventCard key={event.eventid} event={event} />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -84,11 +76,6 @@ function Header({ title, description }: { title: string; description: string }) 
         </h1>
         <p className="mt-1 text-sm md:text-base opacity-90">{description}</p>
       </div>
-      <Link href="/dashboard/events">
-        <Button variant="secondary" className="hidden md:inline-flex">
-          View Events
-        </Button>
-      </Link>
     </div>
   );
 }
