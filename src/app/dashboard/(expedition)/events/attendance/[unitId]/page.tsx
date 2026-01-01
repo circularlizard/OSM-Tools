@@ -153,24 +153,26 @@ export default function UnitDetailPage() {
 
   return (
     <div className="p-4 md:p-6">
-      <Link href="/dashboard/events/attendance">
-        <Button variant="ghost" className="mb-4 pl-0">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="mb-6 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
+        <Link
+          href="/dashboard/events/attendance"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground/90 transition-opacity hover:text-primary-foreground hover:opacity-100"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to Attendance Overview
-        </Button>
-      </Link>
-
-      <div className="mb-6 rounded-lg bg-primary text-primary-foreground px-4 py-3">
-        <h1 className="text-3xl font-bold">{unitName}</h1>
-        <div className="flex items-center gap-4 text-sm mt-1 opacity-90">
-          <span className="flex items-center gap-1">
-            <Users className="h-4 w-4" aria-hidden />
-            {peopleCount} {peopleCount === 1 ? 'person' : 'people'}
-          </span>
-          <span className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" aria-hidden />
-            {eventGroups.length} {eventGroups.length === 1 ? 'event' : 'events'}
-          </span>
+        </Link>
+        <div className="mt-2">
+          <h1 className="text-3xl font-bold">{unitName}</h1>
+          <div className="flex items-center gap-4 text-sm mt-1 opacity-90">
+            <span className="flex items-center gap-1">
+              <Users className="h-4 w-4" aria-hidden />
+              {peopleCount} {peopleCount === 1 ? 'person' : 'people'}
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" aria-hidden />
+              {eventGroups.length} {eventGroups.length === 1 ? 'event' : 'events'}
+            </span>
+          </div>
         </div>
       </div>
 

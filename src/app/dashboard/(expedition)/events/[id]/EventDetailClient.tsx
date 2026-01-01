@@ -6,12 +6,12 @@
 
 import { useMemo, useState } from 'react'
 import { useEventDetail } from '@/hooks/useEventDetail'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Button } from '@/components/ui/button'
 import { useEventSummaryCache } from '@/hooks/useEventSummaryCache'
 import { usePatrolMap } from '@/hooks/usePatrolMap'
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 // Using event summary for participant-related info (custom fields names live here)
 
 interface Props {
@@ -189,20 +189,86 @@ export default function EventDetailClient({ eventId }: Props) {
     return <div className="text-red-600">Failed to load event details.</div>
   }
 
+  const summary: any = getSummaryById(eventId) || data.summary || {}
+  const details: any = data.details || {}
+  const metaEvent = summary?.meta?.event || {}
+  const name = metaEvent?.name || summary?.name || details?.name || `Event ${eventId}`
+  const start = metaEvent?.startdate || summary?.startdate || details?.startdate || summary?.date || ''
+  const end = metaEvent?.enddate || summary?.enddate || details?.enddate || ''
+  const starttime = metaEvent?.starttime || ''
+  const endtime = metaEvent?.endtime || ''
+  const location = metaEvent?.location || summary?.location || details?.location || ''
+  const status = metaEvent?.approval_status || details?.approval_status || ''
+  const publicnotes = metaEvent?.publicnotes || ''
+  const cost = metaEvent?.cost ?? summary?.cost ?? details?.cost ?? 0
+
+  const startDisplay = start || 'Date TBC'
+  const startWithTime = [startDisplay, starttime].filter(Boolean).join(' • ')
+  const hasEndInfo = Boolean(end || endtime)
+  const endDisplay = end || startDisplay
+  const endWithTime = hasEndInfo ? [endDisplay || 'Date TBC', endtime].filter(Boolean).join(' • ') : ''
+  const costNumber = Number(cost)
+  const costDisplay = Number.isFinite(costNumber) ? `£${costNumber.toFixed(2)}` : String(cost ?? '—')
+
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Back link at very top with comfortable spacing */}
-      <div className="flex items-center">
-        <Link href="/dashboard/events">
-          <Button variant="ghost" className="pl-0">← Back to Events</Button>
+      <div className="mb-6 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
+        <Link
+          href="/dashboard/events"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground/90 transition-opacity hover:text-primary-foreground hover:opacity-100"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Back to Events
         </Link>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight">{name}</h1>
       </div>
 
-      <Card>
-        <CardHeader className="gap-2">
-          <Header eventId={eventId} data={data} getSummaryById={getSummaryById} />
-        </CardHeader>
-      </Card>
+      <div className="rounded-2xl border border-border/70 bg-card/90 px-5 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)] space-y-4 md:grid md:grid-cols-2 md:gap-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Schedule</p>
+          <div className="text-sm text-foreground space-y-1">
+            <p>
+              <span className="font-semibold text-muted-foreground">Start:</span>{' '}
+              <span>{startWithTime}</span>
+            </p>
+            {hasEndInfo ? (
+              <p>
+                <span className="font-semibold text-muted-foreground">End:</span>{' '}
+                <span>{endWithTime}</span>
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="space-y-2 text-sm text-foreground md:text-right">
+          <p>
+            <span className="font-semibold text-muted-foreground">Location:</span>{' '}
+            <span>{location || 'Location TBC'}</span>
+          </p>
+          <p>
+            <span className="font-semibold text-muted-foreground">Cost:</span>{' '}
+            <span>{costDisplay}</span>
+          </p>
+          {status ? (
+            <p>
+              <span className="font-semibold text-muted-foreground">Status:</span>{' '}
+              <span>{status}</span>
+            </p>
+          ) : null}
+        </div>
+        {publicnotes ? (
+          <div className="md:col-span-2 border-t border-border/60 pt-4">
+            <details className="group rounded-lg bg-muted/30 p-4">
+              <summary className="cursor-pointer select-none text-sm font-medium text-muted-foreground">
+                Event Description
+              </summary>
+              <div
+                className="mt-3 prose prose-sm max-w-none text-foreground"
+                dangerouslySetInnerHTML={{ __html: publicnotes }}
+              />
+            </details>
+          </div>
+        ) : null}
+      </div>
 
       <Card className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -295,57 +361,6 @@ export default function EventDetailClient({ eventId }: Props) {
           </Card>
         ))}
       </div>
-    </div>
-  )
-}
-
-function Header({
-  eventId,
-  data,
-  getSummaryById,
-}: {
-  eventId: number
-  data: any
-  getSummaryById: (id: number) => any
-}) {
-  const summary = getSummaryById(eventId) || data?.summary || {}
-  const details = data?.details || {}
-
-  // Attempt to derive header fields from summary/details with graceful fallback
-  const metaEvent = summary?.meta?.event || {}
-  const name = metaEvent?.name || summary?.name || details?.name || `Event ${eventId}`
-  const start = metaEvent?.startdate || summary?.startdate || details?.startdate || summary?.date || ''
-  const end = metaEvent?.enddate || summary?.enddate || details?.enddate || ''
-  const starttime = metaEvent?.starttime || ''
-  const endtime = metaEvent?.endtime || ''
-  const location = metaEvent?.location || summary?.location || details?.location || ''
-  // Only show meaningful approval status; do not surface API success flag
-  const status = metaEvent?.approval_status || details?.approval_status || ''
-  const publicnotes = metaEvent?.publicnotes || ''
-  const cost = metaEvent?.cost ?? summary?.cost ?? details?.cost ?? 0
-
-  const dateRange = (() => {
-    const date = start && end && start !== end ? `${start} - ${end}` : start || end || ''
-    const time = starttime && endtime ? `${starttime} - ${endtime}` : starttime || endtime || ''
-    return [date, time].filter(Boolean).join(' • ')
-  })()
-
-  return (
-    <div className="w-full">
-      <CardTitle data-testid="event-detail-title" className="text-2xl md:text-3xl font-semibold tracking-tight">{name}</CardTitle>
-      <CardDescription>
-        {[dateRange, location ? `Location: ${location}` : null, `Cost: £${Number(cost).toFixed(2)}`, status ? `Status: ${status}` : null]
-          .filter(Boolean)
-          .join(' • ')}
-      </CardDescription>
-      {publicnotes ? (
-        <CardContent>
-          <details open={false}>
-            <summary className="cursor-pointer select-none text-sm text-muted-foreground">Event Description</summary>
-            <div className="mt-3 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: publicnotes }} />
-          </details>
-        </CardContent>
-      ) : null}
     </div>
   )
 }
