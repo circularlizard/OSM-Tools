@@ -216,8 +216,8 @@ export function DataLoadingBanner() {
         aria-expanded={!collapsed}
         aria-controls="data-loading-banner"
         onClick={() => setCollapsed((prev) => !prev)}
-        className={`group absolute left-1/2 -translate-x-1/2 px-3 py-1.5 text-[11px] font-semibold shadow-sm transition-all duration-300 border ${
-          collapsed ? `top-0 translate-y-0 ${collapsedHandleTone}` : `bottom-0 translate-y-full ${expandedHandleTone}`
+        className={`group absolute left-1/2 -translate-x-1/2 px-3 py-1.5 text-[11px] font-semibold shadow-sm transition-all duration-500 ease-out border bottom-0 ${
+          collapsed ? `translate-y-1/2 ${collapsedHandleTone}` : `translate-y-full ${expandedHandleTone}`
         } rounded-b-md`}
       >
         <span className="flex items-center gap-1">

@@ -1,3 +1,4 @@
+import { appendFile } from 'fs/promises'
 import { NextRequest, NextResponse } from 'next/server'
 import { scheduleRequest, parseRateLimitHeaders } from '@/lib/bottleneck'
 import {
@@ -98,6 +99,34 @@ interface ApiMapEntry {
 
 const OSM_API_BASE = process.env.OSM_API_URL || 'https://www.onlinescoutmanager.co.uk'
 const USE_MSW = process.env.NEXT_PUBLIC_USE_MSW === 'true'
+const MOCK_UPSTREAM_LOG_PATH = process.env.MOCK_UPSTREAM_LOG_PATH
+
+function logMockModeEvent(event: 'mock_served' | 'mock_missing' | 'upstream_fallback', details: {
+  path: string
+  action?: string | null
+  targetUrl?: string
+}) {
+  const { path, action, targetUrl } = details
+  const actionSuffix = action ? ` (action=${action})` : ''
+  if (event === 'mock_served') {
+    console.info(`[Proxy][MockMode] Served mock data for ${path}${actionSuffix}`)
+    return
+  }
+  if (event === 'mock_missing') {
+    console.error(`[Proxy][MockMode] Missing handler for ${path}${actionSuffix}. Failing fast to avoid upstream traffic.`)
+    return
+  }
+  if (event === 'upstream_fallback' && targetUrl) {
+    const message = `[Proxy][MockMode] Upstream fetch executed for ${path}${actionSuffix} -> ${targetUrl}`
+    console.warn(message)
+    if (MOCK_UPSTREAM_LOG_PATH) {
+      const line = `[${new Date().toISOString()}] ${message}\n`
+      void appendFile(MOCK_UPSTREAM_LOG_PATH, line).catch((err) => {
+        console.error('[Proxy][MockMode] Failed to write upstream log entry', err)
+      })
+    }
+  }
+}
 
 const USER_CACHE_TTL_SECONDS = 60 * 60
 
@@ -387,6 +416,7 @@ export async function GET(
         ? pickStartupDataForMockUser(session.user?.id)
         : findMockData(path, request.nextUrl.searchParams)
       if (mockData) {
+        logMockModeEvent('mock_served', { path, action })
         logProxyRequest({
           method: 'GET',
           path,
@@ -401,21 +431,24 @@ export async function GET(
             ...(await buildSafetyHeaders({ targetUrl, cache: 'BYPASS' })),
           },
         })
-      } else {
-        // No mock data found
-        return NextResponse.json(
-          {
-            error: 'MOCK_DATA_NOT_FOUND',
-            message: `No mock data available for ${path}`,
-            path,
-          },
-          { status: 404 }
-        )
       }
+
+      logMockModeEvent('mock_missing', { path, action })
+      return NextResponse.json(
+        {
+          error: 'MOCK_DATA_NOT_FOUND',
+          message: `No mock data available for ${path}`,
+          path,
+        },
+        { status: 503 }
+      )
     }
 
     // Log the API request for debugging
     const queryParams = Object.fromEntries(request.nextUrl.searchParams)
+    if (USE_MSW) {
+      logMockModeEvent('upstream_fallback', { path, action: queryParams.action, targetUrl })
+    }
     logApiRequest('GET', path, queryParams)
 
     const bypassCache = request.headers.get('X-Cache-Bypass') === '1'

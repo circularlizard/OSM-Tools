@@ -57,15 +57,14 @@ class MockRedis {
 
   pipeline() {
     const ops: Array<() => void> = [];
-    const self = this;
     return {
-      set(key: string, value: string) {
+      set: (key: string, value: string) => {
         ops.push(() => {
-          self.store.set(key, value);
+          this.store.set(key, value);
         });
         return this;
       },
-      async exec() {
+      exec: async () => {
         ops.forEach((op) => op());
         return [];
       },
@@ -103,7 +102,8 @@ class MockRedis {
 
 const instances: MockRedis[] = [];
 
-const MockRedisConstructor = function (..._args: unknown[]) {
+const MockRedisConstructor = function (...args: unknown[]) {
+  void args;
   const instance = new MockRedis();
   instances.push(instance);
   return instance;
