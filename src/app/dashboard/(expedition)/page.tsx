@@ -91,6 +91,7 @@ export default function DashboardPage() {
   
   const currentSection = useStore((s) => s.currentSection);
   const selectedSections = useStore((s) => s.selectedSections);
+  const currentApp = useStore((s) => s.currentApp);
   const hasHydrated = useStore((s) => s._hasHydrated);
   
   // Use React Query hook - single source of truth for events data
@@ -141,7 +142,8 @@ export default function DashboardPage() {
   }
 
   // If no section is selected (after hydration), show the section selector immediately (no flash)
-  const needsSectionSelection = !currentSection && (!selectedSections || selectedSections.length === 0);
+  const isExpeditionApp = currentApp === "expedition";
+  const needsSectionSelection = !isExpeditionApp && !currentSection && (!selectedSections || selectedSections.length === 0);
 
   if (needsSectionSelection) {
     return <SectionSelector redirectTo="/dashboard" />;
@@ -154,11 +156,19 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
           {sectionDisplay && (
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-sm">
               {sectionDisplay.isMultiple ? (
                 <span>{sectionDisplay.count} sections selected</span>
               ) : (
-                <span>{sectionDisplay.name}</span>
+                <>
+                  <span>{sectionDisplay.name}</span>
+                  {isExpeditionApp && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/70" aria-hidden />
+                      Read-only
+                    </span>
+                  )}
+                </>
               )}
             </p>
           )}

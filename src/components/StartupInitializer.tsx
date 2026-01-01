@@ -8,6 +8,7 @@ import { validateAppPermissions } from '@/lib/permissions'
 import type { OAuthData } from '@/lib/redis'
 import type { OsmPermissions } from '@/lib/permissions'
 import type { AppKey } from '@/types/app'
+import { SEEE_FALLBACK_SECTION, SEEE_SECTION_ID } from '@/lib/seee'
 
 const REMEMBER_KEY = 'seee.sectionSelection.v1'
 
@@ -32,8 +33,6 @@ interface StartupRole {
   permissions?: OsmPermissions
   [key: string]: unknown
 }
-
-const SEEE_SECTION_ID = '43105'
 
 /**
  * StartupInitializer
@@ -272,20 +271,16 @@ export default function StartupInitializer() {
         const sectionIds = new Set(currentAvailable.map((s: { sectionId: string }) => s.sectionId))
         
         if (isSEEEApp) {
-          // Try to find SEEE section (ID 43105) in available sections
-          const seeeSection = currentAvailable.find((s: { sectionId: string }) => s.sectionId === SEEE_SECTION_ID)
-          if (seeeSection) {
-            setCurrentSection({
-              sectionId: seeeSection.sectionId,
-              sectionName: seeeSection.sectionName,
-              sectionType: seeeSection.sectionType,
-              termId: seeeSection.termId,
-            })
-            if (process.env.NODE_ENV !== 'production') {
-              console.debug('[StartupInitializer] Auto-selected SEEE section for app:', currentApp)
-            }
-            return // Skip section picker for SEEE apps
+          // Try to find SEEE section (ID 43105) in available sections, fall back to static metadata.
+          const seeeSection = currentAvailable.find((s: { sectionId: string }) => s.sectionId === SEEE_SECTION_ID) ?? {
+            ...SEEE_FALLBACK_SECTION,
+            termId: undefined,
           }
+          setCurrentSection(seeeSection)
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('[StartupInitializer] Auto-selected SEEE section for app:', currentApp, 'using', seeeSection.sectionName)
+          }
+          return // Skip section picker for SEEE apps
         }
         
         // Auto-select when exactly one section is available
