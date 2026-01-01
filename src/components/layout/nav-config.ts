@@ -131,13 +131,13 @@ const planningNav: NavSection[] = [
     items: [
       {
         label: "Members",
-        href: "/dashboard/planning/members",
+        href: "/dashboard/members",
         icon: UsersIcon,
         requiresAdmin: true,
       },
       {
         label: "Member Data Issues",
-        href: "/dashboard/planning/members/issues",
+        href: "/dashboard/members/issues",
         icon: AlertTriangle,
         requiresAdmin: true,
       },

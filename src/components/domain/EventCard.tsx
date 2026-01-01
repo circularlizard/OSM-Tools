@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 
 interface EventCardProps {
   event: Event
+  href?: string
 }
 
 type EventStatus = 'upcoming' | 'active' | 'past'
@@ -43,7 +44,7 @@ const resolveStatus = (event: Event): EventStatus => {
   return 'upcoming'
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, href }: EventCardProps) {
   const prefetchSummary = usePrefetchEventSummary()
   const viewportRef = useViewportPrefetchSummary(event.eventid)
   const totalAttendance = event.yes ?? 0
@@ -55,9 +56,11 @@ export function EventCard({ event }: EventCardProps) {
   }
 
   const status = resolveStatus(event)
+  const targetHref = href ?? `/dashboard/events/${event.eventid}`
+
   return (
     <Link
-      href={`/dashboard/events/${event.eventid}`}
+      href={targetHref}
       className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
       prefetch
       onMouseEnter={() => prefetchSummary(event.eventid)}
