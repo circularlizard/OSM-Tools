@@ -21,15 +21,21 @@ This plan sequencesthe remaining work to align the four-application architecture
 - **Objective:** Deliver the admin planning shell focused on member/event prep, using SEEE section defaults and broader scopes. @docs/implementation/functional-review.md#54-64 @docs/implementation/multi-app-part-2.md#57-60
 - **Specification Updates:**
   - Define core Planner workflows (patrol refresh, walking/tent group management, event preparation) and required scopes.
-  - Add navigation/IA for planner-exclusive views.
+  - Align the Planner navigation IA with Expedition Viewer (events list + consolidated attendees) while noting the planner-only dashboard remains separate.
+  - Add requirements for reusing Platform Admin's patrol data view inside Planner so administrators do not need to switch apps.
+  - Move the member data quality views (members list + issues) from the Data Quality app specification into the Planner specification to reflect their new destination.
   - Document Redis cache expectations and how planner seeds patrol cache for other apps.
 - **Implementation Tasks:**
-  - Build Planner layout with navigation and context-aware hydration queue.
+  - Build Planner layout with navigation and context-aware hydration queue, mirroring Expedition Viewer views for events and consolidated attendees.
+  - Integrate the Platform Admin patrol data view (including cached patrol mapping indicators) so planners can run patrol audits without leaving the app.
+  - Embed member data quality views sourced from the existing Data Quality app, keeping route guards/admin scopes intact.
   - Implement patrol refresh tooling and integration with flexi/badge adapters.
   - Ensure cache priming hooks run post login and on demand.
 - **E2E Updates:**
   - Author scenarios covering planner login, navigation, patrol refresh success/failure, and cache priming visibility.
   - Cover resilience behaviors (rate-limit backoff indications, hydration progress bars).
+
+_Next:_ Once navigation/view parity is locked in, extend the specification to capture walking group and tent group management (column mapping requirements, adapter expectations, admin workflows) before beginning the corresponding implementation tasks.
 
 ## Phase 3: OSM Data Quality Viewer
 - **Objective:** Move member issues/data quality tooling into its dedicated multi-section app with section selector and robust cache usage. @docs/implementation/functional-review.md#65-79 @docs/implementation/multi-app-part-2.md#57-60
