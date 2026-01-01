@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useEvents } from './useEvents'
 import { usePrefetchEventSummary } from './usePrefetchEventSummary'
 
@@ -15,6 +15,19 @@ export function useAttendanceHydration() {
   const failedIdsRef = useRef<Set<number>>(new Set())
   const processedIdsRef = useRef<Set<number>>(new Set())
   const [retryToken, setRetryToken] = useState(0)
+  const [statsSnapshot, setStatsSnapshot] = useState({
+    hydrated: 0,
+    failed: 0,
+    processed: 0,
+  })
+
+  const emitStatsSnapshot = useCallback(() => {
+    setStatsSnapshot({
+      hydrated: hydratedIdsRef.current.size,
+      failed: failedIdsRef.current.size,
+      processed: processedIdsRef.current.size,
+    })
+  }, [])
 
   const uniqueEventIds = useMemo(() => {
     const ids = events.map((e) => Number(e.eventid)).filter((id): id is number => Boolean(id))
@@ -33,6 +46,7 @@ export function useAttendanceHydration() {
     }
 
     hydratingRef.current = true
+    emitStatsSnapshot()
 
     const hydrate = async () => {
       for (const eventId of eventIds) {
@@ -45,16 +59,18 @@ export function useAttendanceHydration() {
           failedIdsRef.current.add(eventId)
         } finally {
           processedIdsRef.current.add(eventId)
+          emitStatsSnapshot()
         }
       }
       hydratingRef.current = false
+      emitStatsSnapshot()
     }
 
     void hydrate()
-  }, [eventsLoading, prefetchSummary, retryToken, uniqueEventIds])
+  }, [emitStatsSnapshot, eventsLoading, prefetchSummary, retryToken, uniqueEventIds])
 
   const totalEvents = uniqueEventIds.length
-  const processedCount = processedIdsRef.current.size
+  const processedCount = statsSnapshot.processed
   const isHydrating = !eventsLoading && totalEvents > 0 && processedCount < totalEvents
 
   const retryFailed = () => {
@@ -64,13 +80,14 @@ export function useAttendanceHydration() {
     failedIdsRef.current.forEach((id) => {
       processedIdsRef.current.delete(id)
     })
+    emitStatsSnapshot()
     setRetryToken((token) => token + 1)
   }
 
   return {
     isHydrating,
-    hydratedCount: hydratedIdsRef.current.size,
-    failedCount: failedIdsRef.current.size,
+    hydratedCount: statsSnapshot.hydrated,
+    failedCount: statsSnapshot.failed,
     processedCount,
     totalEvents,
     retryFailed,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useDataSourceProgress, type DataSourceProgress } from "@/store/use-store";
 
 /**
@@ -12,6 +13,8 @@ import { useDataSourceProgress, type DataSourceProgress } from "@/store/use-stor
  */
 export function DataLoadingBanner() {
   const dataSourceProgress = useDataSourceProgress();
+  const [collapsed, setCollapsed] = useState(false);
+  const collapseDelayMs = 5000;
 
   // Calculate overall progress across all data sources
   const { sources, totalItems, completedItems, isLoading, isComplete, hasError, errorMessages } = useMemo(() => {
@@ -41,6 +44,35 @@ export function DataLoadingBanner() {
 
     return { sources, totalItems, completedItems, isLoading, isComplete, hasError, errorMessages };
   }, [dataSourceProgress]);
+
+  const shouldAutoCollapse = sources.length > 0 && !hasError && !isLoading && isComplete;
+
+  useEffect(() => {
+    if (hasError || isLoading) {
+      setCollapsed(false);
+      return;
+    }
+    if (!shouldAutoCollapse) {
+      return;
+    }
+    if (!collapsed) {
+      const timer = window.setTimeout(() => setCollapsed(true), collapseDelayMs);
+      return () => window.clearTimeout(timer);
+    }
+    return;
+  }, [collapsed, hasError, isLoading, shouldAutoCollapse, totalItems, completedItems, collapseDelayMs]);
+
+  const indicatorLabel = hasError
+    ? "Data error"
+    : isLoading
+    ? "Loading data…"
+    : "Data synced";
+
+  const indicatorTone = hasError
+    ? "bg-destructive/15 text-destructive border-destructive/40"
+    : isLoading
+    ? "bg-primary/10 text-primary border-primary/30"
+    : "bg-muted/70 text-muted-foreground border-muted-foreground/20";
 
   // Hide only when we have no data sources registered (idle state)
   if (sources.length === 0) {
@@ -80,88 +112,120 @@ export function DataLoadingBanner() {
       .join(' • ');
   };
 
+  const collapsedHandleTone = hasError
+    ? "bg-destructive/60 text-destructive-foreground border-destructive/70"
+    : isComplete
+    ? "bg-green-600/50 text-green-50 border-green-500/70"
+    : "bg-muted/70 text-muted-foreground border-border/70";
+
+  const expandedHandleTone = "bg-muted/90 text-muted-foreground border-border/70";
+
   return (
-    <div
-      className={`border-b ${
-        hasError
-          ? "bg-destructive/10 border-destructive"
-          : isComplete
-          ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-          : "bg-muted/40 border-border"
-      }`}
-    >
-      <div className="px-4 py-2 flex items-center justify-between gap-3 text-xs md:text-sm">
-        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 text-muted-foreground">
-          <span className="font-medium text-foreground flex items-center gap-2">
-            {isLoading && (
-              <span
-                className="inline-block h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin"
-                aria-label="Loading"
-              />
-            )}
-            {isComplete && (
-              <svg
-                className="h-4 w-4 text-green-600 dark:text-green-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            )}
-            {hasError && (
-              <svg
-                className="h-4 w-4 text-destructive"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            )}
-            Data Loading
-          </span>
-          <span className={hasError ? "text-destructive" : isComplete ? "text-green-700 dark:text-green-400" : ""}>
-            {getStatusMessage()}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 min-w-[180px]">
-          <div className="hidden md:block text-muted-foreground text-xs">
-            {getSourceSummary()}
-          </div>
-          <div
-            className="w-32 h-1.5 bg-muted rounded-full overflow-hidden"
-            role="progressbar"
-            aria-valuenow={percentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Data loading progress"
-          >
-            <div
-              className={`h-full transition-all duration-300 ${
-                hasError
-                  ? "bg-destructive"
-                  : isComplete
-                  ? "bg-green-600 dark:bg-green-500"
-                  : "bg-primary"
-              }`}
-              style={{ width: `${percentage}%` }}
-            />
+    <div className="relative">
+      <div
+        id="data-loading-banner"
+        className={`overflow-hidden transition-[max-height] duration-500 ease-out ${
+          collapsed ? "max-h-[8px]" : "max-h-32"
+        }`}
+      >
+        <div
+          className={`border-b ${
+            hasError
+              ? "bg-destructive/10 border-destructive"
+              : isComplete
+              ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+              : "bg-muted/40 border-border"
+          }`}
+        >
+          <div className="px-4 py-2 text-xs md:text-sm">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 text-muted-foreground">
+                <span className="font-medium text-foreground flex items-center gap-2">
+                  {isLoading && (
+                    <span
+                      className="inline-block h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin"
+                      aria-label="Loading"
+                    />
+                  )}
+                  {isComplete && (
+                    <svg
+                      className="h-4 w-4 text-green-600 dark:text-green-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                  {hasError && (
+                    <svg
+                      className="h-4 w-4 text-destructive"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  )}
+                  Data Loading
+                </span>
+                <span className={hasError ? "text-destructive" : isComplete ? "text-green-700 dark:text-green-400" : ""}>
+                  {getStatusMessage()}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 min-w-[180px]">
+                <div className="hidden md:block text-muted-foreground text-xs">{getSourceSummary()}</div>
+                <div
+                  className="w-32 h-1.5 bg-muted rounded-full overflow-hidden"
+                  role="progressbar"
+                  aria-valuenow={percentage}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Data loading progress"
+                >
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      hasError
+                        ? "bg-destructive"
+                        : isComplete
+                        ? "bg-green-600 dark:bg-green-500"
+                        : "bg-primary"
+                    }`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      <button
+        type="button"
+        aria-expanded={!collapsed}
+        aria-controls="data-loading-banner"
+        onClick={() => setCollapsed((prev) => !prev)}
+        className={`group absolute left-1/2 -translate-x-1/2 px-3 py-1.5 text-[11px] font-semibold shadow-sm transition-all duration-300 border ${
+          collapsed ? `top-0 translate-y-0 ${collapsedHandleTone}` : `bottom-0 translate-y-full ${expandedHandleTone}`
+        } rounded-b-md`}
+      >
+        <span className="flex items-center gap-1">
+          {collapsed ? <ChevronDown className="h-3 w-3" aria-hidden /> : <ChevronUp className="h-3 w-3" aria-hidden />}
+          <span>{indicatorLabel}</span>
+        </span>
+        <span className="sr-only">Toggle data loading banner</span>
+      </button>
     </div>
   );
 }

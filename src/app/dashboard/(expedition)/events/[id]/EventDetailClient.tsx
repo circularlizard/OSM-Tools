@@ -21,7 +21,7 @@ interface Props {
 export default function EventDetailClient({ eventId }: Props) {
   const { data, isLoading, isError } = useEventDetail(eventId)
   const [unitFilter, setUnitFilter] = useState<string>('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string>('Yes')
   const [sortKey, setSortKey] = useState<string>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const { getSummaryById } = useEventSummaryCache()
