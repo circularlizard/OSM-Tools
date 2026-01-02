@@ -15,7 +15,8 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
     return null;
   }
 
-  const { id } = await params;
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
   if (!id) {
     notFound();
   }

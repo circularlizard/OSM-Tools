@@ -4,7 +4,7 @@ import { getAuthConfig } from "@/lib/auth";
 import { MemberDetailClient } from "./MemberDetailClient";
 
 interface MemberDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function MemberDetailPage({ params }: MemberDetailPageProps) {
@@ -14,7 +14,8 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
     return null;
   }
 
-  const { id } = params;
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   if (!id) {
     notFound();
   }
