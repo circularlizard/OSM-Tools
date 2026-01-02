@@ -133,6 +133,19 @@ describe('member-issues', () => {
       expect(hasNoContactInformation(member)).toBe(false)
     })
 
+    it('returns false when member contact only supplies address1', () => {
+      const member = createMember({
+        primaryContact1: null,
+        primaryContact2: null,
+        emergencyContact: null,
+        memberContact: createContact(
+          { phone1: '', phone2: '', email1: '', email2: '', address1: '123 Main St' },
+          'member'
+        ),
+      })
+      expect(hasNoContactInformation(member)).toBe(false)
+    })
+
     it('returns false when only emergency contact has data', () => {
       const member = createMember({
         memberContact: null,
@@ -337,6 +350,38 @@ describe('member-issues', () => {
       const result = hasDuplicateEmergencyContact(member)
       expect(result.isDuplicate).toBe(false)
     })
+
+    it('detects duplicate via email1 match only', () => {
+      const sharedEmail = 'match@example.test'
+      const member = createMember({
+        emergencyContact: createContact({ email1: sharedEmail, email2: '', phone1: '', phone2: '' }),
+        primaryContact1: createContact({ email1: sharedEmail, email2: '', phone1: '', phone2: '' }),
+      })
+      const result = hasDuplicateEmergencyContact(member)
+      expect(result.isDuplicate).toBe(true)
+      expect(result.duplicateOf).toBe('Primary Contact 1')
+    })
+
+    it('detects duplicate via phone1 match only', () => {
+      const sharedPhone = '0123456789'
+      const member = createMember({
+        emergencyContact: createContact({ email1: '', email2: '', phone1: sharedPhone, phone2: '' }),
+        primaryContact1: createContact({ email1: '', email2: '', phone1: sharedPhone, phone2: '' }),
+      })
+      const result = hasDuplicateEmergencyContact(member)
+      expect(result.isDuplicate).toBe(true)
+      expect(result.duplicateOf).toBe('Primary Contact 1')
+    })
+
+    it('returns false when email1 differs between contacts', () => {
+      const member = createMember({
+        emergencyContact: createContact({ email1: 'a@example.test', email2: '', phone1: '', phone2: '' }),
+        primaryContact1: createContact({ email1: 'b@example.test', email2: '', phone1: '', phone2: '' }),
+        primaryContact2: createContact({ email1: 'c@example.test', email2: '', phone1: '', phone2: '' }),
+      })
+      const result = hasDuplicateEmergencyContact(member)
+      expect(result.isDuplicate).toBe(false)
+    })
   })
 
   describe('hasMissingMemberContactDetails', () => {
@@ -460,6 +505,20 @@ describe('member-issues', () => {
       expect(lowIssues.map((i) => i.type)).toContain('missing-photo-consent')
       expect(lowIssues.map((i) => i.type)).toContain('missing-medical-consent')
     })
+
+    it('includes correct descriptions for critical issues', () => {
+      const member = createMember({
+        memberContact: null,
+        primaryContact1: null,
+        primaryContact2: null,
+        emergencyContact: null,
+      })
+      const issues = getMemberIssues(member)
+      const noContactInfo = issues.find((i) => i.type === 'no-contact-info')
+      const noEmailOrPhone = issues.find((i) => i.type === 'no-email-or-phone')
+      expect(noContactInfo?.description).toBe('No contact information available')
+      expect(noEmailOrPhone?.description).toBe('No email address or phone number available')
+    })
   })
 
   describe('getMembersWithIssues', () => {
@@ -517,6 +576,16 @@ describe('member-issues', () => {
       expect(counts.missingMemberContact).toBe(0)
       expect(counts.missingPhotoConsent).toBe(0)
       expect(counts.missingMedicalConsent).toBe(0)
+    })
+
+    it('counts missingMemberContact accurately', () => {
+      const members = [
+        createMember({ id: '1', memberContact: null }),
+        createMember({ id: '2', memberContact: createContact({ email1: '', email2: '', phone1: '', phone2: '' }) }),
+        createMember({ id: '3' }),
+      ]
+      const counts = getIssueCounts(members)
+      expect(counts.missingMemberContact).toBe(2)
     })
   })
 })
