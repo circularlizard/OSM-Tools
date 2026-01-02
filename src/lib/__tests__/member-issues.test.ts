@@ -13,27 +13,34 @@ import {
 } from '../member-issues'
 import type { NormalizedMember, NormalizedContact } from '../schemas'
 
-let contactCounter = 0
-const createContact = (overrides?: Partial<NormalizedContact>): NormalizedContact => {
-  contactCounter++
-  return {
-    firstName: 'John',
-    lastName: 'Doe',
-    address1: '123 Main St',
-    address2: '',
-    address3: '',
-    address4: '',
-    postcode: 'AB12 3CD',
-    phone1: `0123456789${contactCounter}`,
-    phone2: '',
-    email1: `contact${contactCounter}@example.com`,
-    email2: '',
-    ...overrides,
-  }
+const baseContact: NormalizedContact = {
+  firstName: 'Contact',
+  lastName: 'Person',
+  address1: '',
+  address2: '',
+  address3: '',
+  address4: '',
+  postcode: '',
+  phone1: '',
+  phone2: '',
+  email1: '',
+  email2: '',
 }
 
+const createContact = (
+  overrides?: Partial<NormalizedContact>,
+  label = 'contact'
+): NormalizedContact => ({
+  ...baseContact,
+  firstName: `${label}-first`,
+  lastName: `${label}-last`,
+  phone1: `${label}-phone1`,
+  email1: `${label}@example.test`,
+  ...overrides,
+})
+
 const createMember = (overrides?: Partial<NormalizedMember>): NormalizedMember => ({
-  id: '123',
+  id: 'member-id',
   firstName: 'Test',
   lastName: 'Member',
   fullName: 'Test Member',
@@ -48,10 +55,13 @@ const createMember = (overrides?: Partial<NormalizedMember>): NormalizedMember =
   startedSection: '2022-01-01',
   endDate: null,
   otherSections: [],
-  memberContact: createContact(),
-  primaryContact1: createContact({ firstName: 'Parent', lastName: 'One' }),
-  primaryContact2: createContact({ firstName: 'Parent', lastName: 'Two' }),
-  emergencyContact: createContact({ firstName: 'Emergency', lastName: 'Contact' }),
+  memberContact: createContact({}, 'member'),
+  primaryContact1: createContact({ firstName: 'Parent', lastName: 'One' }, 'primary1'),
+  primaryContact2: createContact({ firstName: 'Parent', lastName: 'Two' }, 'primary2'),
+  emergencyContact: createContact(
+    { firstName: 'Emergency', lastName: 'Contact' },
+    'emergency'
+  ),
   doctorName: 'Dr. Smith',
   doctorPhone: '01234567890',
   doctorAddress: '123 Medical Centre',
@@ -69,7 +79,7 @@ const createMember = (overrides?: Partial<NormalizedMember>): NormalizedMember =
 
 describe('member-issues', () => {
   beforeEach(() => {
-    contactCounter = 0
+    // no per-test contact state currently required
   })
 
   describe('hasNoContactInformation', () => {
@@ -340,24 +350,28 @@ describe('member-issues', () => {
   })
 
   describe('getMembersWithIssues', () => {
-    it('categorizes members by severity', () => {
-      const members = [
-        createMember({ id: '1' }),
-        createMember({ id: '2', emergencyContact: null }),
-        createMember({ id: '3', doctorName: null, doctorPhone: null, doctorAddress: null }),
-        createMember({ id: '4', consents: { photoConsent: false, medicalConsent: true } }),
-      ]
+    it('categorizes members by severity with minimal fixtures', () => {
+      const critical = createMember({ id: 'critical', emergencyContact: null })
+      const medium = createMember({
+        id: 'medium',
+        doctorName: null,
+        doctorPhone: null,
+        doctorAddress: null,
+      })
+      const low = createMember({
+        id: 'low',
+        consents: { photoConsent: false, medicalConsent: true },
+      })
 
-      const result = getMembersWithIssues(members)
-      expect(result.critical).toHaveLength(1)
-      expect(result.medium).toHaveLength(1)
-      expect(result.low).toHaveLength(1)
+      const result = getMembersWithIssues([critical, medium, low])
+      expect(result.critical).toEqual([critical])
+      expect(result.medium).toEqual([medium])
+      expect(result.low).toEqual([low])
       expect(result.all).toHaveLength(3)
     })
 
     it('returns empty arrays when no issues', () => {
-      const members = [createMember({ id: '1' }), createMember({ id: '2' })]
-      const result = getMembersWithIssues(members)
+      const result = getMembersWithIssues([createMember({ id: '1' })])
       expect(result.critical).toHaveLength(0)
       expect(result.medium).toHaveLength(0)
       expect(result.low).toHaveLength(0)
@@ -366,12 +380,11 @@ describe('member-issues', () => {
   })
 
   describe('getIssueCounts', () => {
-    it('counts all issue types correctly', () => {
+    it('counts targeted issue types', () => {
       const members = [
         createMember({ id: '1', emergencyContact: null }),
         createMember({ id: '2', doctorName: null, doctorPhone: null, doctorAddress: null }),
         createMember({ id: '3', consents: { photoConsent: false, medicalConsent: false } }),
-        createMember({ id: '4' }),
       ]
 
       const counts = getIssueCounts(members)
@@ -382,8 +395,7 @@ describe('member-issues', () => {
     })
 
     it('returns zero counts when no issues', () => {
-      const members = [createMember({ id: '1' })]
-      const counts = getIssueCounts(members)
+      const counts = getIssueCounts([createMember({ id: 'clean' })])
       expect(counts.noContactInfo).toBe(0)
       expect(counts.noEmailOrPhone).toBe(0)
       expect(counts.noEmergencyContact).toBe(0)
