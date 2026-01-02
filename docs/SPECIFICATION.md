@@ -108,6 +108,11 @@ The SEEE Event Planning app replaces the legacy "Administrator" role UI. It assu
 * **Accordion UX (REQ-PLAN-05):** Member issues must render as collapsible accordion sections whose headers show issue name, count, criticality indicator, and description.
 * **Issue Tables (REQ-PLAN-06):** Expanded sections must display sortable member tables (default sort: name) with color-coding per criticality, matching the Dec 2025 UX.
 * **Security (REQ-PLAN-07):** Member contact/medical data is sensitive and must never be persisted to localStorage.
+* **Member Detail View (REQ-PLAN-08):** Clicking a member in the Planner’s members list or data quality view must open `/dashboard/planning/members/[scoutId]`, showing:
+  * A breadcrumb/back control that respects the entry context (`from=members` or `from=issues`).
+  * Full member profile: patrol context, all contact cards (member + guardians + emergency), doctor/medical notes, consents.
+  * Inline highlighting of any detected data quality issues from `getMemberIssues`.
+  * Layout parity with other detail pages (primary card header, cards for structured data, responsive mobile cards).
 
 **Routes (canonical, admin only):**
 

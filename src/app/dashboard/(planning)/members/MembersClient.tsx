@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { 
   Camera, 
   Stethoscope, 
@@ -281,6 +283,7 @@ function MemberCard({ member, onClick }: { member: NormalizedMember; onClick?: (
  */
 export function MembersClient() {
   const { members, isLoading, isFetched, refresh } = useMembers()
+  const router = useRouter()
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'name', direction: 'asc' })
   
   const sortedMembers = useMemo(
@@ -318,6 +321,8 @@ export function MembersClient() {
     )
   }
   
+  const detailHref = (id: string) => `/dashboard/planning/members/${encodeURIComponent(id)}?from=members`
+
   return (
     <div className="space-y-4">
       {/* Summary stats */}
@@ -425,7 +430,7 @@ export function MembersClient() {
                   />
                 </th>
                 <th className="text-center p-4 font-semibold">
-                  Details
+                  Data
                 </th>
                 <th className="text-left p-4 font-semibold">
                   <SortableHeader 
@@ -450,7 +455,12 @@ export function MembersClient() {
                       <MemberLoadingState state={member.loadingState} />
                     </td>
                     <td className="p-4 font-medium">
-                      {member.lastName}, {member.firstName}
+                      <Link
+                        href={detailHref(member.id)}
+                        className="text-primary hover:underline"
+                      >
+                        {member.lastName}, {member.firstName}
+                      </Link>
                     </td>
                     <td className="p-4">
                       {age !== null ? `${age}` : '—'}
@@ -482,7 +492,11 @@ export function MembersClient() {
       {/* Mobile card view */}
       <div className="md:hidden space-y-3">
         {sortedMembers.map((member) => (
-          <MemberCard key={member.id} member={member} />
+          <MemberCard
+            key={member.id}
+            member={member}
+            onClick={() => router.push(detailHref(member.id))}
+          />
         ))}
       </div>
     </div>

@@ -1,14 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { AlertCircle, AlertTriangle, Info, ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react'
-import { useMembers } from '@/hooks/useMembers'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import {
-  getMemberIssues,
-  getMembersWithIssues,
-  getIssueCounts,
-} from '@/lib/member-issues'
+import { useMembers } from '@/hooks/useMembers'
+import { getMemberIssues, getMembersWithIssues, getIssueCounts } from '@/lib/member-issues'
 import type { NormalizedMember } from '@/lib/schemas'
 
 function SeverityBadge({ severity }: { severity: 'critical' | 'medium' | 'low' }) {
@@ -34,72 +31,42 @@ function SeverityBadge({ severity }: { severity: 'critical' | 'medium' | 'low' }
 type SortField = 'name' | 'patrol' | 'details'
 type SortDirection = 'asc' | 'desc'
 
-function sortMembers(
-  members: NormalizedMember[],
-  field: SortField,
-  direction: SortDirection,
-  issueType: string
-): NormalizedMember[] {
-  return [...members].sort((a, b) => {
-    let aValue: string
-    let bValue: string
-
-    switch (field) {
-      case 'name':
-        aValue = `${a.lastName}, ${a.firstName}`.toLowerCase()
-        bValue = `${b.lastName}, ${b.firstName}`.toLowerCase()
-        break
-      case 'patrol':
-        aValue = a.patrolName.toLowerCase()
-        bValue = b.patrolName.toLowerCase()
-        break
-      case 'details':
-        const aIssues = getMemberIssues(a)
-        const bIssues = getMemberIssues(b)
-        const aIssue = aIssues.find((i) => i.type === issueType)
-        const bIssue = bIssues.find((i) => i.type === issueType)
-        aValue = aIssue?.description || ''
-        bValue = bIssue?.description || ''
-        break
-      default:
-        return 0
-    }
-
-    if (direction === 'asc') {
-      return aValue.localeCompare(bValue)
-    } else {
-      return bValue.localeCompare(aValue)
-    }
-  })
-}
-
-function SortableTable({
-  members,
-  issueType,
-}: {
+interface SortableTableProps {
   members: NormalizedMember[]
   issueType: string
-}) {
+}
+
+function SortableTable({ members, issueType }: SortableTableProps) {
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
-  const membersWithIssue = members.filter((m) => {
-    const issues = getMemberIssues(m)
-    return issues.some((i) => i.type === issueType)
-  })
-
-  const sortedMembers = useMemo(
-    () => sortMembers(membersWithIssue, sortField, sortDirection, issueType),
-    [membersWithIssue, sortField, sortDirection, issueType]
+  const membersWithIssue = useMemo(
+    () =>
+      members.filter((member) => {
+        const issues = getMemberIssues(member)
+        return issues.some((i) => i.type === issueType)
+      }),
+    [members, issueType]
   )
 
+  const sortedMembers = useMemo(() => {
+    return [...membersWithIssue].sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1
+      if (sortField === 'patrol') {
+        return a.patrolName.localeCompare(b.patrolName) * direction
+      }
+      if (sortField === 'details') {
+        const aIssue = getMemberIssues(a).find((i) => i.type === issueType)
+        const bIssue = getMemberIssues(b).find((i) => i.type === issueType)
+        return (aIssue?.description || '').localeCompare(bIssue?.description || '') * direction
+      }
+      return `${a.lastName}, ${a.firstName}`.localeCompare(`${b.lastName}, ${b.firstName}`) * direction
+    })
+  }, [membersWithIssue, sortField, sortDirection, issueType])
+
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
+    setSortField((prev) => (prev === field ? prev : field))
+    setSortDirection((prev) => (field === sortField ? (prev === 'asc' ? 'desc' : 'asc') : 'asc'))
   }
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -115,34 +82,27 @@ function SortableTable({
 
   if (sortedMembers.length === 0) return null
 
+  const detailHref = (id: string) => `/dashboard/planning/members/${encodeURIComponent(id)}?from=issues`
+
   return (
     <div className="rounded-md border">
       <table className="w-full">
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-4 py-3 text-left text-sm font-medium">
-              <button
-                onClick={() => handleSort('name')}
-                className="flex items-center hover:text-foreground transition-colors"
-              >
+              <button onClick={() => handleSort('name')} className="flex items-center hover:text-foreground transition-colors">
                 Name
                 <SortIcon field="name" />
               </button>
             </th>
             <th className="px-4 py-3 text-left text-sm font-medium">
-              <button
-                onClick={() => handleSort('patrol')}
-                className="flex items-center hover:text-foreground transition-colors"
-              >
+              <button onClick={() => handleSort('patrol')} className="flex items-center hover:text-foreground transition-colors">
                 Patrol
                 <SortIcon field="patrol" />
               </button>
             </th>
             <th className="px-4 py-3 text-left text-sm font-medium">
-              <button
-                onClick={() => handleSort('details')}
-                className="flex items-center hover:text-foreground transition-colors"
-              >
+              <button onClick={() => handleSort('details')} className="flex items-center hover:text-foreground transition-colors">
                 Issue Details
                 <SortIcon field="details" />
               </button>
@@ -151,11 +111,9 @@ function SortableTable({
         </thead>
         <tbody>
           {sortedMembers.map((member) => {
-            const issues = getMemberIssues(member)
-            const issue = issues.find((i) => i.type === issueType)
-
+            const issue = getMemberIssues(member).find((i) => i.type === issueType)
             let issueDetails = issue?.description || ''
-            if (issue?.missingFields && issue.missingFields.length > 0) {
+            if (issue?.missingFields?.length) {
               issueDetails += ` (Missing: ${issue.missingFields.join(', ')})`
             }
             if (issue?.duplicateContact) {
@@ -165,7 +123,9 @@ function SortableTable({
             return (
               <tr key={member.id} className="border-b last:border-0 hover:bg-muted/50">
                 <td className="px-4 py-3 text-sm">
-                  {member.lastName}, {member.firstName}
+                  <Link href={detailHref(member.id)} className="font-medium text-primary hover:underline">
+                    {member.lastName}, {member.firstName}
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-sm">{member.patrolName}</td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">{issueDetails}</td>
