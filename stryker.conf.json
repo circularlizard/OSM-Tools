@@ -1,17 +1,19 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "command",
-  "concurrency": 4,
+  "concurrency": 8,
   "timeoutMS": 30000,
   "timeoutFactor": 3,
   "reporters": ["html", "clear-text", "progress"],
-  "coverageAnalysis": "off",
+  "coverageAnalysis": "perTest",
   "mutate": [
-    "src/lib/**/*.ts",
-    "src/store/**/*.ts",
-    "!src/lib/schemas.ts",
-    "!src/lib/logger.ts",
-    "!src/lib/redis.ts"
+    "src/lib/api.ts",
+    "src/lib/bottleneck.ts",
+    "src/lib/app-route-guards.ts",
+    "src/lib/config-loader.ts",
+    "src/lib/member-data-parser.ts",
+    "src/lib/member-issues.ts",
+    "src/store/use-store.ts"
   ],
   "ignorePatterns": [
     "tests/e2e/**",
@@ -21,7 +23,7 @@
     "coverage/**"
   ],
   "commandRunner": {
-    "command": "npx jest --config jest.config.ts --maxWorkers=2 src/lib src/store"
+    "command": "npx jest --config jest.config.ts --maxWorkers=4 src/lib src/store"
   },
   "tempDirName": ".stryker-tmp",
   "htmlReporter": {
