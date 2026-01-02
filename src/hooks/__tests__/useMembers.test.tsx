@@ -396,9 +396,11 @@ describe('useMembers', () => {
         })
       )
 
-      const updatedMember = result.current.members.find((m) => m.id === '1')
-      expect(updatedMember?.loadingState).toBe('complete')
-      expect(updatedMember?.medicalNotes).toBe('None')
+      await waitFor(() => {
+        const updatedMember = result.current.members.find((m) => m.id === '1')
+        expect(updatedMember?.loadingState).toBe('complete')
+        expect(updatedMember?.medicalNotes).toBe('None')
+      })
     })
 
     it('skips custom data fetch if member already complete', async () => {

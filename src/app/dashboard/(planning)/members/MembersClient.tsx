@@ -14,7 +14,6 @@ import {
   AlertCircle,
   RefreshCw,
   Check,
-  Minus,
   Ellipsis,
 } from 'lucide-react'
 import { useMembers } from '@/hooks/useMembers'
