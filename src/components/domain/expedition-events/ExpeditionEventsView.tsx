@@ -2,7 +2,6 @@
 import { AlertCircle, CalendarDays } from "lucide-react";
 import type { Event } from "@/lib/schemas";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { EventsListSkeleton } from "@/components/domain/EventsListSkeleton";
 import { EventCard } from "@/components/domain/EventCard";
 

@@ -68,12 +68,6 @@ export function DataLoadingBanner() {
     ? "Loading data…"
     : "Data synced";
 
-  const indicatorTone = hasError
-    ? "bg-destructive/15 text-destructive border-destructive/40"
-    : isLoading
-    ? "bg-primary/10 text-primary border-primary/30"
-    : "bg-muted/70 text-muted-foreground border-muted-foreground/20";
-
   // Hide only when we have no data sources registered (idle state)
   if (sources.length === 0) {
     return null;

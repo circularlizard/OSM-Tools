@@ -4,7 +4,7 @@ jest.mock('../logger', () => ({
 
 import { logValidationError } from '../logger'
 import { parseStrict } from '../schemas'
-import { EventsResponseSchema, type EventsResponse, MemberSchema } from '../schemas'
+import { EventsResponseSchema, MemberSchema } from '../schemas'
 
 const mockLogValidationError = logValidationError as jest.Mock
 
