@@ -1,13 +1,15 @@
 'use client'
 
+import { use } from 'react'
 import { UnitAttendanceDetail } from '@/components/domain/consolidated-attendance/UnitAttendanceDetail'
 
 interface UnitDetailPageProps {
-  params: { unitId: string }
+  params: Promise<{ unitId: string }>
 }
 
 export default function UnitDetailPage({ params }: UnitDetailPageProps) {
-  const unitId = decodeURIComponent(params.unitId)
+  const resolvedParams = use(params)
+  const unitId = decodeURIComponent(resolvedParams.unitId)
   return (
     <UnitAttendanceDetail
       unitId={unitId}
