@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Suspense } from 'react'
 import { Gabarito } from 'next/font/google'
 import { MSWProvider } from '@/components/MSWProvider'
 import { SessionProvider } from '@/components/SessionProvider'
@@ -34,9 +35,11 @@ export default function RootLayout({
           <SessionProvider>
             <QueryProvider>
               <StartupInitializer />
-              <ClientShell>
-                {children}
-              </ClientShell>
+              <Suspense fallback={<div className="min-h-screen" />}>
+                <ClientShell>
+                  {children}
+                </ClientShell>
+              </Suspense>
             </QueryProvider>
           </SessionProvider>
         </MSWProvider>
