@@ -295,7 +295,7 @@ export function MemberIssuesClient() {
   })
 
   const handleLoadAll = async () => {
-    if (!isAdmin || pendingMembers.length === 0) return
+    if (pendingMembers.length === 0) return
 
     setBulkStatus('loading')
     setBulkError(null)
@@ -545,7 +545,7 @@ export function MemberIssuesClient() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button
-            disabled={!isAdmin || pendingMembers.length === 0 || bulkStatus === 'loading'}
+            disabled={pendingMembers.length === 0 || bulkStatus === 'loading'}
             onClick={handleLoadAll}
             size="sm"
             className="min-w-[120px]"
@@ -562,11 +562,6 @@ export function MemberIssuesClient() {
           ) : null}
           {bulkStatus === 'error' ? (
             <p className="text-xs text-destructive">Error: {bulkError ?? 'Unknown error'}</p>
-          ) : null}
-          {!isAdmin ? (
-            <p className="text-xs text-muted-foreground">
-              Only administrators can load detailed data.
-            </p>
           ) : null}
         </div>
       </div>

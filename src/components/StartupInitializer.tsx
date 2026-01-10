@@ -102,6 +102,7 @@ export default function StartupInitializer() {
         
         const data = await response.json()
         const sections = data.sections || []
+        const sectionTerms: Record<string, Array<{ term_id?: string | number; termid?: string | number }>> = data.terms || {}
         
         // Use roleSelection from session (set during OAuth login based on provider choice)
         // Falls back to permission-based heuristic if not available
@@ -154,11 +155,17 @@ export default function StartupInitializer() {
 
         // Transform OAuth sections to store format
         const storeSections = sections.map((s: OAuthSection) => {
-          const terms = Array.isArray(s.terms) ? s.terms : []
-          const latestTerm = terms.length > 0 ? terms[terms.length - 1] : null
-          const termId = latestTerm?.term_id ? String(latestTerm.term_id) : undefined
+          const sectionId = String(s.section_id)
+          const termsArray = Array.isArray(s.terms) && s.terms.length > 0
+            ? s.terms
+            : Array.isArray(sectionTerms[sectionId])
+              ? sectionTerms[sectionId]
+              : []
+          const latestTerm = termsArray.length > 0 ? termsArray[termsArray.length - 1] : null
+          const latestTermId = latestTerm && ('term_id' in latestTerm ? latestTerm.term_id : (latestTerm as { termid?: string | number }).termid)
+          const termId = latestTermId !== undefined ? String(latestTermId) : undefined
           return {
-            sectionId: String(s.section_id),
+            sectionId,
             sectionName: s.section_name,
             sectionType: s.section_type,
             termId,

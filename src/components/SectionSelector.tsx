@@ -46,6 +46,8 @@ export function SectionSelector({ redirectTo = '/dashboard', allowSkip = false }
   const currentApp = useStore((s) => s.currentApp)
   const setCurrentSection = useStore((s) => s.setCurrentSection)
   const setSelectedSections = useStore((s) => s.setSelectedSections)
+  const setAppSection = useStore((s) => s.setAppSection)
+  const getAppSection = useStore((s) => s.getAppSection)
   const clearQueue = useStore((s) => s.clearQueue)
   const app = currentApp || 'expedition'
   
@@ -79,10 +81,19 @@ export function SectionSelector({ redirectTo = '/dashboard', allowSkip = false }
 
     if (currentSection?.sectionId) {
       setSelectedId(currentSection.sectionId)
-    } else if (selectedSections.length > 0) {
+      return
+    }
+
+    const rememberedForApp = getAppSection(app)
+    if (rememberedForApp?.sectionId) {
+      setSelectedId(rememberedForApp.sectionId)
+      return
+    }
+
+    if (selectedSections.length > 0) {
       setSelectedId(selectedSections[0].sectionId)
     }
-  }, [selectedSections, currentSection, selectedId])
+  }, [selectedSections, currentSection, getAppSection, selectedId, app])
   
   const selectSection = (sectionId: string) => {
     setSelectedId(sectionId)
@@ -96,12 +107,15 @@ export function SectionSelector({ redirectTo = '/dashboard', allowSkip = false }
     const selected = availableSections.find(s => s.sectionId === selectedId)
     if (!selected) return
     
-    setCurrentSection({
+    const normalizedSection = {
       sectionId: selected.sectionId,
       sectionName: selected.sectionName,
       sectionType: selected.sectionType,
       termId: selected.termId,
-    })
+    }
+
+    setCurrentSection(normalizedSection)
+    setAppSection(app, normalizedSection)
     setSelectedSections([])
     
     if (rememberSelection && userId) {
