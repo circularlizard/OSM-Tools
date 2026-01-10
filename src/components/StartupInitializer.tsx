@@ -49,6 +49,7 @@ export default function StartupInitializer() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const currentSection = useStore((s) => s.currentSection)
   const setUserRole = useStore((s) => s.setUserRole)
   const setAvailableSections = useStore((s) => s.setAvailableSections)
   const setCurrentSection = useStore((s) => s.setCurrentSection)
@@ -339,8 +340,8 @@ export default function StartupInitializer() {
         // The rememberedValid flag is set only when the explicit localStorage key exists
         
         // Redirect to section picker if multi-section user without remembered selection
-        // Skip if already on the section picker page
-        if (currentAvailable.length > 1 && !rememberedValid && pathname !== '/dashboard/section-picker') {
+        // Skip if already on the section picker page OR if a section is already selected in the store
+        if (currentAvailable.length > 1 && !rememberedValid && !currentSection && pathname !== '/dashboard/section-picker') {
           const redirectTo = pathname?.startsWith('/dashboard') ? pathname : '/dashboard'
           router.replace(`/dashboard/section-picker?redirect=${encodeURIComponent(redirectTo)}`)
           if (process.env.NODE_ENV !== 'production') {
