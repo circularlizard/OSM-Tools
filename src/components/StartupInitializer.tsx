@@ -106,16 +106,18 @@ export default function StartupInitializer() {
         // Use roleSelection from session (set during OAuth login based on provider choice)
         // Falls back to permission-based heuristic if not available
         const { roleSelection: sessionRole, appSelection: sessionApp } = session as {
-          roleSelection?: 'admin' | 'standard'
+          roleSelection?: 'admin' | 'standard' | 'data-quality'
           appSelection?: AppKey
         }
 
-        let role: 'admin' | 'standard' | 'readonly'
+        let role: 'admin' | 'standard' | 'data-quality' | 'readonly'
         
         if (sessionRole === 'admin') {
           role = 'admin'
         } else if (sessionRole === 'standard') {
           role = 'standard'
+        } else if (sessionRole === 'data-quality') {
+          role = 'data-quality'
         } else {
           // Fallback: determine role based on permissions
           const hasEventsAccess = sections.some((s: OAuthSection) => s.upgrades?.events)
