@@ -71,8 +71,10 @@ export function useMembers() {
   const app = currentApp || 'planning'
   const userRole = useStore((state) => state.userRole)
   const isAdmin = userRole === 'admin'
+  const isDataQuality = userRole === 'data-quality'
   // Data Quality users also need member access
-  const canAccessMembers = isAdmin || userRole === 'data-quality'
+  const canAccessMembers = isAdmin || isDataQuality
+  const canLoadDetailedData = isAdmin || isDataQuality
   const sectionId = currentSection?.sectionId ?? ''
   const termId = currentSection?.termId ?? ''
   const sectionType = currentSection?.sectionType
@@ -255,8 +257,8 @@ export function useMembers() {
         signal?: AbortSignal
       }
     ) => {
-      if (!isAdmin) {
-        throw new Error('Only administrators can load member details.')
+      if (!canLoadDetailedData) {
+        throw new Error('Only authorized users can load member details.')
       }
       if (!sectionId) {
         throw new Error('No section selected.')
