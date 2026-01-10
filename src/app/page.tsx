@@ -237,6 +237,26 @@ export default function Home() {
           <LoginContent />
         </Suspense>
       </div>
+      <div className="absolute bottom-4 right-4 z-10 text-[0.7rem] text-white/70 text-right leading-snug">
+        Photo by{' '}
+        <a
+          href="https://unsplash.com/@xamh?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-white/40 hover:decoration-white"
+        >
+          Max Hermansson
+        </a>{' '}
+        on{' '}
+        <a
+          href="https://unsplash.com/photos/white-house-near-rock-formation-w5uE11FiAc8?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-white/40 hover:decoration-white"
+        >
+          Unsplash
+        </a>
+      </div>
     </div>
   );
 }

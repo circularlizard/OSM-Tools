@@ -393,6 +393,23 @@ Reference documentation for all completed implementation phases. For active/futu
 
 ---
 
+## **Export Framework & Participant Report Exports ✅ COMPLETE (Jan 10, 2026)**
+
+**Plan:** [export-framework-plan-completed-2026-01-10.md](./export-framework-plan-completed-2026-01-10.md)
+
+**Summary:** Delivered the reusable client-side export framework and shipped the first Expedition Viewer surface (participants by unit) with XLSX/PDF downloads that mirror on-screen filters and layout fidelity.
+
+**Key Deliverables:**
+1. Export types, service orchestration, and SheetJS/react-pdf formatters with Jest coverage plus lazy-loading to protect bundle size.
+2. `useExportContext` hook + Zustand slice with optional prop-based wiring for MVP views.
+3. Shared `<ExportMenu>` UI surface, mock auth-safe download handling, and Playwright download assertions.
+4. Expedition Viewer event detail integration producing export columns/rows directly from filtered participants, respecting breakpoint layouts and excluding hidden PII.
+5. Documentation updates in `docs/SPECIFICATION.md` §3.3.4 and `docs/ARCHITECTURE.md` §8 describing the export contract, rollout expectations, and client-only generation rules.
+
+**Output:** Export actions now consistently reflect “what you see” for the participants view, and future tables can adopt the same context contract without bespoke wiring.
+
+---
+
 ## **Multi-App Platform Transition ✅ COMPLETE (Jan 1, 2025)**
 
 **Plan:** [multi-app-transition-plan-completed-2025-01-01.md](./multi-app-transition-plan-completed-2025-01-01.md)
