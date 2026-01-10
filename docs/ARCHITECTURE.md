@@ -322,17 +322,36 @@ Users can bypass cache for records they have access to:
 * **Per-member refresh:** bypass the cached member list entry or any member detail fetch available in the current UI context.
 * **Global refresh (current section):** bypass the user-scoped caches for the active section.
 
-## **8\. Reporting & Export**
+## **8. Reporting & Export**
 
-*Addresses Section 3.6 (Reporting)*
+*Addresses Section 3.3.4 (Reporting) & REQ-VIEW-10 → REQ-VIEW-13A*
 
-### **8.1 PDF Generation: React-PDF**
+### **8.1 Export View Context Contract**
 
-* **Why:** Allows building the PDF report using React components for consistent styling.
+* **`ExportViewContext`:** Canonical structure describing the *exact* data shown on screen (`id`, `title`, `filters`, `columns`, `rows`, `source`). Only rows/columns visible after filters/sorts may appear, satisfying REQ-VIEW-10/11.
+* **Columns:** `ExportColumn { id, label, type, formatter? }` is derived directly from the UI table schema (Name, Unit, Attendance, Age, dynamic custom fields, etc.).
+* **Rows:** `ExportRow` entries are plucked from memoized client data (TanStack Query/Zustand) so no additional API calls are made.
+* **Registration:** Screens call `useExportContext(context)` which writes to `src/store/export-store.ts` (Zustand) so any export-capable shell can introspect the latest ready-to-download dataset.
 
-### **8.2 Spreadsheet Export: SheetJS (xlsx)**
+### **8.2 Export Service & Formatters**
 
-* **Why:** Robust library for generating .xlsx files client-side.
+* **Service Layer (`src/lib/export/service.ts`):** Accepts the registered `ExportViewContext` and orchestrates downloads. Generates audit-friendly filenames (`<viewId>-<timestamp>`) and invokes formatters.
+* **Spreadsheet Formatter:** Built on **SheetJS (xlsx)**; respects column ordering, coerces types (string/number), applies sensible column widths, and appends filter metadata rows at the top of the sheet (REQ-VIEW-10).
+* **PDF Formatter:** Built on **react-pdf**; renders branded headers, table body, and footer block outlining applied filters/access scope (REQ-VIEW-12/13). Tailwind tokens are mapped to react-pdf style objects to keep typography/colors consistent.
+* **Performance:** Formatters must chunk large datasets and may defer heavy work using `requestIdleCallback` where available to avoid UI jank on multi-hundred-row reports.
+
+### **8.3 Export UI Surface**
+
+* **Export Menu Component (`src/components/domain/export/ExportMenu.tsx`):** Reusable shadcn Dropdown/Button pairing that displays format options (“Download spreadsheet”, “Download PDF”). Disabled when no context or zero rows are available.
+* **Placement:** Lives alongside the view’s filter controls (events detail card, consolidated attendance toolbar, planner logistics tables) to reinforce “exports reflect what you currently see.”
+* **Accessibility:** Buttons include aria labels announcing format + row count, keyboard navigation works via shadcn primitives, and focus is returned after menu closes.
+* **Telemetry (future):** Hooks are ready to log download events through `src/lib/logger.ts` once instrumentation backlog allows (REQ-VIEW-13A).
+
+### **8.4 Initial Adoption & Rollout**
+
+* **MVP Surface (REQ-VIEW-10A):** Expedition Viewer → Event participants-by-unit table (`EventDetailClient`) registers an export context with the filtered/sorted participant data immediately after hydration.
+* **Future Surfaces:** Consolidated attendance cards/tables, Expedition Planner logistics views, and Data Quality issue grids will reuse the same context + UI without bespoke exporters, avoiding drift as additional columns/pivots appear.
+* **Client-Side Only:** All exports operate purely in the browser against cached data, preserving the platform’s read-only posture toward OSM (REQ-VIEW-11, SECURITY §3).
 
 ## **9\. Development & Strategy Patterns**
 

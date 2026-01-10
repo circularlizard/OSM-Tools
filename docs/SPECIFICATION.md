@@ -164,6 +164,10 @@ To support offline analysis and physical record-keeping during expeditions:
 * **Filter Fidelity (REQ-VIEW-11):** All exports must respect the currently applied filters (e.g., Patrol, Event, Readiness).
 * **PDF Export (REQ-VIEW-12):** Users must be able to generate a well-formatted PDF report suitable for printing.
 * **PDF Formatting (REQ-VIEW-13):** PDF exports must include readable table layouts, clear headers, and reflect applied filters/access controls.
+* **Reusable Export Context (REQ-VIEW-10, REQ-VIEW-12):** Every export-capable view must expose an `ExportViewContext` describing its currently rendered columns, rows, filters, and provenance so downstream formatters and UI can offer consistent options without bespoke wiring.
+* **Client-Side Generation (REQ-VIEW-11):** Spreadsheet and PDF files are produced entirely in the browser from data already fetched via TanStack Query/Zustand caches, preserving the platform’s read-only stance toward OSM.
+* **Expedition Viewer MVP (REQ-VIEW-10A):** The Expedition Viewer event participant-by-unit report is the first mandated export surface. Its spreadsheet/PDF actions must only include rows that pass the on-screen unit + attendance filters and mirror the table order, ensuring leaders can reconcile exports with what they see.
+* **Future Rollout (REQ-VIEW-13A):** Consolidated attendance, planner logistics, and data-quality tables must adopt the same export context contract to avoid divergence. Navigation shells should merely surface the shared export menu component once a screen registers a valid context.
 
 ### **3.4 OSM Data Quality Viewer Application (Administrator Experience)**
 
