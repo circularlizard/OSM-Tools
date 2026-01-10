@@ -26,6 +26,8 @@ jest.mock('@tanstack/react-query', () => ({
 // Mock the store
 const mockSetCurrentSection = jest.fn()
 const mockSetSelectedSections = jest.fn()
+const mockSetAppSection = jest.fn()
+const mockGetAppSection = jest.fn(() => null)
 const mockClearQueue = jest.fn()
 const mockAvailableSections = [
   { sectionId: 'section-1', sectionName: 'Troop A', sectionType: 'scouts', termId: 'term-1' },
@@ -41,6 +43,8 @@ jest.mock('@/store/use-store', () => ({
       selectedSections: [],
       setCurrentSection: mockSetCurrentSection,
       setSelectedSections: mockSetSelectedSections,
+      setAppSection: mockSetAppSection,
+      getAppSection: mockGetAppSection,
       clearQueue: mockClearQueue,
     }
     return selector(state)
