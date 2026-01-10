@@ -39,22 +39,28 @@ Deliver a reusable export capability that lets any dashboard view expose "downlo
 ### Phase A – Foundations
 1. Create export types + service layer files under `src/lib/export/` with accompanying unit tests (REQ-VIEW-10/12 coverage references in describe blocks).
 2. Add `useExportContext` hook + Zustand slice in `src/store/export-store.ts`. The slice stores the latest `ExportViewContext` keyed by route id.
+   - For the MVP, allow views to pass context directly into `<ExportMenu>` (prop-based) so we can ship export locally without requiring a global header/shell integration.
 3. Build spreadsheet and PDF formatters with unit tests covering:
    - Column ordering
    - Filter metadata inclusion
    - Unicode name rendering (scout names, patrols)
 4. Introduce `<ExportMenu>` component with Jest + Testing Library interaction tests to verify disabled/enabled states and format selection.
+5. Ensure formatter dependencies are lazy-loaded (dynamic import) so `xlsx` / `react-pdf` are only fetched when the user initiates an export.
+6. Defer CSV output initially: the MVP delivers XLSX + PDF; add a CSV formatter later if required by downstream workflows.
 
 ### Phase B – Expedition Viewer Participant Export
 1. Extend `EventDetailClient`:
+   - Clarify the MVP export reflects the existing participants list/table with a Unit column (it does not invent grouping beyond what is visible on screen).
    - Derive `exportColumns` from existing visible columns (Name, Unit, Attendance, Age, dynamic custom fields).
-   - Derive `exportRows` from `participants` memo so filters/sorts already applied.
-   - Compose `ExportViewContext` with event metadata + current filters and pass into `useExportContext`.
+   - Derive `exportRows` from `participants` memo so filters/sorts already applied, and ensure row order matches the current on-screen sort.
+   - Do not export hidden/raw fields (e.g., export Age, but do not export DOB unless DOB is displayed).
+   - Choose breakpoint fidelity: export the columns currently visible for the active layout (desktop table vs mobile card fields), to satisfy “only the data displayed on screen”.
+   - Compose `ExportViewContext` with event metadata + current filters and pass into `useExportContext` (or provide it directly to `<ExportMenu>` for the MVP).
    - Place `<ExportMenu>` near the table/card controls (adjacent to filters) aligned with UI rules in @docs/ARCHITECTURE.md §6.
 2. Wire the menu to call the export service for whichever format users select.
 3. Add regression tests:
    - Component test stubbing `useExportContext` to confirm the correct context payload.
-   - E2E BDD scenario (viewer) validating that downloads trigger (mock `URL.createObjectURL`).
+   - E2E BDD scenario (viewer) validating that downloads trigger using Playwright’s download assertions (e.g., filename extension and non-zero content).
 
 ### Phase C – Documentation & Future Rollout
 1. Update `docs/SPECIFICATION.md` §3.3.4 to describe the reusable export framework and note Expedition Viewer adoption as REQ-VIEW-10/12 MVP.
