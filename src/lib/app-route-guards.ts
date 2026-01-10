@@ -5,7 +5,7 @@ type RouteMatcher = {
   match: (pathname: string) => boolean;
 };
 
-type UserRole = 'admin' | 'standard' | 'readonly';
+type UserRole = 'admin' | 'standard' | 'readonly' | 'data-quality';
 
 type RoleMatcher = {
   role: UserRole;
@@ -77,8 +77,11 @@ const roleMatchers: RoleMatcher[] = [
       startsWith('/dashboard/api-browser')(pathname) ||
       startsWith('/dashboard/debug')(pathname) ||
       startsWith('/dashboard/platform')(pathname) ||
-      startsWith('/dashboard/members')(pathname) ||
-      startsWith('/dashboard/data-quality')(pathname),
+      startsWith('/dashboard/members')(pathname),
+  },
+  {
+    role: 'data-quality',
+    match: (pathname) => startsWith('/dashboard/data-quality')(pathname),
   },
 ];
 
@@ -126,6 +129,7 @@ const ROLE_RANK: Record<UserRole, number> = {
   readonly: 0,
   standard: 1,
   admin: 2,
+  'data-quality': 1,
 };
 
 export function isRoleAllowed(required: UserRole | null, actual: UserRole | null): boolean {

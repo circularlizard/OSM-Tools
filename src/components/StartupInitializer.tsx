@@ -373,6 +373,7 @@ export default function StartupInitializer() {
     session,
     pathname,
     router,
+    currentSection,
     setUserRole,
     setAvailableSections,
     setCurrentSection,

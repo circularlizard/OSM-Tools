@@ -71,6 +71,8 @@ export function useMembers() {
   const app = currentApp || 'planning'
   const userRole = useStore((state) => state.userRole)
   const isAdmin = userRole === 'admin'
+  // Data Quality users also need member access
+  const canAccessMembers = isAdmin || userRole === 'data-quality'
   const sectionId = currentSection?.sectionId ?? ''
   const termId = currentSection?.termId ?? ''
   const sectionType = currentSection?.sectionType
@@ -100,7 +102,7 @@ export function useMembers() {
       // Create normalized members from summaries (Phase 1 complete)
       return membersList.map(createNormalizedMemberFromSummary)
     },
-    enabled: isAuthenticated && isAdmin && !!sectionId && !!termId,
+    enabled: isAuthenticated && canAccessMembers && !!sectionId && !!termId,
     // Members data is expensive - keep it fresh for 12 hours
     staleTime: 12 * 60 * 60 * 1000,
     // Keep in cache for 24 hours

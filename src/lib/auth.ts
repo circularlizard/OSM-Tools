@@ -1,19 +1,9 @@
 import type { AuthOptions, DefaultUser } from 'next-auth'
-import type { JWT as BaseJWT } from 'next-auth/jwt'
+import type { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getMockUser } from '@/mocks/mockSession'
 import { setOAuthData, type OAuthData, getSessionVersion } from './redis'
 import { DEFAULT_APP_FOR_ROLE, type AppKey } from '@/types/app'
-
-/**
- * Extended JWT type with our custom fields
- */
-interface JWT extends BaseJWT {
-  roleSelection?: 'admin' | 'standard'
-  scopes?: string[]
-  sessionVersion?: number
-  appSelection?: AppKey
-}
 
 /**
  * Extended user type with OSM-specific fields
@@ -406,8 +396,8 @@ export function getAuthConfig(): AuthOptions {
       // Store only section IDs in session (full data fetched from Redis when needed)
       session.sectionIds = token.sectionIds as number[] | undefined
       session.scopes = token.scopes as string[] | undefined
-      session.roleSelection = token.roleSelection as 'admin' | 'standard' | undefined
-      session.appSelection = (token as JWT).appSelection
+      session.roleSelection = token.roleSelection as 'admin' | 'standard' | 'data-quality' | undefined
+      session.appSelection = token.appSelection
 
       return session
     },

@@ -4,12 +4,13 @@ import type { NormalizedMember, Event } from '@/lib/schemas'
 import type { AppKey } from '@/types/app'
 
 /**
- * User Role Types
- * - admin: Full access including configuration management
+ * User Role
+ * - admin: Full access to all features
  * - standard: Standard leader with patrol/event-based access
  * - readonly: View-only access
+ * - data-quality: Data quality specialist with member access
  */
-export type UserRole = 'admin' | 'standard' | 'readonly'
+export type UserRole = 'admin' | 'standard' | 'readonly' | 'data-quality'
 
 /**
  * Theme Mode
