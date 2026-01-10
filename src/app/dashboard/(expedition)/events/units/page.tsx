@@ -2,6 +2,6 @@
 
 import { AttendanceOverview } from '@/components/domain/consolidated-attendance/AttendanceOverview'
 
-export default function AttendanceByPersonPage() {
+export default function UnitOverviewPage() {
   return <AttendanceOverview />
 }

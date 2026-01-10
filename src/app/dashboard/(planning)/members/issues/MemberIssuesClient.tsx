@@ -8,6 +8,21 @@ import { Button } from '@/components/ui/button'
 import { useMembers } from '@/hooks/useMembers'
 import { getMemberIssues, getMembersWithIssues, getIssueCounts } from '@/lib/member-issues'
 import type { NormalizedMember } from '@/lib/schemas'
+import { useExportViewContext, createExportColumn } from '@/hooks/useExportContext'
+import type { ExportColumn, ExportRow, ExportFormat } from '@/lib/export'
+import { executeExport } from '@/lib/export'
+import { Download, FileSpreadsheet, FileText, Users, ListChecks, Loader2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 function SeverityBadge({ severity }: { severity: 'critical' | 'medium' | 'low' }) {
   const variants = {
@@ -156,6 +171,118 @@ export function MemberIssuesClient() {
     return { counts, membersWithIssues }
   }, [members])
 
+  // Issue type to human-readable title mapping
+  const issueLabels = useMemo<Record<string, string>>(() => ({
+    'no-contact-info': 'No Contact Information',
+    'no-email-or-phone': 'No Email or Phone',
+    'no-emergency-contact': 'No Emergency Contact',
+    'missing-doctor-info': 'Missing Doctor Info',
+    'duplicate-emergency-contact': 'Duplicate Emergency Contact',
+    'missing-member-contact': 'Missing Member Contact',
+    'missing-photo-consent': 'Missing Photo Consent',
+    'missing-medical-consent': 'Missing Medical Consent',
+  }), [])
+
+  // Export Option 1: By Issue (for each issue, list members) (REQ-DQ-04)
+  const byIssueColumns = useMemo<ExportColumn[]>(() => [
+    createExportColumn('issueType', 'Issue Type', 'string'),
+    createExportColumn('severity', 'Severity', 'string'),
+    createExportColumn('memberName', 'Member Name', 'string'),
+    createExportColumn('patrol', 'Patrol', 'string'),
+    createExportColumn('issueDetails', 'Issue Details', 'string'),
+  ], [])
+
+  const byIssueRows = useMemo<ExportRow[]>(() => {
+    const rows: ExportRow[] = []
+    const severityOrder = { critical: 0, medium: 1, low: 2 }
+
+    for (const member of membersWithIssues.all) {
+      const issues = getMemberIssues(member)
+      for (const issue of issues) {
+        let details = issue.description
+        if (issue.missingFields?.length) {
+          details += ` (Missing: ${issue.missingFields.join(', ')})`
+        }
+        if (issue.duplicateContact) {
+          details += ` (Same as ${issue.duplicateContact})`
+        }
+
+        rows.push({
+          issueType: issueLabels[issue.type] || issue.type,
+          severity: issue.severity.charAt(0).toUpperCase() + issue.severity.slice(1),
+          memberName: `${member.lastName}, ${member.firstName}`,
+          patrol: member.patrolName,
+          issueDetails: details,
+          _sortSeverity: severityOrder[issue.severity] ?? 3,
+        })
+      }
+    }
+
+    // Sort by issue type, then severity, then member name
+    rows.sort((a, b) => {
+      const issueCmp = String(a.issueType).localeCompare(String(b.issueType))
+      if (issueCmp !== 0) return issueCmp
+      const sevA = (a._sortSeverity as number) ?? 3
+      const sevB = (b._sortSeverity as number) ?? 3
+      if (sevA !== sevB) return sevA - sevB
+      return String(a.memberName).localeCompare(String(b.memberName))
+    })
+
+    // Remove sort helper field
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return rows.map(({ _sortSeverity, ...rest }) => rest)
+  }, [membersWithIssues.all, issueLabels])
+
+  // Export Option 2: By Member (for each member, list issues) (REQ-DQ-04)
+  const byMemberColumns = useMemo<ExportColumn[]>(() => [
+    createExportColumn('memberName', 'Member Name', 'string'),
+    createExportColumn('patrol', 'Patrol', 'string'),
+    createExportColumn('issueCount', 'Issue Count', 'number'),
+    createExportColumn('criticalIssues', 'Critical Issues', 'string'),
+    createExportColumn('mediumIssues', 'Medium Issues', 'string'),
+    createExportColumn('lowIssues', 'Low Issues', 'string'),
+  ], [])
+
+  const byMemberRows = useMemo<ExportRow[]>(() => {
+    const rows: ExportRow[] = []
+
+    for (const member of membersWithIssues.all) {
+      const issues = getMemberIssues(member)
+      const critical = issues.filter((i) => i.severity === 'critical').map((i) => issueLabels[i.type] || i.type)
+      const medium = issues.filter((i) => i.severity === 'medium').map((i) => issueLabels[i.type] || i.type)
+      const low = issues.filter((i) => i.severity === 'low').map((i) => issueLabels[i.type] || i.type)
+
+      rows.push({
+        memberName: `${member.lastName}, ${member.firstName}`,
+        patrol: member.patrolName,
+        issueCount: issues.length,
+        criticalIssues: critical.join(', ') || '—',
+        mediumIssues: medium.join(', ') || '—',
+        lowIssues: low.join(', ') || '—',
+      })
+    }
+
+    // Sort by member name
+    rows.sort((a, b) => String(a.memberName).localeCompare(String(b.memberName)))
+
+    return rows
+  }, [membersWithIssues.all, issueLabels])
+
+  // Create both export contexts (REQ-DQ-04)
+  const byIssueContext = useExportViewContext({
+    id: 'member-issues-by-issue',
+    title: 'Data Issues Report - By Issue Type',
+    columns: byIssueColumns,
+    rows: byIssueRows,
+  })
+
+  const byMemberContext = useExportViewContext({
+    id: 'member-issues-by-member',
+    title: 'Data Issues Report - By Member',
+    columns: byMemberColumns,
+    rows: byMemberRows,
+  })
+
   const handleLoadAll = async () => {
     if (!isAdmin || pendingMembers.length === 0) return
 
@@ -178,27 +305,130 @@ export function MemberIssuesClient() {
     }
   }
 
+  // Export state
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExport = async (
+    context: ReturnType<typeof useExportViewContext>,
+    format: ExportFormat
+  ) => {
+    setIsExporting(true)
+    try {
+      await executeExport(context, format)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const hasIssues = membersWithIssues.all.length > 0
+
+  // Header component with export dropdown
+  const header = (
+    <div className="rounded-lg bg-primary text-primary-foreground px-4 py-4 mb-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1
+            className="text-2xl md:text-3xl font-bold flex items-center gap-2"
+            data-testid="member-issues-title"
+          >
+            <AlertTriangle className="h-6 w-6" aria-hidden />
+            <span>Member Data Issues</span>
+          </h1>
+          <p className="mt-1 text-sm md:text-base opacity-90">
+            Review and address data quality issues for members in the selected section
+          </p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-start border border-white/30 bg-white/10 text-primary-foreground hover:bg-white/20"
+              disabled={!hasIssues || isExporting}
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export Issues Report
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <ListChecks className="h-4 w-4 mr-2" />
+                By Issue Type
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handleExport(byIssueContext, 'xlsx')}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Spreadsheet (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport(byIssueContext, 'pdf')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  PDF Document (.pdf)
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Users className="h-4 w-4 mr-2" />
+                By Member
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handleExport(byMemberContext, 'xlsx')}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Spreadsheet (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport(byMemberContext, 'pdf')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  PDF Document (.pdf)
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">
+              {byMemberRows.length} members with {byIssueRows.length} issues
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  )
+
   if (members.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">
-          No members loaded. Please select a section to view member data issues.
-        </p>
-      </div>
+      <>
+        {header}
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">
+            No members loaded. Please select a section to view member data issues.
+          </p>
+        </div>
+      </>
     )
   }
 
   if (membersWithIssues.all.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-4">
-          <Info className="h-8 w-8" />
+      <>
+        {header}
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-4">
+            <Info className="h-8 w-8" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">No Issues Found</h2>
+          <p className="text-muted-foreground">
+            All {members.length} members have complete data. Great work!
+          </p>
         </div>
-        <h2 className="text-xl font-semibold mb-2">No Issues Found</h2>
-        <p className="text-muted-foreground">
-          All {members.length} members have complete data. Great work!
-        </p>
-      </div>
+      </>
     )
   }
 
@@ -290,8 +520,10 @@ export function MemberIssuesClient() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border p-4 space-y-2">
+    <>
+      {header}
+      <div className="space-y-4">
+        <div className="rounded-lg border p-4 space-y-2">
         <div className="flex flex-col gap-1">
           <p className="text-sm font-medium">Custom data loading</p>
           <p className="text-sm text-muted-foreground">
@@ -369,6 +601,7 @@ export function MemberIssuesClient() {
           )
         })}
       </Accordion>
-    </div>
+      </div>
+    </>
   )
 }

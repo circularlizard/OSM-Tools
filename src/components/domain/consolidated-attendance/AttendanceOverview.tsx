@@ -10,14 +10,14 @@ import { ExportMenu } from '@/components/domain/export'
 import { useExportViewContext, createExportColumn } from '@/hooks/useExportContext'
 import type { ExportColumn, ExportRow } from '@/lib/export/types'
 
-const defaultUnitHref = (unitId: string) => `/dashboard/events/attendance/${encodeURIComponent(unitId)}`
+const defaultUnitHref = (unitId: string) => `/dashboard/events/units/${encodeURIComponent(unitId)}`
 
 interface AttendanceOverviewProps {
   title?: string
   buildUnitHref?: (unitId: string) => string
 }
 
-export function AttendanceOverview({ title = 'Attendance Overview', buildUnitHref }: AttendanceOverviewProps) {
+export function AttendanceOverview({ title = 'Unit Overview', buildUnitHref }: AttendanceOverviewProps) {
   const { attendees, getPatrolName } = useConsolidatedAttendance()
   const { isLoading: eventsLoading } = useEvents()
   const { hydratedCount, totalEvents, isHydrating, failedCount, retryFailed } = useAttendanceHydration()

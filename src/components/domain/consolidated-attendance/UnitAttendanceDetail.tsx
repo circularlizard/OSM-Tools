@@ -194,7 +194,7 @@ export function UnitAttendanceDetail({ unitId, overviewHref, eventDetailBaseHref
               className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground/90 transition-opacity hover:text-primary-foreground hover:opacity-100"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
-              Back to Attendance Overview
+              Back to Unit Overview
             </Link>
             <div className="mt-2">
               <h1 className="text-3xl font-bold">{unitName}</h1>
