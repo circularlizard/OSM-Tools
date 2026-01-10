@@ -156,12 +156,51 @@ const planningNav: NavSection[] = [
   },
 ];
 
+const dataQualityNav: NavSection[] = [
+  {
+    items: [
+      {
+        label: "Data Quality Home",
+        href: "/dashboard/data-quality",
+        icon: LayoutDashboard,
+      },
+    ],
+  },
+  {
+    title: "Members",
+    items: [
+      {
+        label: "Members",
+        href: "/dashboard/data-quality/members",
+        icon: UsersIcon,
+        requiresAdmin: true,
+      },
+      {
+        label: "Member Data Issues",
+        href: "/dashboard/data-quality/members/issues",
+        icon: AlertTriangle,
+        requiresAdmin: true,
+      },
+    ],
+  },
+  {
+    title: "Sections",
+    items: [
+      {
+        label: "Section Picker",
+        href: "/dashboard/section-picker",
+        icon: Compass,
+      },
+    ],
+  },
+];
+
 const NAV_MAP: Record<AppKey, NavSection[]> = {
   expedition: expeditionNav,
   multi: multiNav,
   "platform-admin": platformNav,
   planning: planningNav,
-  "data-quality": multiNav, // Data quality uses same nav as multi-section viewer
+  "data-quality": dataQualityNav,
 };
 
 export function getNavSections(app: AppKey | null): NavSection[] {

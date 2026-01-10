@@ -27,7 +27,6 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const permissionValidated = useStore((s) => s.permissionValidated);
   const missingPermissions = useStore((s) => s.missingPermissions);
   const availableSections = useStore((s) => s.availableSections);
-  const setCurrentApp = useStore((s) => s.setCurrentApp);
   const setCurrentSection = useStore((s) => s.setCurrentSection);
   const setSelectedSections = useStore((s) => s.setSelectedSections);
   const logout = useLogout();
@@ -73,6 +72,10 @@ export default function ClientShell({ children }: { children: React.ReactNode })
     return (raw as AppKey | null) ?? null
   }, [searchParams]);
 
+  // Redirect to the correct app's default path when there's a mismatch between
+  // the current route's required app and the store's currentApp.
+  // IMPORTANT: Only redirect if currentApp is set (by a layout) and differs from requiredApp.
+  // Do NOT auto-set currentApp from requiredApp here - that's handled by each app's layout.
   useEffect(() => {
     if (!isDashboardRoute) return;
     if (!requiredApp || !currentApp) return;
@@ -81,20 +84,15 @@ export default function ClientShell({ children }: { children: React.ReactNode })
     // If appSelection is present in the URL, wait for StartupInitializer to reconcile it.
     if (urlAppSelection) return;
 
+    // If we're being redirected FROM somewhere, don't redirect again to prevent loops
+    if (searchParams.get('redirectedFrom')) return;
+
     const targetPath = getDefaultPathForApp(currentApp);
     const params = new URLSearchParams();
     params.set('app', currentApp);
     params.set('redirectedFrom', pathname);
     router.replace(`${targetPath}?${params.toString()}`);
-  }, [currentApp, isDashboardRoute, pathname, requiredApp, router, urlAppSelection]);
-
-  useEffect(() => {
-    if (!isDashboardRoute) return;
-    if (!requiredApp) return;
-    if (requiredApp === currentApp) return;
-    if (urlAppSelection) return;
-    setCurrentApp(requiredApp);
-  }, [currentApp, isDashboardRoute, requiredApp, setCurrentApp, urlAppSelection]);
+  }, [currentApp, isDashboardRoute, pathname, requiredApp, router, searchParams, urlAppSelection]);
 
   useEffect(() => {
     if (!isDashboardRoute) return;
@@ -135,7 +133,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const isSectionPickerPage = pathname === '/dashboard/section-picker';
 
   const effectiveApp = currentApp ?? 'expedition';
-  const appUsesSectionChrome = effectiveApp === 'expedition' || effectiveApp === 'multi' || effectiveApp === 'planning';
+  const appUsesSectionChrome = effectiveApp === 'expedition' || effectiveApp === 'multi' || effectiveApp === 'planning' || effectiveApp === 'data-quality';
   
   // Determine if we should show the banner (has section selected)
   const hasSection = !!currentSection?.sectionId || (selectedSections && selectedSections.length > 0);

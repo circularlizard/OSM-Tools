@@ -37,7 +37,7 @@ const routeMatchers: RouteMatcher[] = [
   },
   {
     app: "data-quality",
-    match: (pathname) => startsWith("/dashboard/members/issues")(pathname),
+    match: (pathname) => startsWith("/dashboard/data-quality")(pathname),
   },
   {
     app: "multi",
@@ -66,7 +66,8 @@ const roleMatchers: RoleMatcher[] = [
       startsWith('/dashboard/api-browser')(pathname) ||
       startsWith('/dashboard/debug')(pathname) ||
       startsWith('/dashboard/platform')(pathname) ||
-      startsWith('/dashboard/members')(pathname),
+      startsWith('/dashboard/members')(pathname) ||
+      startsWith('/dashboard/data-quality')(pathname),
   },
 ];
 
@@ -75,7 +76,7 @@ const DEFAULT_APP_PATH: Record<AppKey, string> = {
   multi: "/dashboard/members",
   "platform-admin": "/dashboard/admin",
   planning: "/dashboard/planning",
-  "data-quality": "/dashboard/members/issues",
+  "data-quality": "/dashboard/data-quality",
 };
 
 export function getRequiredAppForPath(pathname: string): AppKey | null {

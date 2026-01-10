@@ -42,11 +42,19 @@ describe('app-route-guards', () => {
     describe('multi-section viewer routes', () => {
       it('detects /dashboard/members routes', () => {
         expect(getRequiredAppForPath('/dashboard/members')).toBe('multi')
-        expect(getRequiredAppForPath('/dashboard/members/issues')).toBe('data-quality')
+        expect(getRequiredAppForPath('/dashboard/members/issues')).toBe('multi')
       })
 
       it('detects /dashboard/section-picker routes', () => {
         expect(getRequiredAppForPath('/dashboard/section-picker')).toBe('multi')
+      })
+    })
+
+    describe('data-quality routes', () => {
+      it('detects /dashboard/data-quality routes', () => {
+        expect(getRequiredAppForPath('/dashboard/data-quality')).toBe('data-quality')
+        expect(getRequiredAppForPath('/dashboard/data-quality/members')).toBe('data-quality')
+        expect(getRequiredAppForPath('/dashboard/data-quality/members/issues')).toBe('data-quality')
       })
     })
 
@@ -98,7 +106,8 @@ describe('app-route-guards', () => {
       expect(isPathAllowedForApp('/dashboard/admin', 'platform-admin')).toBe(true)
       expect(isPathAllowedForApp('/dashboard/planning', 'planning')).toBe(true)
       expect(isPathAllowedForApp('/dashboard/members', 'multi')).toBe(true)
-      expect(isPathAllowedForApp('/dashboard/members/issues', 'data-quality')).toBe(true)
+      expect(isPathAllowedForApp('/dashboard/data-quality', 'data-quality')).toBe(true)
+      expect(isPathAllowedForApp('/dashboard/data-quality/members', 'data-quality')).toBe(true)
     })
 
     it('blocks mismatched app and path', () => {
@@ -106,7 +115,7 @@ describe('app-route-guards', () => {
       expect(isPathAllowedForApp('/dashboard/admin', 'expedition')).toBe(false)
       expect(isPathAllowedForApp('/dashboard/planning', 'expedition')).toBe(false)
       expect(isPathAllowedForApp('/dashboard/members', 'expedition')).toBe(false)
-      expect(isPathAllowedForApp('/dashboard/members/issues', 'multi')).toBe(false)
+      expect(isPathAllowedForApp('/dashboard/data-quality', 'multi')).toBe(false)
     })
 
     it('allows paths with no required app', () => {

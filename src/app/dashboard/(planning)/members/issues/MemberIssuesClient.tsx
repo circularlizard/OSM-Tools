@@ -11,6 +11,7 @@ import type { NormalizedMember } from '@/lib/schemas'
 import { useExportViewContext, createExportColumn } from '@/hooks/useExportContext'
 import type { ExportColumn, ExportRow, ExportFormat } from '@/lib/export'
 import { executeExport } from '@/lib/export'
+import { useStore } from '@/store/use-store'
 import { Download, FileSpreadsheet, FileText, Users, ListChecks, Loader2 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -50,9 +51,10 @@ type SortDirection = 'asc' | 'desc'
 interface SortableTableProps {
   members: NormalizedMember[]
   issueType: string
+  basePath: string
 }
 
-function SortableTable({ members, issueType }: SortableTableProps) {
+function SortableTable({ members, issueType, basePath }: SortableTableProps) {
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
@@ -98,7 +100,7 @@ function SortableTable({ members, issueType }: SortableTableProps) {
 
   if (sortedMembers.length === 0) return null
 
-  const detailHref = (id: string) => `/dashboard/planning/members/${encodeURIComponent(id)}?from=issues`
+  const detailHref = (id: string) => `${basePath}/${encodeURIComponent(id)}?from=issues`
 
   return (
     <div className="rounded-md border">
@@ -156,9 +158,18 @@ function SortableTable({ members, issueType }: SortableTableProps) {
 
 export function MemberIssuesClient() {
   const { members, loadMissingMemberCustomData, isAdmin } = useMembers()
+  const currentApp = useStore((s) => s.currentApp)
   const [bulkStatus, setBulkStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [bulkError, setBulkError] = useState<string | null>(null)
   const [bulkProgress, setBulkProgress] = useState<{ total: number; completed: number }>({ total: 0, completed: 0 })
+
+  // Determine the base path for member detail links based on current app
+  const membersBasePath = useMemo(() => {
+    if (currentApp === 'data-quality') {
+      return '/dashboard/data-quality/members'
+    }
+    return '/dashboard/planning/members'
+  }, [currentApp])
 
   const pendingMembers = useMemo(
     () => members.filter((member) => member.loadingState !== 'complete' && member.loadingState !== 'error'),
@@ -595,7 +606,7 @@ export function MemberIssuesClient() {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
-                <SortableTable members={issue.members} issueType={issue.id} />
+                <SortableTable members={issue.members} issueType={issue.id} basePath={membersBasePath} />
               </AccordionContent>
             </AccordionItem>
           )

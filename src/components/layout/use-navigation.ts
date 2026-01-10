@@ -50,6 +50,7 @@ export function useNavigationMenu() {
   const availableSections = useStore((s) => s.availableSections);
   const setCurrentSection = useStore((s) => s.setCurrentSection);
   const setSelectedSections = useStore((s) => s.setSelectedSections);
+  const setAppSection = useStore((s) => s.setAppSection);
   const clearQueue = useStore((s) => s.clearQueue);
   const currentApp = useStore((s) => s.currentApp);
   const userRole = useStore((s) => s.userRole);
@@ -89,16 +90,22 @@ export function useNavigationMenu() {
       const selected = availableSections.find((s) => s.sectionId === sectionId);
       if (!selected) return;
 
-      setCurrentSection({
+      const section = {
         sectionId: selected.sectionId,
         sectionName: selected.sectionName,
         sectionType: selected.sectionType,
         termId: selected.termId,
-      });
+      };
+
+      setCurrentSection(section);
       setSelectedSections([]);
       clearQueue();
 
+      // Remember section for current app (per-app section memory)
       const appKey = currentApp || "expedition";
+      setAppSection(appKey, section);
+
+      // Clear only the current app's caches to maintain isolation
       queryClient.removeQueries({ queryKey: eventsKeys.all(appKey) });
       queryClient.removeQueries({ queryKey: eventSummaryKeys.all(appKey) });
       queryClient.removeQueries({ queryKey: attendanceKeys.all(appKey) });
@@ -108,7 +115,7 @@ export function useNavigationMenu() {
         console.debug("[Navigation] Section changed, cleared cached queries for app:", appKey);
       }
     },
-    [availableSections, clearQueue, currentApp, queryClient, setCurrentSection, setSelectedSections]
+    [availableSections, clearQueue, currentApp, queryClient, setAppSection, setCurrentSection, setSelectedSections]
   );
 
   const changeSectionHref = useMemo(

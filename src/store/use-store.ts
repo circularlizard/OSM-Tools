@@ -39,6 +39,11 @@ interface SessionState {
   selectedSections: Section[]
   setSelectedSections: (sections: Section[]) => void
 
+  // Per-app section memory (remembers last section for each app)
+  appSections: Partial<Record<AppKey, Section>>
+  setAppSection: (app: AppKey, section: Section | null) => void
+  getAppSection: (app: AppKey) => Section | null
+
   // Current app context (planning, expedition, platform-admin, multi, data-quality)
   currentApp: AppKey | null
   setCurrentApp: (app: AppKey | null) => void
@@ -277,6 +282,22 @@ export const useStore = create<StoreState>()(
       selectedSections: [],
       setSelectedSections: (sections) => set({ selectedSections: sections }),
 
+      // Per-app section memory
+      appSections: {},
+      setAppSection: (app, section) => set((state) => {
+        if (section === null) {
+          const { [app]: _, ...rest } = state.appSections
+          return { appSections: rest }
+        }
+        return {
+          appSections: {
+            ...state.appSections,
+            [app]: section,
+          },
+        }
+      }),
+      getAppSection: (app) => useStore.getState().appSections[app] ?? null,
+
       currentApp: null,
       setCurrentApp: (currentApp) => set({ currentApp }),
 
@@ -298,6 +319,7 @@ export const useStore = create<StoreState>()(
         set({
           currentSection: null,
           selectedSections: [],
+          appSections: {},
           currentApp: null,
           userRole: null,
           availableSections: [],
@@ -436,6 +458,7 @@ export const useStore = create<StoreState>()(
       partialize: (state) => ({
         currentSection: state.currentSection,
         selectedSections: state.selectedSections,
+        appSections: state.appSections,
         currentApp: state.currentApp,
         userRole: state.userRole,
         accessControlStrategy: state.accessControlStrategy,
@@ -466,6 +489,8 @@ export const useIsExpeditionApp = () => useStore((state) => state.currentApp ===
 export const useIsPlatformAdminApp = () =>
   useStore((state) => state.currentApp === 'platform-admin')
 export const useIsMultiApp = () => useStore((state) => state.currentApp === 'multi')
+export const useIsDataQualityApp = () => useStore((state) => state.currentApp === 'data-quality')
+export const useAppSections = () => useStore((state) => state.appSections)
 
 export const getCurrentApp = () => useStore.getState().currentApp
 

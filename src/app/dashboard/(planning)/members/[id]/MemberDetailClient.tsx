@@ -7,22 +7,30 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMembers } from "@/hooks/useMembers";
 import { getMemberIssues } from "@/lib/member-issues";
+import { useStore } from "@/store/use-store";
 import type { NormalizedContact } from "@/lib/schemas";
 
 interface MemberDetailClientProps {
   memberId: string;
 }
 
-const BACK_LINKS: Record<string, { href: string; label: string }> = {
+const PLANNING_BACK_LINKS: Record<string, { href: string; label: string }> = {
   members: { href: "/dashboard/planning/members", label: "Back to Members" },
   issues: { href: "/dashboard/planning/members/issues", label: "Back to Data Quality" },
+};
+
+const DATA_QUALITY_BACK_LINKS: Record<string, { href: string; label: string }> = {
+  members: { href: "/dashboard/data-quality/members", label: "Back to Members" },
+  issues: { href: "/dashboard/data-quality/members/issues", label: "Back to Data Quality" },
 };
 
 export function MemberDetailClient({ memberId }: MemberDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentApp = useStore((s) => s.currentApp);
   const backKey = searchParams.get("from") ?? "members";
-  const backLink = BACK_LINKS[backKey] ?? BACK_LINKS.members;
+  const backLinks = currentApp === "data-quality" ? DATA_QUALITY_BACK_LINKS : PLANNING_BACK_LINKS;
+  const backLink = backLinks[backKey] ?? backLinks.members;
 
   const { members, isLoading, loadMemberCustomData } = useMembers();
   const member = members.find((m) => m.id === memberId);
