@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import Home from '@/app/page'
 
 jest.mock('next-auth/react', () => ({
@@ -26,10 +27,15 @@ describe('Login Page', () => {
     jest.resetAllMocks()
   })
 
-  test('renders app cards and hides mock panel when disabled', () => {
+  test('renders expedition tab by default and shows other apps when tab selected', async () => {
+    const user = userEvent.setup()
     render(<Home />)
     expect(screen.getByText('Expedition Viewer')).toBeInTheDocument()
-    expect(screen.getByText('Expedition Planner')).toBeInTheDocument()
+    expect(screen.queryByText('Expedition Planner')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Other Apps' }))
+    await waitFor(() => {
+      expect(screen.getByText('Expedition Planner')).toBeInTheDocument()
+    })
     expect(screen.queryByText('OSM Data Quality')).not.toBeInTheDocument()
     expect(screen.queryByText('Development Mode')).toBeNull()
   })
@@ -42,20 +48,21 @@ describe('Login Page', () => {
     expect(screen.getByLabelText('Mock persona (optional)')).toBeInTheDocument()
   })
 
-  test('calls signIn with providers', () => {
+  test('calls signIn with providers', async () => {
     process.env.NEXT_PUBLIC_MOCK_AUTH_ENABLED = 'true'
+    const user = userEvent.setup()
     const spy = jest.spyOn(nextAuthReact, 'signIn').mockResolvedValue(undefined as any)
     render(<Home />)
 
     // OAuth flow: click expedition card
-    fireEvent.click(screen.getByRole('heading', { name: 'Expedition Viewer' }))
+    await user.click(screen.getByRole('heading', { name: 'Expedition Viewer' }))
     expect(spy).toHaveBeenCalledWith(
       'osm-standard',
       expect.objectContaining({ callbackUrl: '/dashboard?appSelection=expedition' })
     )
 
     // Mock flow: click expedition mock button in dev panel
-    fireEvent.click(screen.getByRole('button', { name: 'Expedition Viewer' }))
+    await user.click(screen.getByRole('button', { name: 'Expedition Viewer' }))
     expect(spy).toHaveBeenCalledWith(
       'credentials',
       expect.objectContaining({
@@ -67,11 +74,15 @@ describe('Login Page', () => {
     )
   })
 
-  test('shows configured apps from environment variable', () => {
+  test('shows configured apps from environment variable', async () => {
+    const user = userEvent.setup()
     process.env.NEXT_PUBLIC_VISIBLE_APPS = 'expedition,planning,data-quality'
     render(<Home />)
     expect(screen.getByText('Expedition Viewer')).toBeInTheDocument()
-    expect(screen.getByText('Expedition Planner')).toBeInTheDocument()
-    expect(screen.getByText('OSM Data Quality')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Other Apps' }))
+    await waitFor(() => {
+      expect(screen.getByText('Expedition Planner')).toBeInTheDocument()
+      expect(screen.getByText('OSM Data Quality')).toBeInTheDocument()
+    })
   })
 })

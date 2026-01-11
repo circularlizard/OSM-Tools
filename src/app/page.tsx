@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Map, ClipboardCheck, Settings } from "lucide-react";
 import Image from "next/image";
 import { APP_LABELS, APP_DESCRIPTIONS, APP_REQUIRES_ADMIN, getPrimaryApps, type AppKey } from "@/types/app";
@@ -94,6 +95,48 @@ function LoginContent() {
   };
 
   const primaryApps = getPrimaryApps()
+  const expeditionApp: AppKey = 'expedition'
+  const otherApps = primaryApps.filter(app => app !== 'expedition')
+
+  const tabTriggerClass =
+    "text-white/70 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm";
+
+  const renderAppCard = (app: AppKey) => (
+    <Card 
+      key={app}
+      className={`cursor-pointer transition-all hover:shadow-xl hover:scale-105 flex flex-col ${
+        selectedApp === app ? 'ring-2 ring-primary' : ''
+      }`}
+      onClick={() => handleAppSelect(app)}
+    >
+      <CardHeader className="text-center pb-2 flex-1">
+        <div className="mx-auto w-full rounded-lg bg-muted px-4 py-3 flex items-center justify-center gap-3">
+          <div className="p-3 rounded-full bg-background text-primary">
+            {APP_ICONS[app]}
+          </div>
+          <CardTitle className="text-lg">{APP_LABELS[app]}</CardTitle>
+        </div>
+        <CardDescription className="text-sm mt-3">
+          {APP_DESCRIPTIONS[app]}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0 mt-auto">
+        <div className="text-xs text-center text-muted-foreground">
+          {APP_REQUIRES_ADMIN[app] ? (
+            <span className="inline-flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              Requires admin access
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              Standard access
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
 
   return (
     <div className="w-full max-w-4xl space-y-8">
@@ -103,53 +146,35 @@ function LoginContent() {
         <p className="text-lg text-white/80">Select an application to continue</p>
       </div>
       
-      {/* 3-Card App Selection */}
-      <div
-        className={`grid w-full gap-6 justify-center ${
-          primaryApps.length === 1
-            ? 'grid-cols-1 max-w-md mx-auto'
-            : primaryApps.length === 2
-            ? 'grid-cols-1 md:grid-cols-2 md:max-w-3xl mx-auto'
-            : 'grid-cols-1 md:grid-cols-3'
-        }`}
-      >
-        {primaryApps.map((app) => (
-          <Card 
-            key={app}
-            className={`cursor-pointer transition-all hover:shadow-xl hover:scale-105 flex flex-col ${
-              selectedApp === app ? 'ring-2 ring-primary' : ''
+      {/* Tabbed App Selection */}
+      <Tabs defaultValue="unit-leaders" className="w-full">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6 bg-white/10 backdrop-blur">
+          <TabsTrigger value="unit-leaders" className={tabTriggerClass}>
+            For Unit Leaders
+          </TabsTrigger>
+          <TabsTrigger value="other-apps" className={tabTriggerClass}>
+            Other Apps
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="unit-leaders" className="mt-0">
+          <div className="grid w-full gap-6 justify-center grid-cols-1 max-w-md mx-auto">
+            {renderAppCard(expeditionApp)}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="other-apps" className="mt-0">
+          <div
+            className={`grid w-full gap-6 justify-center ${
+              otherApps.length === 1
+                ? 'grid-cols-1 max-w-md mx-auto'
+                : 'grid-cols-1 md:grid-cols-2 md:max-w-3xl mx-auto'
             }`}
-            onClick={() => handleAppSelect(app)}
           >
-            <CardHeader className="text-center pb-2 flex-1">
-              <div className="mx-auto w-full rounded-lg bg-muted px-4 py-3 flex items-center justify-center gap-3">
-                <div className="p-3 rounded-full bg-background text-primary">
-                  {APP_ICONS[app]}
-                </div>
-                <CardTitle className="text-lg">{APP_LABELS[app]}</CardTitle>
-              </div>
-              <CardDescription className="text-sm mt-3">
-                {APP_DESCRIPTIONS[app]}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 mt-auto">
-              <div className="text-xs text-center text-muted-foreground">
-                {APP_REQUIRES_ADMIN[app] ? (
-                  <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    Requires admin access
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    Standard access
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            {otherApps.map(renderAppCard)}
+          </div>
+        </TabsContent>
+      </Tabs>
       
       {/* Platform Admin Link */}
       <div className="text-center">
