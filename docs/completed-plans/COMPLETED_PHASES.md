@@ -458,3 +458,46 @@ Reference documentation for all completed implementation phases. For active/futu
 - Added 82 new unit tests for app routing, auth selection, and store state.
 - Fixed mock auth redirect callback for BDD test compatibility.
 - All 34 BDD tests passing.
+
+---
+
+## **Functional Review & Multi-App Stage 3 Planning ✅ COMPLETE (Jan 11, 2026)**
+
+**Plan:** [functional-review-plan-completed-2026-01-11.md](./functional-review-plan-completed-2026-01-11.md) and [multi-app-stage-3-plan-completed-2026-01-11.md](./multi-app-stage-3-plan-completed-2026-01-11.md)
+
+**Summary:** Archived the functional review findings and multi-app stage 3 implementation plan after completing the Expedition Viewer Phase 1 and establishing the four-app architecture platform.
+
+**Key Findings Archived:**
+- Login simplification requirements (3-card layout vs complex selector)
+- Rate limiting and resilience improvements needed
+- User/app combination analysis (Standard + Expedition Viewer only)
+- Admin app development requirements (Event Planner, Platform Admin)
+- Multi-section viewer improvements needed
+
+**Multi-App Stage 3 Framework:**
+- Phase 1: Expedition Viewer (Completed Jan 1, 2026)
+- Phase 2: Expedition Planner (Navigation parity achieved, member data quality pending)
+- Phase 3: OSM Data Quality Viewer (Completed Jan 11, 2026)
+- Phase 4: Platform Admin (Telemetry and audit log improvements pending)
+
+**Output:** Comprehensive planning documentation archived with clear implementation roadmap and status tracking.
+
+---
+
+## **Vercel Deployment Guide ✅ COMPLETE (Jan 11, 2026)**
+
+**Plan:** [vercel-deployment-plan-completed-2026-01-11.md](./vercel-deployment-plan-completed-2026-01-11.md)
+
+**Summary:** Complete production deployment guide for Vercel with environment configuration, OAuth setup, KV integration, and verification procedures.
+
+**Key Deliverables:**
+1. **Prerequisites Documentation**: GitHub access, Vercel plan requirements, Redis/KV backend, OSM OAuth credentials
+2. **Step-by-Step Deployment**: Project import, build settings, environment variables, KV connection
+3. **Environment Variables Matrix**: Complete list of 20+ required variables with production/preview guidance
+4. **OAuth Configuration**: Callback URL setup for admin and standard providers
+5. **Verification Checklist**: Post-deployment smoke tests and platform defaults seeding
+6. **Maintenance Guidelines**: Preview consistency, secrets rotation, KV backups, CI alignment
+
+**Output:** Production-ready deployment documentation with all technical requirements and operational procedures documented.
+
+---
