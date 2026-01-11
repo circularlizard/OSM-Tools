@@ -30,7 +30,7 @@ interface Props {
 export default function EventDetailClient({
   eventId,
   backHref = '/dashboard/events',
-  attendanceHrefBase = '/dashboard/events/attendance',
+  attendanceHrefBase = '/dashboard/events/units',
 }: Props) {
   const { data, isLoading, isPending, isError } = useEventDetail(eventId)
   const [unitFilter, setUnitFilter] = useState<string>('')

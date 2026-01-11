@@ -7,6 +7,27 @@ import { useRateLimitTelemetry } from "@/hooks/useRateLimitTelemetry";
 import { cn } from "@/lib/utils";
 import { useNavigationMenu } from "./use-navigation";
 
+function formatDuration(seconds: number | null | undefined): string | null {
+  if (seconds === null || seconds === undefined) return null;
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    const minsPart = minutes > 0 ? ` ${minutes}m` : "";
+    return `${hours}h${minsPart}${remainingSeconds > 0 ? ` ${remainingSeconds}s` : ""}`.trim();
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m${remainingSeconds > 0 ? ` ${remainingSeconds}s` : ""}`;
+  }
+
+  return `${remainingSeconds}s`;
+}
+
 export default function Sidebar() {
   const {
     visibleSections,
@@ -85,46 +106,66 @@ function RateLimitSidebarIndicator() {
   const view = useMemo(() => {
     if (!data) return null;
 
-    const formatTtl = (ttl: number | null | undefined) => {
-      if (!ttl || ttl <= 0) return null;
-      if (ttl >= 60) {
-        const minutes = Math.floor(ttl / 60);
-        const seconds = ttl % 60;
-        return `${minutes}m ${seconds}s`;
+    const quotaCooldownSeconds = (() => {
+      if (!data.quota || typeof data.quota.reset !== "number") return null;
+      const raw = data.quota.reset;
+
+      if (!Number.isFinite(raw) || raw <= 0) return null;
+
+      const currentSeconds = Math.floor(Date.now() / 1000);
+      const looksLikeEpochSeconds = raw > 1_000_000_000;
+      const looksLikeEpochMilliseconds = raw > 1_000_000_000_000;
+
+      let secondsUntilReset: number;
+      if (looksLikeEpochMilliseconds) {
+        secondsUntilReset = Math.round(raw / 1000 - currentSeconds);
+      } else if (looksLikeEpochSeconds) {
+        secondsUntilReset = Math.round(raw - currentSeconds);
+      } else {
+        secondsUntilReset = Math.round(raw);
       }
-      return `${ttl}s`;
-    };
+
+      if (!Number.isFinite(secondsUntilReset) || secondsUntilReset <= 0) return null;
+      return secondsUntilReset;
+    })();
 
     if (data.hardLocked) {
+      const ttl = formatDuration(data.hardLockTtlSeconds);
       return {
         label: "Blocked",
-        detail: `Upstream blocked${formatTtl(data.hardLockTtlSeconds) ? ` • ${formatTtl(data.hardLockTtlSeconds)} remaining` : ""}`,
+        detail: `Upstream blocked${ttl ? ` • ${ttl} remaining` : ""}`,
         dotClass: "bg-destructive",
+        cooldownSeconds: data.hardLockTtlSeconds ?? quotaCooldownSeconds,
       };
     }
 
     if (data.softLocked) {
+      const ttl = formatDuration(data.softLockTtlSeconds);
       return {
         label: "Cooling",
-        detail: formatTtl(data.softLockTtlSeconds) ? `Resumes in ${formatTtl(data.softLockTtlSeconds)}` : "Resuming shortly",
+        detail: ttl ? `Resumes in ${ttl}` : "Resuming shortly",
         dotClass: "bg-amber-500",
+        cooldownSeconds: data.softLockTtlSeconds ?? quotaCooldownSeconds,
       };
     }
 
     if (data.quota && data.quota.limit > 0) {
       const percentUsed = ((data.quota.limit - data.quota.remaining) / data.quota.limit) * 100;
+      const usageDetail = `${data.quota.remaining}/${data.quota.limit} remaining`;
       if (percentUsed >= 80) {
         return {
           label: "High usage",
-          detail: `${data.quota.remaining}/${data.quota.limit} remaining`,
+          detail: usageDetail,
           dotClass: "bg-amber-500",
+          cooldownSeconds: data.softLockTtlSeconds ?? quotaCooldownSeconds,
         };
       }
 
       return {
         label: "Stable",
-        detail: `${data.quota.remaining}/${data.quota.limit} remaining`,
+        detail: usageDetail,
         dotClass: "bg-emerald-500",
+        cooldownSeconds: data.softLockTtlSeconds ?? quotaCooldownSeconds,
       };
     }
 
@@ -132,12 +173,14 @@ function RateLimitSidebarIndicator() {
       label: "Stable",
       detail: null,
       dotClass: "bg-emerald-500",
+      cooldownSeconds: data.softLockTtlSeconds ?? quotaCooldownSeconds,
     };
   }, [data]);
 
   const statusLabel = view?.label ?? (isFetching ? "Checking…" : isError ? "Unavailable" : "Unknown");
   const dotClass = view?.dotClass ?? (isError ? "bg-amber-500/70" : "bg-muted-foreground/40");
   const detail = view?.detail ?? null;
+  const cooldownText = formatDuration(view?.cooldownSeconds ?? null);
 
   return (
     <div className="mt-4 border-t border-border/80 pt-4 text-[11px] text-muted-foreground shrink-0">
@@ -149,6 +192,11 @@ function RateLimitSidebarIndicator() {
         <span className="text-foreground font-medium">{statusLabel}</span>
       </div>
       {detail ? <p className="mt-1 text-muted-foreground/80">{detail}</p> : null}
+      {cooldownText ? (
+        <p className="mt-1 text-muted-foreground/70">
+          Cooldown: <span className="text-foreground font-medium">{cooldownText}</span>
+        </p>
+      ) : null}
     </div>
   );
 }
