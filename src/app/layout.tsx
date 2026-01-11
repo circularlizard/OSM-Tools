@@ -16,7 +16,7 @@ const gabarito = Gabarito({
 })
 
 export const metadata: Metadata = {
-  title: 'SEEE Expedition Dashboard',
+  title: 'OSM Tools',
   description: 'Scout Event Management Dashboard',
   icons: {
     icon: '/favicon.svg',

@@ -42,17 +42,20 @@ export function useEvents() {
   
   // Default to 'expedition' if no app is set (backward compatibility)
   const app = currentApp || 'expedition'
+  const appSupportsEvents = app === 'expedition' || app === 'planning' || app === 'multi'
 
   // If multiple sections are selected, issue parallel queries per section to avoid
   // combining into a single request and to ensure distinct section IDs/terms.
-  const targets = (selectedSections && selectedSections.length > 0)
-    ? selectedSections
-    : currentSection?.sectionId
-      ? [currentSection]
-      : []
+  const targets = appSupportsEvents
+    ? (selectedSections && selectedSections.length > 0
+        ? selectedSections
+        : currentSection?.sectionId
+          ? [currentSection]
+          : [])
+    : []
 
   // Only enable queries if user is authenticated AND has sections selected
-  const multiEnabled = isAuthenticated && targets.length > 0
+  const multiEnabled = appSupportsEvents && isAuthenticated && targets.length > 0
 
   const queries = useQueries({
     queries: targets.map((sec) => {
@@ -126,13 +129,14 @@ export function useEvents() {
         signal,
       })
     },
-    enabled: isAuthenticated && !!currentSection?.sectionId && !(selectedSections && selectedSections.length > 0),
+    enabled: appSupportsEvents && isAuthenticated && !!currentSection?.sectionId && !(selectedSections && selectedSections.length > 0),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   })
 
   // Update data loading tracker for progress banner
   useEffect(() => {
+    if (!appSupportsEvents) return
     if (!multiEnabled && !single.isLoading) return
 
     const totalEvents = merged?.items.length ?? single.data?.items.length ?? 0
@@ -180,6 +184,19 @@ export function useEvents() {
 
   // Unified return shape
   const useMulti = multiEnabled && targets.length > 0
+
+  if (!appSupportsEvents) {
+    return {
+      data: undefined,
+      events: [] as Event[],
+      isLoading: false,
+      isFetching: false,
+      isFetched: false,
+      isError: false,
+      error: null,
+    }
+  }
+
   return {
     data: merged ?? single.data,
     events: events.length > 0 ? events : (single.data?.items ?? []),

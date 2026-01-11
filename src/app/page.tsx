@@ -99,7 +99,7 @@ function LoginContent() {
     <div className="w-full max-w-4xl space-y-8">
       {/* Header */}
       <div className="text-center text-white">
-        <h1 className="text-4xl font-bold mb-2">SEEE Expedition Dashboard</h1>
+        <h1 className="text-4xl font-bold mb-2">OSM Tools</h1>
         <p className="text-lg text-white/80">Select an application to continue</p>
       </div>
       
@@ -227,7 +227,7 @@ export default function Home() {
         <Suspense fallback={
           <Card className="w-full max-w-md shadow-2xl">
             <CardHeader>
-              <CardTitle className="text-xl">SEEE Expedition Dashboard</CardTitle>
+              <CardTitle className="text-xl">OSM Tools</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="animate-pulse space-y-4">
